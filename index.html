@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة المبيعات</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+        <div class="container">
+        <div style="text-align:center;margin-bottom:20px;">
+            <img src="logo.png" alt="Logo" style="height:65px;width:auto;">
+        </div>
+        <div class="header-with-button">
+            <h1>إدارة المبيعات اليومية</h1>
+            <a href="reports.html" class="btn-reports">📊 عرض التقارير</a>
+        </div>
+
+        <div class="card" id="loginCard" style="margin-bottom:20px;padding:16px;border:1px solid #e0e0e0;border-radius:12px;background:#f8f9fa;">
+            <h3 style="margin-bottom:12px;color:#ac0a0a;">تسجيل دخول الموظف</h3>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <input type="text" id="loginEmployeeId" placeholder="الرقم الوظيفي" style="flex:1;min-width:160px;padding:10px;border:2px solid #e0e0e0;border-radius:10px;">
+                <input type="password" id="loginPassword" placeholder="كلمة المرور" style="flex:1;min-width:160px;padding:10px;border:2px solid #e0e0e0;border-radius:10px;">
+                <button id="btnLogin" style="flex:0 0 auto;padding:12px 16px;background:#064e0e;color:white;border:none;border-radius:10px;cursor:pointer;">تسجيل الدخول</button>
+            </div>
+            <div id="loginStatus" style="margin-top:10px;color:#ff0404;font-weight:600;">غير مسجل دخول</div>
+        </div>
+
+        <!-- بطاقة الترحيب -->
+        <div id="welcomeCard" class="card" style="display:none;margin-bottom:20px;padding:16px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:12px;border:none;color:white;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+                <div>
+                    <h2 style="margin:0;margin-bottom:8px;font-size:24px;">👋 مرحباً بك، <span id="welcomeUserName" style="font-weight:700;color:#ffeb3b;"></span></h2>
+                    <p style="margin:0;font-size:14px;opacity:0.9;">🏢 الفرع: <strong id="welcomeUserBranch" style="font-weight:600;"></strong></p>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <a id="btnAdminLink" href="admin.html" class="btn-reports" style="display:none;background:linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);padding:10px 16px;text-decoration:none;border-radius:8px;color:white;font-weight:600;cursor:pointer;transition:transform 0.2s;">⚙️ صفحة الإدارة</a>
+                    <button id="btnLogoutWelcome" style="padding:10px 16px;background:#d32f2f;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;transition:all 0.3s;">تسجيل الخروج</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="secureArea" style="display:none;">
+        <form id="salesForm">
+            <div class="form-group" style="display:none;">
+                <label for="employeeId">الرقم الوظيفي</label>
+                <input type="text" id="employeeId" name="employeeId" placeholder="أدخل الرقم الوظيفي" required>
+            </div>
+
+            <div class="form-group" style="display:none;">
+                <label for="branch">الفرع</label>
+                <input type="text" id="branch" name="branch" placeholder="أدخل اسم الفرع" required>
+            </div>
+
+            <div class="form-group">
+                <label for="saleDate" style="font-size:16px;font-weight:bold;color:#2c3e50;">📅 التاريخ</label>
+                <input type="date" id="saleDate" name="saleDate" required style="padding:14px;font-size:16px;border:3px solid #3498db;border-radius:10px;background:#e8f4fc;color:#2c3e50;font-weight:600;cursor:pointer;">
+            </div>
+
+            <div class="form-group">
+                <label for="totalSales">إجمالي المبيعات</label>
+                <input type="number" id="totalSales" name="totalSales" step="0.01" placeholder="أدخل إجمالي المبيعات" required>
+            </div>
+
+            
+
+            <div class="form-group">
+                <label for="totalCard">إجمالي الشبكة</label>
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <input type="number" id="totalCard" name="totalCard" step="0.01" placeholder="سيتم الحساب تلقائياً" readonly required>
+                    <button type="button" id="btnToggleCardBreakdown" style="padding:10px 14px;background:#2d9cdb;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;">تفاصيل الشبكة</button>
+                </div>
+                <small style="color:#666;display:block;margin-top:6px;">اضغط على الزر لفتح/طي تفاصيل الشبكة</small>
+            </div>
+
+            <div id="cardBreakdownGroup" style="display:none;background:#f7fbff;padding:16px;border-radius:12px;border:2px solid #b3d9ff;margin:10px 0;">
+                <div class="form-group">
+                    <label for="visaSales">مبيعات فيزا</label>
+                    <input type="number" id="visaSales" name="visaSales" step="0.01" placeholder="أدخل مبيعات فيزا" value="">
+                </div>
+
+                <div class="form-group">
+                    <label for="masterSales">مبيعات ماستر كارد</label>
+                    <input type="number" id="masterSales" name="masterSales" step="0.01" placeholder="أدخل مبيعات ماستر كارد" value="">
+                </div>
+
+                <div class="form-group">
+                    <label for="madaSales">مبيعات مدى</label>
+                    <input type="number" id="madaSales" name="madaSales" step="0.01" placeholder="أدخل مبيعات مدى" value="">
+                </div>
+            </div>
+             <div class="form-group">
+                <label for="totalCash">إجمالي الكاش (تلقائي)</label>
+                <input type="number" id="totalCash" name="totalCash" step="0.01" placeholder="سيتم الحساب تلقائياً" readonly required>
+            </div>
+
+           
+
+    
+
+            <div class="form-group">
+                <label for="extraCash">كاش زائد</label>
+                <input type="number" id="extraCash" name="extraCash" step="0.01" placeholder="أدخل الكاش الزائد" value="">
+            </div>
+
+            <div class="form-group">
+                <button type="button" id="btnToggleOtherDetails" style="padding:10px 20px;background:#6c5ce7;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">تفاصيل أخرى</button>
+            </div>
+
+            <div id="otherDetailsGroup" style="display:none;background:#f9f7ff;padding:16px;border-radius:12px;border:2px solid #d6ccff;margin:10px 0;">
+                <div class="form-group">
+                    <label for="expenses">المصروفات</label>
+                    <input type="number" id="expenses" name="expenses" step="0.01" placeholder="أدخل المصروفات" value="">
+                </div>
+
+                <div class="form-group" id="expenseNotesGroup" style="display: none;">
+                    <label for="expenseNotes">ملاحظات المصروفات <span style="color: red;">*</span></label>
+                    <textarea id="expenseNotes" name="expenseNotes" rows="3" placeholder="اكتب سبب المصروفات..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="returns">المردود</label>
+                    <input type="number" id="returns" name="returns" step="0.01" placeholder="أدخل المردود" value="">
+                </div>
+
+                <div class="form-group" id="returnsNotesGroup" style="display: none;">
+                    <label for="returnsNotes">ملاحظات المردود <span style="color: red;">*</span></label>
+                    <textarea id="returnsNotes" name="returnsNotes" rows="3" placeholder="اكتب سبب المردود..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="withdrawal">السحب او عجز</label>
+                    <input type="number" id="withdrawal" name="withdrawal" step="0.01" placeholder="أدخل السحب" value="">
+                </div>
+
+                <div class="form-group" id="withdrawalNotesGroup" style="display: none;">
+                    <label for="withdrawalNotes">ملاحظات السحب/العجز <span style="color: red;">*</span></label>
+                    <textarea id="withdrawalNotes" name="withdrawalNotes" rows="3" placeholder="اكتب سبب السحب أو العجز..."></textarea>
+                </div>
+            </div>
+             <div class="form-group">
+                <button type="button" id="btnToggleFinancing" style="padding:10px 20px;background:#17a2b8;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">💳 تمويل</button>
+            </div>
+            <div id="financingGroup" style="display:none;background:#f0f8ff;padding:20px;border-radius:12px;border:2px solid #17a2b8;margin:10px 0;">
+                <div style="display:flex;align-items:center;gap:15px;margin-bottom:15px;padding-bottom:10px;border-bottom:2px solid #17a2b8;">
+                    <img src="financing-icon.svg" alt="تمويل" style="width:48px;height:48px;">
+                    <h3 style="margin:0;color:#17a2b8;font-size:20px;font-weight:bold;">قسم التمويل</h3>
+                </div>
+                
+                <div class="form-group">
+                    <label for="tamara">تمارا</label>
+                    <input type="number" id="tamara" name="tamara" step="0.01" placeholder="أدخل تمارا" value="">
+                </div>
+
+                <div class="form-group">
+                    <label for="tabby">تابي</label>
+                    <input type="number" id="tabby" name="tabby" step="0.01" placeholder="أدخل تابي" value="">
+                </div>
+
+                <div class="form-group" id="financingNotesGroup" style="display: none;">
+                    <label for="financingNotes">ملاحظات التمويل (إجباري) <span style="color: red;">*</span></label>
+                    <textarea id="financingNotes" name="financingNotes" rows="3" placeholder="اكتب ملاحظات عن تمارا أو تابي..."></textarea>
+                </div>
+            </div>
+           
+            <div class="form-group">
+                <label for="imageUpload">📸 رفع صورة</label>
+                <input type="file" id="imageUpload" name="imageUpload" accept="image/jpeg,image/png,image/jpg,image/gif,image/webp" style="width:100%;padding:10px;border:2px dashed #e0e0e0;border-radius:10px;background:#f9f9f9;cursor:pointer;">
+                <small style="color:#666;display:block;margin-top:8px;">الصيغ المدعومة: JPG, PNG, GIF, WEBP (الحد الأقصى: 5MB)</small>
+                <div id="imagePreview" style="margin-top:15px;display:none;">
+                    <img id="previewImg" style="max-width:100%;max-height:300px;border-radius:8px;border:2px solid #4caf50;" alt="معاينة الصورة">
+                    <p id="imageName" style="color:#666;margin-top:8px;font-size:12px;"></p>
+                    <button type="button" id="btnRemoveImage" style="margin-top:8px;padding:6px 12px;background:#f44336;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;">❌ إزالة الصورة</button>
+                </div>
+                <input type="hidden" id="attachment" name="attachment">
+                <input type="hidden" id="attachmentURL" name="attachmentURL">
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="btn-submit">حفظ</button>
+                <button type="reset" class="btn-reset">مسح</button>
+            </div>
+        </form>
+
+        <div class="result" id="result">
+            <div class="result-item">
+                <span class="result-label">الرقم الوظيفي:</span>
+                <span class="result-value" id="displayEmployeeId">-</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">الفرع:</span>
+                <span class="result-value" id="displayBranch">-</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">إجمالي المبيعات:</span>
+                <span class="result-value" id="displaySales">0</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">إجمالي الكاش:</span>
+                <span class="result-value" id="displayCash">0</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">إجمالي مدي:</span>
+                <span class="result-value" id="displayCard">0</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">المصروفات:</span>
+                <span class="result-value" id="displayExpenses">0</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">المردود:</span>
+                <span class="result-value" id="displayReturns">0</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">السحب:</span>
+                <span class="result-value" id="displayWithdrawal">0</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">الملاحظات:</span>
+                <span class="result-value" id="displayNotes">-</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">الملف المرفق:</span>
+                <span class="result-value" id="displayAttachment">لا يوجد</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">المجموع:</span>
+                <span class="result-value" id="displayTotal">0</span>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+        const supabaseUrl = 'https://rgblfimktfasocahzqtg.supabase.co'; // استبدل بـ URL الخاص بك
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnYmxmaW1rdGZhc29jYWh6cXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NDg5NTQsImV4cCI6MjA4NTUyNDk1NH0.BMKXS1hTX5ntacnOQH5c2I5KDp5jpSWwJeHIDkz2els';
+         const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+        const form = document.getElementById('salesForm');
+        const result = document.getElementById('result');
+        const expensesInput = document.getElementById('expenses');
+        const expenseNotesGroup = document.getElementById('expenseNotesGroup');
+        const expenseNotesInput = document.getElementById('expenseNotes');
+        const returnsNotesGroup = document.getElementById('returnsNotesGroup');
+        const returnsNotesInput = document.getElementById('returnsNotes');
+        const withdrawalNotesGroup = document.getElementById('withdrawalNotesGroup');
+        const withdrawalNotesInput = document.getElementById('withdrawalNotes');
+
+        const loginEmployeeId = document.getElementById('loginEmployeeId');
+        const loginPassword = document.getElementById('loginPassword');
+        const btnLogin = document.getElementById('btnLogin');
+        const loginStatus = document.getElementById('loginStatus');
+        const loginCard = document.getElementById('loginCard');
+        const secureArea = document.getElementById('secureArea');
+        const welcomeCard = document.getElementById('welcomeCard');
+        const btnLogoutWelcome = document.getElementById('btnLogoutWelcome');
+        let currentEmployee = null;
+
+        const totalSalesInput = document.getElementById('totalSales');
+        const totalCardInput = document.getElementById('totalCard');
+        const visaSalesInput = document.getElementById('visaSales');
+        const masterSalesInput = document.getElementById('masterSales');
+        const madaSalesInput = document.getElementById('madaSales');
+        const cardBreakdownGroup = document.getElementById('cardBreakdownGroup');
+        const btnToggleCardBreakdown = document.getElementById('btnToggleCardBreakdown');
+        const otherDetailsGroup = document.getElementById('otherDetailsGroup');
+        const btnToggleOtherDetails = document.getElementById('btnToggleOtherDetails');
+        const tamaraInput = document.getElementById('tamara');
+        const tabbyInput = document.getElementById('tabby');
+        const extraCashInput = document.getElementById('extraCash');
+        const returnsInput = document.getElementById('returns');
+        const withdrawalInput = document.getElementById('withdrawal');
+        const totalCashInput = document.getElementById('totalCash');
+        
+        // متغيرات الصور والمرفقات
+        const imageUploadInput = document.getElementById('imageUpload');
+        const imagePreviewDiv = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const imageName = document.getElementById('imageName');
+        const btnRemoveImage = document.getElementById('btnRemoveImage');
+        const attachmentInput = document.getElementById('attachment');
+        const attachmentURLInput = document.getElementById('attachmentURL');
+        
+        let uploadedImageFile = null;
+        
+        // متغيرات التمويل
+        const btnToggleFinancing = document.getElementById('btnToggleFinancing');
+        const financingGroup = document.getElementById('financingGroup');
+        const financingNotesGroup = document.getElementById('financingNotesGroup');
+        const financingNotesInput = document.getElementById('financingNotes');
+
+        function calculateCash() {
+            const totalSales = parseFloat(totalSalesInput.value) || 0;
+            const totalCard = parseFloat(totalCardInput.value) || 0;
+            const tamara = parseFloat(tamaraInput.value) || 0;
+            const tabby = parseFloat(tabbyInput.value) || 0;
+            const extraCash = parseFloat(extraCashInput.value) || 0;
+            const expenses = parseFloat(expensesInput.value) || 0;
+            const withdrawal = parseFloat(withdrawalInput.value) || 0;
+            const returns = parseFloat(returnsInput.value) || 0;
+
+            const cash = totalSales - totalCard - tamara - tabby - expenses - withdrawal - returns + extraCash;
+            totalCashInput.value = cash.toFixed(2);
+        }
+
+        function updateTotalCardFromBreakdown() {
+            const visa = parseFloat(visaSalesInput.value) || 0;
+            const master = parseFloat(masterSalesInput.value) || 0;
+            const mada = parseFloat(madaSalesInput.value) || 0;
+            const totalCard = visa + master + mada;
+            totalCardInput.value = totalCard.toFixed(2);
+            calculateCash();
+        }
+
+        function toggleCardBreakdown(forceOpen) {
+            if (!cardBreakdownGroup) return;
+            const isOpen = cardBreakdownGroup.style.display !== 'none';
+            const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !isOpen;
+            cardBreakdownGroup.style.display = shouldOpen ? 'block' : 'none';
+        }
+
+        function toggleOtherDetails(forceOpen) {
+            if (!otherDetailsGroup) return;
+            const isOpen = otherDetailsGroup.style.display !== 'none';
+            const shouldOpen = typeof forceOpen === 'boolean' ? forceOpen : !isOpen;
+            otherDetailsGroup.style.display = shouldOpen ? 'block' : 'none';
+        }
+
+        totalSalesInput.addEventListener('input', calculateCash);
+        totalCardInput.addEventListener('input', calculateCash);
+        visaSalesInput.addEventListener('input', updateTotalCardFromBreakdown);
+        masterSalesInput.addEventListener('input', updateTotalCardFromBreakdown);
+        madaSalesInput.addEventListener('input', updateTotalCardFromBreakdown);
+        tamaraInput.addEventListener('input', calculateCash);
+        tabbyInput.addEventListener('input', calculateCash);
+        extraCashInput.addEventListener('input', calculateCash);
+
+        if (btnToggleCardBreakdown) {
+            btnToggleCardBreakdown.addEventListener('click', function() {
+                toggleCardBreakdown();
+            });
+        }
+
+        if (btnToggleOtherDetails) {
+            btnToggleOtherDetails.addEventListener('click', function() {
+                toggleOtherDetails();
+            });
+        }
+
+        totalCardInput.addEventListener('click', function() {
+            toggleCardBreakdown(true);
+        });
+
+        function checkFinancingNotes() {
+            const tamaraValue = parseFloat(tamaraInput.value) || 0;
+            const tabbyValue = parseFloat(tabbyInput.value) || 0;
+            if (tamaraValue > 0 || tabbyValue > 0) {
+                financingNotesGroup.style.display = 'block';
+                financingNotesInput.setAttribute('required', 'required');
+            } else {
+                financingNotesGroup.style.display = 'none';
+                financingNotesInput.removeAttribute('required');
+                financingNotesInput.value = '';
+            }
+        }
+
+        tamaraInput.addEventListener('input', checkFinancingNotes);
+        tabbyInput.addEventListener('input', checkFinancingNotes);
+
+        let withdrawalAlertShown = false;
+
+        btnToggleFinancing.addEventListener('click', function() {
+            if (financingGroup.style.display === 'none') {
+                financingGroup.style.display = 'block';
+                btnToggleFinancing.textContent = '💳 إخفاء التمويل';
+            } else {
+                financingGroup.style.display = 'none';
+                btnToggleFinancing.textContent = '💳 تمويل';
+                tamaraInput.value = '0';
+                tabbyInput.value = '0';
+                financingNotesGroup.style.display = 'none';
+                financingNotesInput.removeAttribute('required');
+                financingNotesInput.value = '';
+                calculateCash();
+            }
+        });
+        expensesInput.addEventListener('input', function() {
+            calculateCash();
+            const expensesValue = parseFloat(this.value) || 0;
+            if (expensesValue > 0) {
+                expenseNotesGroup.style.display = 'block';
+                expenseNotesInput.setAttribute('required', 'required');
+            } else {
+                expenseNotesGroup.style.display = 'none';
+                expenseNotesInput.removeAttribute('required');
+                expenseNotesInput.value = '';
+            }
+        });
+
+        returnsInput.addEventListener('input', function() {
+            calculateCash();
+            const returnsValue = parseFloat(this.value) || 0;
+            if (returnsValue > 0) {
+                returnsNotesGroup.style.display = 'block';
+                returnsNotesInput.setAttribute('required', 'required');
+            } else {
+                returnsNotesGroup.style.display = 'none';
+                returnsNotesInput.removeAttribute('required');
+                returnsNotesInput.value = '';
+            }
+        });
+        withdrawalInput.addEventListener('input', function() {
+            calculateCash();
+            const withdrawalValue = parseFloat(this.value) || 0;
+            if (withdrawalValue > 0) {
+                withdrawalNotesGroup.style.display = 'block';
+                withdrawalNotesInput.setAttribute('required', 'required');
+            } else {
+                withdrawalNotesGroup.style.display = 'none';
+                withdrawalNotesInput.removeAttribute('required');
+                withdrawalNotesInput.value = '';
+            }
+
+            if (withdrawalValue > 0 && !withdrawalAlertShown) {
+                alert('⚠️ تأكد من تبليغ مديرك بالمبلغ');
+                withdrawalAlertShown = true;
+            }
+        });
+
+        async function saveToSupabase(recordData) {
+            try {
+                console.log('Attempting to insert record:', recordData);
+                const insertData = {
+                    employee_id: recordData.employeeId,
+                    branch: recordData.branch,
+                    sale_date: recordData.saleDate,
+                    total_sales: recordData.totalSales,
+                    total_cash: recordData.totalCash,
+                    total_card: recordData.totalCard,
+                    tamara: recordData.tamara,
+                    tabby: recordData.tabby,
+                    extra_cash: recordData.extraCash,
+                    expenses: recordData.expenses,
+                    returns: recordData.returns,
+                    withdrawal: recordData.withdrawal,
+                    notes: recordData.notes,
+                    financing_notes: recordData.financingNotes,
+                    attachment: recordData.attachment,
+                    created_at: new Date().toISOString()
+                };
+                
+                // أضف الأعمدة الاختيارية فقط إذا كانت لها قيمة
+                if (recordData.visaSales && recordData.visaSales > 0) {
+                    insertData.visa_sales = recordData.visaSales;
+                }
+                if (recordData.masterSales && recordData.masterSales > 0) {
+                    insertData.master_sales = recordData.masterSales;
+                }
+                if (recordData.madaSales && recordData.madaSales > 0) {
+                    insertData.mada_sales = recordData.madaSales;
+                }
+                
+                const { data, error } = await supabase
+                    .from('sales')
+                    .insert([insertData]);
+                
+                if (error) {
+                    console.error('Supabase error details:', error);
+                    console.error('Error code:', error.code);
+                    console.error('Error message:', error.message);
+                    throw error;
+                }
+                
+                console.log('Insert successful:', data);
+            } catch (err) {
+                console.error('Save to Supabase failed:', err);
+                throw err;
+            }
+        }
+
+        function setFormEnabled(enabled) {
+            const controls = Array.from(form.elements).filter(el => el.id !== 'loginEmployeeId' && el.id !== 'loginPassword' && el.id !== 'btnLogin');
+            controls.forEach(el => { el.disabled = !enabled; });
+        }
+
+        btnLogin.addEventListener('click', handleLogin);
+        setFormEnabled(false);
+        secureArea.style.display = 'none';
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            if (!currentEmployee) {
+                alert('الرجاء تسجيل الدخول قبل الحفظ');
+                return;
+            }
+
+            const employeeId = document.getElementById('employeeId').value;
+            const branch = document.getElementById('branch').value;
+            const saleDate = document.getElementById('saleDate').value;
+            
+            // التحقق من البيانات المطلوبة
+            if (!employeeId || !branch || !saleDate) {
+                alert('❌ البيانات الأساسية ناقصة:\n- رقم الموظف: ' + (employeeId ? '✅' : '❌') + 
+                      '\n- الفرع: ' + (branch ? '✅' : '❌') + 
+                      '\n- التاريخ: ' + (saleDate ? '✅' : '❌'));
+                return;
+            }
+            
+            const totalSales = parseFloat(document.getElementById('totalSales').value) || 0;
+            const totalCash = parseFloat(document.getElementById('totalCash').value) || 0;
+            const totalCard = parseFloat(document.getElementById('totalCard').value) || 0;
+            const tamara = parseFloat(document.getElementById('tamara').value) || 0;
+            const tabby = parseFloat(document.getElementById('tabby').value) || 0;
+            const extraCash = parseFloat(document.getElementById('extraCash').value) || 0;
+            const expenses = parseFloat(document.getElementById('expenses').value) || 0;
+            
+            if ((tamara > 0 || tabby > 0) && !document.getElementById('financingNotes').value.trim()) {
+                alert('يرجى إدخال ملاحظة توضح سبب التمويل (تمارا/تابي)');
+                document.getElementById('financingNotes').focus();
+                return;
+            }
+            
+            const returns = parseFloat(document.getElementById('returns').value) || 0;
+            const withdrawal = parseFloat(document.getElementById('withdrawal').value) || 0;
+            const expenseNotes = expenseNotesInput.value.trim();
+            const returnsNotes = returnsNotesInput.value.trim();
+            const withdrawalNotes = withdrawalNotesInput.value.trim();
+
+            if (expenses > 0 && !expenseNotes) {
+                alert('يرجى إدخال ملاحظة توضح سبب المصروفات');
+                expenseNotesInput.focus();
+                return;
+            }
+
+            if (returns > 0 && !returnsNotes) {
+                alert('يرجى إدخال ملاحظة توضح سبب المردود');
+                returnsNotesInput.focus();
+                return;
+            }
+
+            if (withdrawal > 0 && !withdrawalNotes) {
+                alert('يرجى إدخال ملاحظة توضح سبب السحب/العجز');
+                withdrawalNotesInput.focus();
+                return;
+            }
+            const notesParts = [];
+            if (expenses > 0) notesParts.push(`مصروفات: ${expenseNotes}`);
+            if (returns > 0) notesParts.push(`مردود: ${returnsNotes}`);
+            if (withdrawal > 0) notesParts.push(`سحب/عجز: ${withdrawalNotes}`);
+            const notes = notesParts.length ? notesParts.join(' | ') : '-';
+            const attachment = '';
+
+            const total = totalCash + totalCard;
+
+            // إظهار رسالة تأكيد مع ملخص المدخلات
+            let confirmMessage = '===== ملخص المدخلات =====\n\n';
+            confirmMessage += 'الفرع: ' + branch + '\n';
+            confirmMessage += 'التاريخ: ' + saleDate + '\n';
+            confirmMessage += 'الموظف: ' + employeeId + '\n';
+            confirmMessage += '----------------------------\n';
+            confirmMessage += 'إجمالي المبيعات: ' + totalSales.toFixed(2) + ' ريال\n';
+            confirmMessage += 'الكاش: ' + totalCash.toFixed(2) + ' ريال **\n';
+            confirmMessage += 'مدي: ' + totalCard.toFixed(2) + ' ريال\n';
+            if (tamara > 0) confirmMessage += 'تمارا: ' + tamara.toFixed(2) + ' ريال\n';
+            if (tabby > 0) confirmMessage += 'تابي: ' + tabby.toFixed(2) + ' ريال\n';
+            if (extraCash > 0) confirmMessage += 'كاش زائد: ' + extraCash.toFixed(2) + ' ريال\n';
+            if (expenses > 0) confirmMessage += 'المصروفات: ' + expenses.toFixed(2) + ' ريال\n';
+            if (returns > 0) confirmMessage += 'المردود: ' + returns.toFixed(2) + ' ريال\n';
+            if (withdrawal > 0) confirmMessage += 'السحب: ' + withdrawal.toFixed(2) + ' ريال\n';
+            confirmMessage += '----------------------------\n';
+            confirmMessage += 'هل تؤكد حفظ هذه البيانات؟';
+
+            console.log('Showing confirmation dialog...');
+            const userConfirmed = confirm(confirmMessage);
+            console.log('User confirmation:', userConfirmed);
+            
+            if (!userConfirmed) {
+                console.log('User cancelled, not saving');
+                return;
+            }
+
+            console.log('User confirmed, proceeding to save...');
+
+            document.getElementById('displayEmployeeId').textContent = employeeId;
+            document.getElementById('displayBranch').textContent = branch;
+            document.getElementById('displaySales').textContent = totalSales.toFixed(2) + ' ريال';
+            document.getElementById('displayCash').textContent = totalCash.toFixed(2) + ' ريال';
+            document.getElementById('displayCard').textContent = totalCard.toFixed(2) + ' ريال';
+            document.getElementById('displayExpenses').textContent = expenses.toFixed(2) + ' ريال';
+            document.getElementById('displayReturns').textContent = returns.toFixed(2) + ' ريال';
+            document.getElementById('displayWithdrawal').textContent = withdrawal.toFixed(2) + ' ريال';
+            document.getElementById('displayNotes').textContent = notes;
+            document.getElementById('displayAttachment').textContent = 'لا يوجد';
+            document.getElementById('displayTotal').textContent = total.toFixed(2) + ' ريال';
+
+            // رفع الصورة أولاً إذا كانت موجودة
+            let attachmentURL = '-';
+            let attachmentFileName = '-';
+            
+            if (uploadedImageFile) {
+                try {
+                    console.log('Uploading image first...');
+                    document.getElementById('displayAttachment').textContent = '⏳ جاري رفع الصورة...';
+                    
+                    const uploadResult = await uploadImageToSupabase(uploadedImageFile);
+                    attachmentURL = uploadResult.url;
+                    attachmentFileName = uploadResult.fileName;
+                    
+                    console.log('Image uploaded:', uploadResult);
+                    document.getElementById('displayAttachment').textContent = `✅ ${uploadResult.fileName}`;
+                } catch (error) {
+                    console.error('Failed to upload image:', error);
+                    alert('❌ فشل رفع الصورة: ' + (error.message || 'خطأ غير معروف'));
+                    return;
+                }
+            }
+
+            const recordData = {
+                employeeId,
+                branch,
+                saleDate,
+                totalSales,
+                totalCash,
+                totalCard,
+                visaSales: parseFloat(visaSalesInput.value) || 0,
+                masterSales: parseFloat(masterSalesInput.value) || 0,
+                madaSales: parseFloat(madaSalesInput.value) || 0,
+                tamara,
+                tabby,
+                extraCash,
+                expenses,
+                returns,
+                withdrawal,
+                notes,
+                financingNotes: document.getElementById('financingNotes').value || '-',
+                attachment: attachmentURL
+            };
+
+            try {
+                console.log('Attempting to save to Supabase...', recordData);
+                await saveToSupabase(recordData);
+                console.log('Save successful!');
+                alert('تم حفظ البيانات في Supabase بنجاح!');
+                result.classList.add('show');
+                form.reset();
+                
+                // مسح الصورة المرفوعة
+                uploadedImageFile = null;
+                imagePreviewDiv.style.display = 'none';
+                previewImg.src = '';
+                imageName.textContent = '';
+                attachmentInput.value = '';
+                attachmentURLInput.value = '';
+                
+                withdrawalAlertShown = false;
+                expenseNotesGroup.style.display = 'none';
+                expenseNotesInput.removeAttribute('required');
+                expenseNotesInput.value = '';
+                returnsNotesGroup.style.display = 'none';
+                returnsNotesInput.removeAttribute('required');
+                returnsNotesInput.value = '';
+                withdrawalNotesGroup.style.display = 'none';
+                withdrawalNotesInput.removeAttribute('required');
+                withdrawalNotesInput.value = '';
+                financingGroup.style.display = 'none';
+                financingNotesGroup.style.display = 'none';
+                financingNotesInput.removeAttribute('required');
+                totalCashInput.value = '';
+                financingGroup.style.display = 'none';
+                btnToggleFinancing.textContent = '💳 تمويل';
+                document.getElementById('employeeId').value = currentEmployee.employee_id;
+                document.getElementById('employeeId').readOnly = true;
+                document.getElementById('branch').value = currentEmployee.branch_name || '';
+                document.getElementById('branch').readOnly = true;
+                document.getElementById('saleDate').value = new Date().toISOString().split('T')[0];
+                result.classList.remove('show');
+            } catch (err) {
+                console.error('Error saving data:', err);
+                console.error('Error details:', {
+                    message: err.message,
+                    code: err.code,
+                    details: err.details,
+                    hint: err.hint
+                });
+                let errorMessage = 'تعذر الحفظ إلى Supabase.\n\n';
+                if (err.code === 'PGRST116') {
+                    errorMessage += '❌ الحقول المُدخلة لا تطابق أسماء الأعمدة في قاعدة البيانات.\n';
+                    errorMessage += 'تحقق من: الترميز والأسماء.';
+                } else if (err.code === 'PGRST') {
+                    errorMessage += '❌ خطأ في صلاحيات الوصول (RLS).\n';
+                    errorMessage += 'تحقق من سياسات الأمان في Supabase.';
+                } else if (err.message.includes('duplicate key')) {
+                    errorMessage += '❌ هذا السجل موجود بالفعل.';
+                } else {
+                    errorMessage += `❌ ${err.message || 'خطأ غير معروف'}`;
+                }
+                alert(errorMessage);
+            }
+        });
+
+        async function handleLogin() {
+            const id = loginEmployeeId.value.trim();
+            const pass = loginPassword.value.trim();
+            if (!id || !pass) {
+                alert('أدخل الرقم الوظيفي وكلمة المرور');
+                return;
+            }
+            try {
+                const { data: empData, error } = await supabase
+                    .from('employees')
+                    .select('*')
+                    .eq('employee_id', id)
+                    .eq('password', pass)
+                    .single();
+                
+                if (error || !empData) {
+                    alert('بيانات الدخول غير صحيحة');
+                    return;
+                }
+                const data = empData;
+                currentEmployee = { id: data.id, ...data };
+                loginStatus.textContent = `مسجل كـ ${data.name} - فرع: ${data.branch_name || '-'}`;
+                loginStatus.style.color = '#28a745';
+                
+                // إظهار بطاقة الترحيب
+                document.getElementById('welcomeUserName').textContent = data.name;
+                document.getElementById('welcomeUserBranch').textContent = data.branch_name || '-';
+                welcomeCard.style.display = 'block';
+                
+                // عرض زر الإدارة فقط للمدراء
+                const adminBtn = document.getElementById('btnAdminLink');
+                if (data.permissions && data.permissions.includes('manageEmployees')) {
+                    adminBtn.style.display = 'inline-block';
+                } else {
+                    adminBtn.style.display = 'none';
+                }
+                
+                document.getElementById('employeeId').value = data.employee_id;
+                document.getElementById('employeeId').readOnly = true;
+                document.getElementById('branch').value = data.branch_name || '';
+                document.getElementById('branch').readOnly = true;
+                setFormEnabled(true);
+                secureArea.style.display = 'block';
+                loginCard.style.display = 'none';
+            } catch (err) {
+                console.error(err);
+                alert('تعذر تسجيل الدخول. تحقق من الاتصال.');
+            }
+        }
+
+        async function bootstrapAccessIfEmpty() {
+            try {
+                const { data: employees, error } = await supabase
+                    .from('employees')
+                    .select('*')
+                    .limit(1);
+                
+                if (error) throw error;
+                
+                if (!employees || employees.length === 0) {
+                    currentEmployee = { id: 'bootstrap', name: 'Setup Mode', branch_name: '' };
+                    loginStatus.textContent = 'وضع إنشاء أول حساب (لا توجد بيانات موظفين)';
+                    loginStatus.style.color = '#f39c12';
+                    
+                    // إظهار بطاقة الترحيب للوضع الافتراضي
+                    document.getElementById('welcomeUserName').textContent = 'Setup Mode';
+                    document.getElementById('welcomeUserBranch').textContent = 'جميع الفروع';
+                    welcomeCard.style.display = 'block';
+                    
+                    secureArea.style.display = 'block';
+                    loginCard.style.display = 'none';
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // زر تسجيل الخروج من بطاقة الترحيب
+        btnLogoutWelcome.addEventListener('click', function() {
+            if (confirm('هل تريد تسجيل الخروج؟')) {
+                currentEmployee = null;
+                loginStatus.textContent = 'غير مسجل دخول';
+                loginStatus.style.color = '#666';
+                welcomeCard.style.display = 'none';
+                secureArea.style.display = 'none';
+                loginCard.style.display = 'block';
+                loginEmployeeId.value = '';
+                loginPassword.value = '';
+                form.reset();
+                setFormEnabled(false);
+            }
+        });
+
+        form.addEventListener('reset', function() {
+            result.classList.remove('show');
+            if (cardBreakdownGroup) {
+                cardBreakdownGroup.style.display = 'none';
+            }
+            if (otherDetailsGroup) {
+                otherDetailsGroup.style.display = 'none';
+            }
+            if (expenseNotesGroup) expenseNotesGroup.style.display = 'none';
+            if (returnsNotesGroup) returnsNotesGroup.style.display = 'none';
+            if (withdrawalNotesGroup) withdrawalNotesGroup.style.display = 'none';
+            if (expenseNotesInput) expenseNotesInput.value = '';
+            if (returnsNotesInput) returnsNotesInput.value = '';
+            if (withdrawalNotesInput) withdrawalNotesInput.value = '';
+            if (visaSalesInput) visaSalesInput.value = '';
+            if (masterSalesInput) masterSalesInput.value = '';
+            if (madaSalesInput) madaSalesInput.value = '';
+            if (totalCardInput) totalCardInput.value = '';
+        });
+
+        btnLogin.addEventListener('click', handleLogin);
+        setFormEnabled(false);
+
+        // ===== معالج رفع الصور إلى Supabase Storage =====
+        // عند اختيار صورة
+        imageUploadInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // التحقق من حجم الملف (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('❌ حجم الصورة كبير جداً. الحد الأقصى 5MB');
+                imageUploadInput.value = '';
+                return;
+            }
+
+            // التحقق من نوع الملف
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('❌ نوع الملف غير مدعوم. استخدم: JPG, PNG, GIF, WEBP');
+                imageUploadInput.value = '';
+                return;
+            }
+
+            uploadedImageFile = file;
+
+            // عرض معاينة
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                imageName.textContent = `📎 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                imagePreviewDiv.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // عند حذف الصورة
+        btnRemoveImage.addEventListener('click', function() {
+            uploadedImageFile = null;
+            imageUploadInput.value = '';
+            imagePreviewDiv.style.display = 'none';
+            previewImg.src = '';
+            imageName.textContent = '';
+            attachmentInput.value = '';
+            attachmentURLInput.value = '';
+        });
+
+        // دالة رفع الصورة إلى Supabase Storage
+        async function uploadImageToSupabase(file) {
+            try {
+                // إنشاء اسم فريد للملف
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                const filePath = `sales-images/${fileName}`;
+
+                console.log('Uploading image to Supabase Storage:', filePath);
+
+                // رفع الملف إلى Storage
+                const { data, error } = await supabase.storage
+                    .from('sales-attachments')
+                    .upload(filePath, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (error) {
+                    console.error('Upload error:', error);
+                    throw error;
+                }
+
+                console.log('Upload successful:', data);
+
+                // الحصول على الرابط العام
+                const { data: urlData } = supabase.storage
+                    .from('sales-attachments')
+                    .getPublicUrl(filePath);
+
+                console.log('Public URL:', urlData.publicUrl);
+
+                return {
+                    fileName: fileName,
+                    filePath: filePath,
+                    url: urlData.publicUrl
+                };
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                throw error;
+            }
+        }
+
+        // Google Drive Integration
+        // ملاحظة: استبدل بـ Client ID الخاص بك من Google Cloud Console
+        const GOOGLE_CLIENT_ID = '1035871153322-blaqsn0jds9at16k1ucpeoa0f4vce073.apps.googleusercontent.com';
+        const GOOGLE_API_KEY = 'AIzaSyDnZ2dkhtkouVaRIw4Pi1krSeFS71e8jGg';
+        let pickerInited = false;
+        let gauth;
+
+        // التحقق من الإعدادات وتسجيل التصحيح
+        function checkGoogleDriveSetup() {
+            if (GOOGLE_CLIENT_ID.includes('YOUR_') || GOOGLE_API_KEY.includes('YOUR_')) {
+                console.warn('⚠️ تنبيه: لم يتم تحديث بيانات Google Drive!');
+                alert('⚠️ تحذير: بيانات Google Drive لم تُحدّث بعد!\n\nاقرأ ملف: FIX_AUTHORIZATION_ERROR.md');
+            } else {
+                console.log('✅ بيانات Google Drive محدثة بنجاح');
+            }
+        }
+
+
+    
+        secureArea.style.display = 'none';
+        bootstrapAccessIfEmpty();
+    </script>
+
+    <footer style="position:fixed;bottom:0;left:0;right:0;text-align:center;padding:15px;background:#f8f9fa;border-top:2px solid #e0e0e0;color:#666;font-size:14px;">
+        © 2026 Copy Right by Mazen Algarne. All rights reserved.
+    </footer>
+</body>
+</html>

@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة الفروع والموظفين</title>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; color: #333; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; border-radius: 16px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+        .header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+        h1 { font-size: 26px; color: #333; }
+        a.btn { text-decoration: none; padding: 10px 16px; border-radius: 10px; font-weight: 600; color: white; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        a.btn:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(32,201,151,0.3); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+        .card { background: #f8f9fa; border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb; }
+        .card h2 { font-size: 18px; margin-bottom: 12px; color: #444; }
+        .field { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; color: #555; }
+        input, select { width: 100%; padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 14px; direction: rtl; }
+        input:focus, select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+        .permissions { display: flex; flex-wrap: wrap; gap: 8px 12px; }
+        .perm-item { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 10px 18px rgba(102,126,234,0.25); }
+        .list { margin-top: 18px; max-height: 280px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 10px; background: white; }
+        .list table { width: 100%; border-collapse: collapse; }
+        .list th, .list td { padding: 10px 8px; text-align: center; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        .list th { background: #f3f4f6; font-weight: 700; }
+        .tag { display: inline-block; padding: 4px 8px; border-radius: 8px; background: #eef2ff; color: #4c51bf; font-size: 12px; }
+        
+        /* ============================================ */
+        /* Media Queries - التوافقية مع جميع الأجهزة */
+        /* ============================================ */
+        
+        /* الهواتف الذكية (تحت 768px) */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            
+            .container {
+                padding: 18px;
+                border-radius: 12px;
+            }
+            
+            .header {
+                margin-bottom: 15px;
+                gap: 8px;
+            }
+            
+            h1 {
+                font-size: 20px;
+                width: 100%;
+                text-align: center;
+                order: 2;
+            }
+            
+            a.btn {
+                padding: 8px 12px;
+                font-size: 12px;
+                flex: 1;
+                text-align: center;
+                min-width: 120px;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            .list {
+                max-height: 250px;
+            }
+        }
+        
+        /* الهواتف الصغيرة (تحت 480px) */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 12px;
+            }
+            
+            h1 {
+                font-size: 18px;
+            }
+            
+            .card {
+                padding: 12px;
+                margin-bottom: 12px;
+            }
+            
+            .card h2 {
+                font-size: 16px;
+                margin-bottom: 10px;
+            }
+            
+            .field {
+                margin-bottom: 10px;
+            }
+            
+            label {
+                font-size: 13px;
+                margin-bottom: 5px;
+            }
+            
+            input, select {
+                padding: 9px 10px;
+                font-size: 14px;
+                border-radius: 8px;
+            }
+            
+            button {
+                padding: 10px;
+                font-size: 14px;
+            }
+            
+            .list table {
+                font-size: 11px;
+            }
+            
+            .list th, .list td {
+                padding: 8px 4px;
+                font-size: 11px;
+            }
+            
+            .permissions {
+                gap: 6px 8px;
+            }
+            
+            .perm-item {
+                font-size: 13px;
+                gap: 4px;
+            }
+        }
+        
+        /* الهواتف الصغيرة جداً (تحت 360px) */
+        @media (max-width: 360px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 16px;
+            }
+            
+            a.btn {
+                padding: 7px 10px;
+                font-size: 11px;
+            }
+            
+            input, select {
+                font-size: 15px; /* منع التكبير التلقائي في iOS */
+            }
+            
+            button {
+                padding: 9px;
+                font-size: 13px;
+            }
+            
+            .list {
+                max-height: 200px;
+            }
+        }
+    
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div style="text-align:center;margin-bottom:20px;width:100%;">
+                <img src="logo.png" alt="Logo" style="height:80px;width:auto;">
+            </div>
+            <h1>إدارة الفروع والموظفين</h1>
+            <a href="reports.html" class="btn"> التقارير  </a>
+            <a href="index.html" class="btn">← العودة للصفحة الرئيسية</a>
+        </div>
+
+        <div class="card" id="loginCard" style="margin-bottom:16px;">
+            <h2>تسجيل دخول الموظف</h2>
+            <div class="field">
+                <label for="loginEmpId">الرقم الوظيفي</label>
+                <input id="loginEmpId" type="text" placeholder="مثال: 1012">
+            </div>
+            <div class="field">
+                <label for="loginPassword">كلمة المرور</label>
+                <input id="loginPassword" type="password" placeholder="أدخل كلمة المرور">
+            </div>
+            <button id="btnLogin">تسجيل الدخول</button>
+            <div id="loginStatus" style="margin-top:10px;color:#666;font-weight:600;">غير مسجل دخول</div>
+        </div>
+
+        <div class="grid" id="secureArea" style="display:none;">
+            <div class="card">
+                <h2>إضافة فرع</h2>
+                <div class="field">
+                    <label for="branchName">اسم الفرع</label>
+                    <input id="branchName" type="text" placeholder="مثال: السامر" required>
+                </div>
+                <div class="field">
+                    <label for="branchCode">رمز الفرع (اختياري)</label>
+                    <input id="branchCode" type="text" placeholder="مثال: SAM01">
+                </div>
+                <button id="saveBranch">حفظ الفرع</button>
+                <div class="list" id="branchesList"></div>
+            </div>
+
+            <div class="card">
+                <h2>إضافة موظف وصلاحيات</h2>
+                <div class="field">
+                    <label for="empName">اسم الموظف</label>
+                    <input id="empName" type="text" placeholder="مثال: أحمد علي" required>
+                </div>
+                <div class="field">
+                    <label for="empId">الرقم الوظيفي</label>
+                    <input id="empId" type="text" placeholder="مثال: 1012" required>
+                </div>
+                <div class="field">
+                    <label for="empBranch">اختر الفرع</label>
+                    <select id="empBranch"></select>
+                </div>
+                <div class="field">
+                    <label for="empPassword">كلمة المرور</label>
+                    <input id="empPassword" type="password" placeholder="أدخل كلمة المرور" required>
+                </div>
+                <div class="field">
+                    <label>الصلاحيات</label>
+                    <div class="permissions">
+                        <label class="perm-item"><input type="checkbox" value="viewReports" checked> عرض التقارير</label>
+                        <label class="perm-item"><input type="checkbox" value="addSales" checked> إضافة مبيعات</label>
+                        <label class="perm-item"><input type="checkbox" value="manageEmployees"> إدارة موظفين</label>
+                        <label class="perm-item"><input type="checkbox" value="export"> تصدير بيانات</label>
+                    </div>
+                </div>
+                <button id="saveEmployee">حفظ الموظف</button>
+                <div class="list" id="employeesList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+        const supabaseUrl = 'https://rgblfimktfasocahzqtg.supabase.co'; // استبدل بـ URL الخاص بك
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnYmxmaW1rdGZhc29jYWh6cXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NDg5NTQsImV4cCI6MjA4NTUyNDk1NH0.BMKXS1hTX5ntacnOQH5c2I5KDp5jpSWwJeHIDkz2els';
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+        const branchName = document.getElementById('branchName');
+        const branchCode = document.getElementById('branchCode');
+        const saveBranchBtn = document.getElementById('saveBranch');
+        const branchesList = document.getElementById('branchesList');
+        const empName = document.getElementById('empName');
+        const empId = document.getElementById('empId');
+        const empBranch = document.getElementById('empBranch');
+        const empPassword = document.getElementById('empPassword');
+        const saveEmployeeBtn = document.getElementById('saveEmployee');
+        const employeesList = document.getElementById('employeesList');
+        const secureArea = document.getElementById('secureArea');
+        const loginEmpId = document.getElementById('loginEmpId');
+        const loginPassword = document.getElementById('loginPassword');
+        const btnLogin = document.getElementById('btnLogin');
+        const loginStatus = document.getElementById('loginStatus');
+
+        let currentUser = null;
+        let editingEmployeeId = null;
+        let employeesCache = [];
+        let branchesCache = [];
+
+        async function loadBranches() {
+            const { data: items, error } = await supabase
+                .from('branches')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (error) {
+                console.error('Supabase error:', error);
+                items = [];
+            }
+
+            empBranch.innerHTML = '';
+            if (!items || items.length === 0) {
+                empBranch.innerHTML = '<option value="">لا يوجد فروع</option>';
+            } else {
+                empBranch.innerHTML = '<option value="">اختر الفرع</option>';
+                items.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b.id;
+                    opt.textContent = b.name;
+                    opt.dataset.name = b.name;
+                    empBranch.appendChild(opt);
+                });
+            }
+
+            branchesCache = items || [];
+            const rows = (items || []).map((b, i) => `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${b.name}</td>
+                    <td>${b.code || '-'}</td>
+                    <td>${new Date(b.created_at).toLocaleString('ar-EG')}</td>
+                    <td><button data-id="${b.id}" class="btn-delete-branch" style="padding:4px 8px;border:none;border-radius:6px;background:#dc3545;color:white;cursor:pointer;font-size:12px;">حذف</button></td>
+                </tr>`).join('');
+            branchesList.innerHTML = items && items.length ? `<table><thead><tr><th>#</th><th>الفرع</th><th>الرمز</th><th>التاريخ</th><th>حذف</th></tr></thead><tbody>${rows}</tbody></table>` : '<div style="padding:12px;text-align:center;color:#777;">لا توجد فروع</div>';
+
+            branchesList.querySelectorAll('.btn-delete-branch').forEach(btn => {
+                btn.addEventListener('click', () => deleteBranch(btn.dataset.id));
+            });
+        }
+
+        async function loadEmployees() {
+            const { data: items, error } = await supabase
+                .from('employees')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (error) {
+                console.error('Supabase error:', error);
+                items = [];
+            }
+
+            employeesCache = items || [];
+
+            const rows = (items || []).map((e, i) => `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${e.name}</td>
+                    <td>${e.employee_id}</td>
+                    <td>${e.branch_name || '-'}</td>
+                    <td>${(e.permissions || []).map(p => `<span class="tag">${p}</span>`).join(' ') || '-'}</td>
+                    <td>
+                        <button data-id="${e.id}" class="btn-edit" style="padding:4px 8px;border:none;border-radius:6px;background:#17a2b8;color:white;cursor:pointer;margin-right:4px;font-size:12px;">تعديل</button>
+                        <button data-id="${e.id}" class="btn-delete-emp" style="padding:4px 8px;border:none;border-radius:6px;background:#dc3545;color:white;cursor:pointer;font-size:12px;">حذف</button>
+                    </td>
+                </tr>`).join('');
+            employeesList.innerHTML = items && items.length ? `<table><thead><tr><th>#</th><th>الاسم</th><th>الرقم الوظيفي</th><th>الفرع</th><th>الصلاحيات</th><th>إجراءات</th></tr></thead><tbody>${rows}</tbody></table>` : '<div style="padding:12px;text-align:center;color:#777;">لا توجد بيانات</div>';
+
+            employeesList.querySelectorAll('.btn-edit').forEach(btn => {
+                btn.addEventListener('click', () => startEditEmployee(btn.dataset.id));
+            });
+            employeesList.querySelectorAll('.btn-delete-emp').forEach(btn => {
+                btn.addEventListener('click', () => deleteEmployee(btn.dataset.id));
+            });
+        }
+
+        saveBranchBtn.addEventListener('click', async () => {
+            if (!currentUser) return alert('يرجى تسجيل الدخول أولاً');
+            const name = branchName.value.trim();
+            const code = branchCode.value.trim();
+            if (!name) return alert('أدخل اسم الفرع');
+            try {
+                const { error } = await supabase
+                    .from('branches')
+                    .insert([{
+                        name,
+                        code: code || null,
+                        created_at: new Date().toISOString()
+                    }]);
+                
+                if (error) throw error;
+                alert('تم حفظ الفرع');
+                branchName.value = '';
+                branchCode.value = '';
+                await loadBranches();
+            } catch (err) {
+                console.error(err);
+                alert('تعذر حفظ الفرع. تحقق من الاتصال أو الصلاحيات.');
+            }
+        });
+
+        saveEmployeeBtn.addEventListener('click', async () => {
+            if (!currentUser) return alert('يرجى تسجيل الدخول أولاً');
+            const name = empName.value.trim();
+            const employeeId = empId.value.trim();
+            const branchId = empBranch.value;
+            const selectedBranchName = empBranch.options[empBranch.selectedIndex]?.textContent || '';
+            const password = empPassword.value.trim();
+            const permissions = Array.from(document.querySelectorAll('.permissions input[type="checkbox"]:checked')).map(c => c.value);
+            if (!name || !employeeId || !branchId || !password) return alert('يرجى تعبئة كل الحقول واختيار فرع وكلمة مرور.');
+            try {
+                if (editingEmployeeId) {
+                    const { error } = await supabase
+                        .from('employees')
+                        .update({
+                            name,
+                            employee_id: employeeId,
+                            branch_id: branchId,
+                            branch_name: selectedBranchName,
+                            password,
+                            permissions,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', editingEmployeeId);
+                    
+                    if (error) throw error;
+                    alert('تم تحديث الموظف');
+                } else {
+                    const { error } = await supabase
+                        .from('employees')
+                        .insert([{
+                            name,
+                            employee_id: employeeId,
+                            branch_id: branchId,
+                            branch_name: selectedBranchName,
+                            password,
+                            permissions,
+                            created_at: new Date().toISOString()
+                        }]);
+                    
+                    if (error) throw error;
+                    alert('تم حفظ الموظف');
+                }
+                empName.value = '';
+                empId.value = '';
+                empBranch.value = '';
+                empPassword.value = '';
+                document.querySelectorAll('.permissions input[type="checkbox"]').forEach(c => { c.checked = false; });
+                editingEmployeeId = null;
+                saveEmployeeBtn.textContent = 'حفظ الموظف';
+                await loadEmployees();
+            } catch (err) {
+                console.error(err);
+                alert('تعذر حفظ الموظف. تحقق من الاتصال أو الصلاحيات.');
+            }
+        });
+
+        async function handleLogin() {
+            const id = loginEmpId.value.trim();
+            const pass = loginPassword.value.trim();
+            if (!id || !pass) {
+                alert('أدخل الرقم الوظيفي وكلمة المرور');
+                return;
+            }
+            try {
+                const { data: empData, error } = await supabase
+                    .from('employees')
+                    .select('*')
+                    .eq('employee_id', id)
+                    .eq('password', pass)
+                    .single();
+                
+                if (error || !empData) {
+                    alert('بيانات الدخول غير صحيحة');
+                    return;
+                }
+
+                const data = empData;
+                
+                // التحقق من أن المستخدم مدير
+                if (!data.permissions || !data.permissions.includes('manageEmployees')) {
+                    alert('⛔ معذرة، هذه الصفحة مخصصة للمدراء فقط');
+                    loginEmpId.value = '';
+                    loginPassword.value = '';
+                    return;
+                }
+                
+                currentUser = { id: data.id, ...data };
+                localStorage.setItem('adminSession', JSON.stringify({
+                    user: currentUser,
+                    timestamp: Date.now()
+                }));
+                loginStatus.textContent = `تم الدخول: ${data.name} - فرع: ${data.branch_name || '-'}`;
+                loginStatus.style.color = '#28a745';
+                secureArea.style.display = 'grid';
+                loginCard.style.display = 'none';
+                await loadBranches();
+                await loadEmployees();
+            } catch (err) {
+                console.error(err);
+                alert('تعذر تسجيل الدخول. تحقق من الاتصال أو القواعد.');
+            }
+        }
+
+        async function bootstrapAccessIfEmpty() {
+            const sessionData = localStorage.getItem('adminSession');
+            if (sessionData) {
+                try {
+                    const { user, timestamp } = JSON.parse(sessionData);
+                    const elapsed = Date.now() - timestamp;
+                    const tenMinutes = 10 * 60 * 1000;
+                    if (elapsed < tenMinutes) {
+                        // التحقق من أن المستخدم مدير
+                        if (!user.permissions || !user.permissions.includes('manageEmployees')) {
+                            localStorage.removeItem('adminSession');
+                            alert('⛔ معذرة، هذه الصفحة مخصصة للمدراء فقط');
+                            return;
+                        }
+                        
+                        currentUser = user;
+                        loginStatus.textContent = `تم الدخول: ${user.name} - فرع: ${user.branch_name || '-'}`;
+                        loginStatus.style.color = '#28a745';
+                        secureArea.style.display = 'grid';
+                        loginCard.style.display = 'none';
+                        await loadBranches();
+                        await loadEmployees();
+                        return;
+                    } else {
+                        localStorage.removeItem('adminSession');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    localStorage.removeItem('adminSession');
+                }
+            }
+            try {
+                const { data: employees, error } = await supabase
+                    .from('employees')
+                    .select('*')
+                    .limit(1);
+                
+                if (error) throw error;
+                
+                if (!employees || employees.length === 0) {
+                    currentUser = { id: 'bootstrap', name: 'Setup Mode', branch_name: '' };
+                    loginStatus.textContent = 'وضع إنشاء أول حساب (لا توجد بيانات موظفين)';
+                    loginStatus.style.color = '#f39c12';
+                    secureArea.style.display = 'grid';
+                    loginCard.style.display = 'none';
+                    await loadBranches();
+                    await loadEmployees();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function deleteBranch(id) {
+            if (!confirm('هل أنت متأكد من حذف هذا الفرع؟')) return;
+            try {
+                const { error } = await supabase
+                    .from('branches')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) throw error;
+                branchesCache = branchesCache.filter(b => b.id !== id);
+                alert('تم حذف الفرع');
+                await loadBranches();
+            } catch (err) {
+                console.error(err);
+                alert('تعذر حذف الفرع. تحقق من الصلاحيات.');
+            }
+        }
+
+        async function deleteEmployee(id) {
+            if (!confirm('هل أنت متأكد من حذف هذا الموظف؟')) return;
+            try {
+                const { error } = await supabase
+                    .from('employees')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) throw error;
+                employeesCache = employeesCache.filter(e => e.id !== id);
+                alert('تم حذف الموظف');
+                await loadEmployees();
+            } catch (err) {
+                console.error(err);
+                alert('تعذر حذف الموظف. تحقق من الصلاحيات.');
+            }
+        }
+
+        function startEditEmployee(id) {
+            const target = employeesCache.find(e => e.id === id);
+            if (!target) return;
+            empName.value = target.name || '';
+            empId.value = target.employee_id || '';
+            empPassword.value = '';
+            const branchOption = Array.from(empBranch.options).find(opt => opt.textContent === (target.branch_name || ''));
+            empBranch.value = branchOption ? branchOption.value : '';
+            document.querySelectorAll('.permissions input[type="checkbox"]').forEach(c => { c.checked = (target.permissions || []).includes(c.value); });
+            editingEmployeeId = id;
+            saveEmployeeBtn.textContent = 'تحديث الموظف';
+        }
+
+        btnLogin.addEventListener('click', handleLogin);
+        bootstrapAccessIfEmpty();
+    </script>
+
+    <footer style="position:fixed;bottom:0;left:0;right:0;text-align:center;padding:15px;background:#f8f9fa;border-top:2px solid #e0e0e0;color:#666;font-size:14px;">
+        © 2026 Copy Right by Mazen Algarne. All rights reserved.
+    </footer>
+</body>
+</html>

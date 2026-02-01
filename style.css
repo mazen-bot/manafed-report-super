@@ -1,0 +1,406 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.container {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    padding: 40px;
+    max-width: 500px;
+    width: 100%;
+}
+
+/* المحمول الصغير جداً (تحت 360px) */
+@media (max-width: 360px) {
+    body {
+        padding: 10px;
+    }
+    
+    .container {
+        border-radius: 15px;
+        padding: 20px;
+        max-width: 100%;
+    }
+    
+    h1 {
+        font-size: 20px !important;
+    }
+}
+
+/* الهواتف الذكية (360px - 600px) */
+@media (max-width: 600px) {
+    body {
+        padding: 15px;
+    }
+    
+    .container {
+        border-radius: 15px;
+        padding: 25px;
+        max-width: 100%;
+    }
+}
+
+/* الأجهزة اللوحية (600px - 900px) */
+@media (max-width: 900px) {
+    .container {
+        max-width: 100%;
+        padding: 30px;
+    }
+}
+
+.header-with-button {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+/* تحسين الهواتف الذكية */
+@media (max-width: 600px) {
+    .header-with-button {
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+}
+
+.btn-reports {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.btn-reports:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 0;
+    font-size: 28px;
+}
+
+/* تحسين الهواتف الذكية */
+@media (max-width: 600px) {
+    h1 {
+        font-size: 22px;
+    }
+}
+
+/* تحسين الهواتف الصغيرة جداً */
+@media (max-width: 360px) {
+    h1 {
+        font-size: 18px;
+    }
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    color: #555;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+input[type="number"],
+input[type="text"],
+textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    direction: rtl;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* تحسين الهواتف الذكية */
+@media (max-width: 600px) {
+    input[type="number"],
+    input[type="text"],
+    textarea {
+        padding: 10px 12px;
+        font-size: 16px; /* يمنع التكبير التلقائي في iOS */
+        border-radius: 8px;
+    }
+    
+    textarea {
+        min-height: 80px;
+    }
+}
+
+input[readonly] {
+    background-color: #f0f0f0;
+    cursor: not-allowed;
+    color: #666;
+}
+
+input[type="number"]:focus,
+input[type="text"]:focus,
+textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    border: 2px dashed #e0e0e0;
+    border-radius: 10px;
+    background: #f9f9f9;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+input[type="file"]:hover {
+    border-color: #667eea;
+    background: #f0f4ff;
+}
+
+.btn-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+/* تحسين الهواتف الذكية */
+@media (max-width: 600px) {
+    .btn-group {
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 25px;
+    }
+    
+    button {
+        padding: 12px;
+        font-size: 14px;
+    }
+}
+
+button {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-submit {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+.btn-reset {
+    background: #f5f5f5;
+    color: #666;
+}
+
+.btn-reset:hover {
+    background: #e0e0e0;
+}
+
+.result {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    display: none;
+}
+
+.result.show {
+    display: block;
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.result-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.result-item:last-child {
+    border-bottom: none;
+    font-weight: bold;
+    color: #667eea;
+    font-size: 18px;
+}
+
+.result-label {
+    color: #666;
+}
+
+.result-value {
+    color: #333;
+    font-weight: 600;
+}
+
+#notesGroup {
+    background: #fff3cd;
+    border: 2px solid #ffc107;
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 25px;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#notesGroup label {
+    color: #856404;
+}
+
+/* ============================================ */
+/* Media Queries - التوافقية مع جميع الأجهزة */
+/* ============================================ */
+
+/* الأجهزة اللوحية الكبيرة (900px - 1200px) */
+@media (min-width: 900px) {
+    .container {
+        max-width: 700px;
+    }
+}
+
+/* الهواتف الذكية (600px - 900px) */
+@media (max-width: 900px) {
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    label {
+        font-size: 14px;
+        margin-bottom: 6px;
+    }
+    
+    .result-item {
+        flex-direction: column;
+        gap: 5px;
+    }
+}
+
+/* الهواتف الذكية الصغيرة (تحت 600px) */
+@media (max-width: 600px) {
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    select,
+    textarea {
+        font-size: 16px; /* منع التكبير التلقائي في iOS */
+    }
+    
+    .form-group {
+        margin-bottom: 18px;
+    }
+    
+    label {
+        font-size: 14px;
+        margin-bottom: 6px;
+    }
+    
+    .result {
+        padding: 15px;
+        margin-top: 20px;
+    }
+    
+    .result-item {
+        padding: 8px 0;
+        font-size: 13px;
+    }
+    
+    .result-item:last-child {
+        font-size: 16px;
+    }
+}
+
+/* الهواتف الصغيرة جداً (تحت 360px) */
+@media (max-width: 360px) {
+    .container {
+        padding: 15px;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    label {
+        font-size: 13px;
+    }
+    
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    select,
+    textarea {
+        font-size: 15px;
+        padding: 8px 10px;
+    }
+    
+    button {
+        font-size: 13px;
+        padding: 10px;
+    }
+}

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار إعدادات Google Drive</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .test-box {
+            background: #f8f9fa;
+            border-left: 4px solid #4285f4;
+            padding: 16px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+        }
+        
+        .test-box h3 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .test-box p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .input-group {
+            margin: 16px 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: monospace;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #4285f4;
+            box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
+        }
+        
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 12px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .result.success {
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+            color: #2e7d32;
+            display: block;
+        }
+        
+        .result.error {
+            background: #ffebee;
+            border: 2px solid #f44336;
+            color: #c62828;
+            display: block;
+        }
+        
+        .result.warning {
+            background: #fff3e0;
+            border: 2px solid #ff9800;
+            color: #e65100;
+            display: block;
+        }
+        
+        .checklist {
+            list-style: none;
+            margin-top: 16px;
+        }
+        
+        .checklist li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .checklist li:before {
+            content: '✓';
+            color: #4caf50;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .checklist li.pending:before {
+            content: '○';
+            color: #ff9800;
+        }
+        
+        .checklist li.error:before {
+            content: '✕';
+            color: #f44336;
+        }
+        
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 16px 0;
+            color: #1565c0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 اختبار إعدادات Google Drive</h1>
+        
+        <div class="info-box">
+            📌 هذه الأداة تساعدك على فحص إعدادات Google Drive وحل مشاكل المصادقة
+        </div>
+        
+        <div class="test-box">
+            <h3>1️⃣ بيانات Google Cloud</h3>
+            <p>أدخل بيانات Google Cloud Console الخاصة بك:</p>
+            
+            <div class="input-group">
+                <label for="clientId">Client ID:</label>
+                <input type="text" id="clientId" placeholder="123456789-abcd.apps.googleusercontent.com">
+                <small style="color: #666; margin-top: 4px; display: block;">
+                    ابحث عن: <code>OAuth 2.0 Client IDs</code> في Google Cloud Console
+                </small>
+            </div>
+            
+            <div class="input-group">
+                <label for="apiKey">API Key:</label>
+                <input type="text" id="apiKey" placeholder="AIzaSyD...">
+                <small style="color: #666; margin-top: 4px; display: block;">
+                    ابحث عن: <code>API Keys</code> في Google Cloud Console
+                </small>
+            </div>
+        </div>
+        
+        <div class="test-box">
+            <h3>2️⃣ النطاق (Origin)</h3>
+            <p id="currentOrigin" style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-family: monospace; color: #333;"></p>
+            <small style="color: #666; margin-top: 8px; display: block;">
+                ✓ يجب تسجيل هذا النطاق في Google Cloud Console تحت:<br>
+                <code>Credentials → OAuth 2.0 Client ID → Authorized JavaScript origins</code>
+            </small>
+        </div>
+        
+        <button onclick="runTests()">🔍 تشغيل الاختبارات</button>
+        
+        <div id="result" class="result"></div>
+        
+        <div class="test-box" style="margin-top: 24px;">
+            <h3>📋 قائمة الفحص</h3>
+            <ul class="checklist">
+                <li class="pending">Google Picker API مفعل</li>
+                <li class="pending">Google Drive API مفعل</li>
+                <li class="pending">OAuth 2.0 Client ID موجود</li>
+                <li class="pending">API Key موجود</li>
+                <li class="pending">النطاق مسجل في Google Cloud</li>
+                <li class="pending">بيانات الإدارة صحيحة</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // عرض النطاق الحالي
+        document.getElementById('currentOrigin').textContent = window.location.origin;
+
+        function runTests() {
+            const clientId = document.getElementById('clientId').value.trim();
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const resultDiv = document.getElementById('result');
+            
+            let html = '<h3>📊 نتائج الاختبار:</h3>';
+            let allPassed = true;
+            
+            // فحص 1: Client ID
+            if (!clientId) {
+                html += '<p style="color: #f44336;">❌ <strong>Client ID مفقود</strong></p>';
+                allPassed = false;
+            } else if (!clientId.includes('.apps.googleusercontent.com')) {
+                html += '<p style="color: #f44336;">❌ <strong>Client ID غير صحيح</strong><br>يجب أن ينتهي بـ: <code>.apps.googleusercontent.com</code></p>';
+                allPassed = false;
+            } else {
+                html += '<p style="color: #4caf50;">✅ <strong>Client ID صحيح</strong><br>' + clientId + '</p>';
+            }
+            
+            // فحص 2: API Key
+            if (!apiKey) {
+                html += '<p style="color: #f44336;">❌ <strong>API Key مفقود</strong></p>';
+                allPassed = false;
+            } else if (apiKey.length < 20) {
+                html += '<p style="color: #f44336;">❌ <strong>API Key قصير جداً</strong></p>';
+                allPassed = false;
+            } else {
+                html += '<p style="color: #4caf50;">✅ <strong>API Key موجود</strong><br>' + apiKey.substring(0, 20) + '...</p>';
+            }
+            
+            // فحص 3: النطاق
+            const currentOrigin = window.location.origin;
+            html += '<p><strong>🌐 النطاق الحالي:</strong><br><code>' + currentOrigin + '</code><br>';
+            html += '<small style="color: #666;">تأكد من تسجيل هذا في Google Cloud Console</small></p>';
+            
+            // النتيجة النهائية
+            html += '<hr style="margin: 16px 0; border: none; border-top: 1px solid #e0e0e0;">';
+            
+            if (allPassed) {
+                resultDiv.className = 'result success';
+                html += '<h3>✅ جميع الاختبارات نجحت!</h3>';
+                html += '<p>انسخ البيانات التالية في <code>index.html</code>:</p>';
+                html += '<pre style="background: #f5f5f5; padding: 12px; border-radius: 4px; overflow-x: auto; margin: 12px 0; font-size: 12px;">';
+                html += `const GOOGLE_CLIENT_ID = '${clientId}';\n`;
+                html += `const GOOGLE_API_KEY = '${apiKey}';\n`;
+                html += '</pre>';
+            } else {
+                resultDiv.className = 'result error';
+                html += '<h3>❌ هناك مشاكل في الإعدادات</h3>';
+                html += '<p>✓ تأكد من جميع البيانات أعلاه</p>';
+                html += '<p>✓ اقرأ ملف: <code>FIX_AUTHORIZATION_ERROR.md</code></p>';
+            }
+            
+            resultDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
