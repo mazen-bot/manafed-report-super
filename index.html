@@ -5,6 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>إدارة المبيعات</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        #btnToggleOtherDetails:hover {
+            background: #6b2d87 !important;
+            color: white !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(107, 45, 135, 0.2);
+        }
+        #btnToggleCardBreakdown:hover {
+            background: #6b2d87 !important;
+            color: white !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(107, 45, 135, 0.2);
+        }
+        #btnToggleFinancing:hover {
+            background: #6b2d87 !important;
+            color: white !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(107, 45, 135, 0.2);
+        }
+    </style>
 </head>
 <body>
         <div class="container">
@@ -17,24 +37,24 @@
         </div>
 
         <div class="card" id="loginCard" style="margin-bottom:20px;padding:16px;border:1px solid #e0e0e0;border-radius:12px;background:#f8f9fa;">
-            <h3 style="margin-bottom:12px;color:#ac0a0a;">تسجيل دخول الموظف</h3>
+            <h3 style="margin-bottom:12px;color:#6b2d87;">تسجيل دخول الموظف</h3>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
                 <input type="text" id="loginEmployeeId" placeholder="الرقم الوظيفي" style="flex:1;min-width:160px;padding:10px;border:2px solid #e0e0e0;border-radius:10px;">
                 <input type="password" id="loginPassword" placeholder="كلمة المرور" style="flex:1;min-width:160px;padding:10px;border:2px solid #e0e0e0;border-radius:10px;">
-                <button id="btnLogin" style="flex:0 0 auto;padding:12px 16px;background:#064e0e;color:white;border:none;border-radius:10px;cursor:pointer;">تسجيل الدخول</button>
+                <button id="btnLogin" style="flex:0 0 auto;padding:12px 16px;background:#6b2d87;color:white;border:none;border-radius:10px;cursor:pointer;font-weight:600;">تسجيل الدخول</button>
             </div>
             <div id="loginStatus" style="margin-top:10px;color:#ff0404;font-weight:600;">غير مسجل دخول</div>
         </div>
 
         <!-- بطاقة الترحيب -->
-        <div id="welcomeCard" class="card" style="display:none;margin-bottom:20px;padding:16px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border-radius:12px;border:none;color:white;">
+        <div id="welcomeCard" class="card" style="display:none;margin-bottom:20px;padding:16px;background:#6b2d87;border-radius:12px;border:none;color:white;">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
                 <div>
-                    <h2 style="margin:0;margin-bottom:8px;font-size:24px;">👋 مرحباً بك، <span id="welcomeUserName" style="font-weight:700;color:#ffeb3b;"></span></h2>
+                    <h2 style="margin:0;margin-bottom:8px;font-size:24px;">👋 مرحباً بك، <span id="welcomeUserName" style="font-weight:700;color:#ffd700;"></span></h2>
                     <p style="margin:0;font-size:14px;opacity:0.9;">🏢 الفرع: <strong id="welcomeUserBranch" style="font-weight:600;"></strong></p>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <a id="btnAdminLink" href="admin.html" class="btn-reports" style="display:none;background:linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);padding:10px 16px;text-decoration:none;border-radius:8px;color:white;font-weight:600;cursor:pointer;transition:transform 0.2s;">⚙️ صفحة الإدارة</a>
+                    <a id="btnAdminLink" href="admin.html" class="btn-reports" style="display:none;background:#28a745;padding:10px 16px;text-decoration:none;border-radius:8px;color:white;font-weight:600;cursor:pointer;transition:transform 0.2s;">⚙️ صفحة الإدارة</a>
                     <button id="btnLogoutWelcome" style="padding:10px 16px;background:#d32f2f;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;transition:all 0.3s;">تسجيل الخروج</button>
                 </div>
             </div>
@@ -66,10 +86,8 @@
 
             <div class="form-group">
                 <label for="totalCard">إجمالي الشبكة</label>
-                <div style="display:flex;gap:10px;align-items:center;">
-                    <input type="number" id="totalCard" name="totalCard" step="0.01" placeholder="سيتم الحساب تلقائياً" readonly required>
-                    <button type="button" id="btnToggleCardBreakdown" style="padding:10px 14px;background:#2d9cdb;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;">تفاصيل الشبكة</button>
-                </div>
+                <input type="number" id="totalCard" name="totalCard" step="0.01" placeholder="سيتم الحساب تلقائياً" readonly required>
+                <button type="button" id="btnToggleCardBreakdown" style="width:100%;margin-top:10px;padding:12px 20px;background:transparent;color:#6b2d87;border:2px solid #6b2d87;border-radius:10px;cursor:pointer;font-size:15px;font-weight:600;transition:all 0.3s;">تفاصيل الشبكة</button>
                 <small style="color:#666;display:block;margin-top:6px;">اضغط على الزر لفتح/طي تفاصيل الشبكة</small>
             </div>
 
@@ -104,7 +122,7 @@
             </div>
 
             <div class="form-group">
-                <button type="button" id="btnToggleOtherDetails" style="padding:10px 20px;background:#6c5ce7;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">تفاصيل أخرى</button>
+                <button type="button" id="btnToggleOtherDetails" style="width:100%;padding:12px 20px;background:transparent;color:#6b2d87;border:2px solid #6b2d87;border-radius:10px;cursor:pointer;font-size:15px;font-weight:600;transition:all 0.3s;">تفاصيل أخرى (مصروفات --مردود--الخ)</button>
             </div>
 
             <div id="otherDetailsGroup" style="display:none;background:#f9f7ff;padding:16px;border-radius:12px;border:2px solid #d6ccff;margin:10px 0;">
@@ -139,7 +157,7 @@
                 </div>
             </div>
              <div class="form-group">
-                <button type="button" id="btnToggleFinancing" style="padding:10px 20px;background:#17a2b8;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">💳 تمويل</button>
+                <button type="button" id="btnToggleFinancing" style="width:100%;padding:12px 20px;background:transparent;color:#6b2d87;border:2px solid #6b2d87;border-radius:10px;cursor:pointer;font-size:15px;font-weight:600;transition:all 0.3s;">💳 تابي -- تمارا - تمويل </button>
             </div>
             <div id="financingGroup" style="display:none;background:#f0f8ff;padding:20px;border-radius:12px;border:2px solid #17a2b8;margin:10px 0;">
                 <div style="display:flex;align-items:center;gap:15px;margin-bottom:15px;padding-bottom:10px;border-bottom:2px solid #17a2b8;">

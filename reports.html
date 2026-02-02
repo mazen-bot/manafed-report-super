@@ -27,7 +27,7 @@
                 <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;">كلمة المرور:</label>
                 <input type="password" id="loginPassword" placeholder="أدخل كلمة المرور" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:15px;">
             </div>
-            <button id="btnLogin" style="width:100%;padding:14px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;transition:transform 0.2s;">تسجيل الدخول</button>
+            <button id="btnLogin" style="width:100%;padding:14px;background:#6b2d87;color:white;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;transition:transform 0.2s;">تسجيل الدخول</button>
             <div id="loginMessage" style="margin-top:12px;text-align:center;color:#666;font-weight:600;"></div>
         </div>
 
@@ -82,8 +82,14 @@
                 <button class="btn-filter-special" onclick="showCardBreakdownReport()" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;padding:10px 20px;border:none;border-radius:10px;font-weight:700;cursor:pointer;transition:transform 0.2s;box-shadow:0 4px 6px rgba(0,0,0,0.1);" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                     📊 تقرير تفاصيل الشبكة
                 </button>
+                <button class="btn-filter-special" onclick="generateHandoverReport()" style="background:linear-gradient(135deg, #f39c12 0%, #e67e22 100%);color:white;padding:10px 20px;border:none;border-radius:10px;font-weight:700;cursor:pointer;transition:transform 0.2s;box-shadow:0 4px 6px rgba(0,0,0,0.1);" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    🖨️ تقرير تسليم العهدة
+                </button>
                 <button class="btn-filter-special" id="btnShowAll" onclick="showAllRecords()" style="background:linear-gradient(135deg, #27ae60 0%, #229954 100%);color:white;padding:10px 20px;border:none;border-radius:10px;font-weight:700;cursor:pointer;transition:transform 0.2s;box-shadow:0 4px 6px rgba(0,0,0,0.1);display:none;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                     📊 عرض جميع السجلات
+                </button>
+                <button class="btn-filter-special" id="btnWithdrawalsReport" onclick="showWithdrawalsReport()" style="background:linear-gradient(135deg, #16a085 0%, #117a65 100%);color:white;padding:10px 20px;border:none;border-radius:10px;font-weight:700;cursor:pointer;transition:transform 0.2s;box-shadow:0 4px 6px rgba(0,0,0,0.1);display:none;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    💰 تقرير السحوبات والعجز
                 </button>
             </div>
         </div>
@@ -144,7 +150,7 @@
                     <tr>
                         <th>#</th>
                         <th>تاريخ المبيعات</th>
-                        <th>التاريخ والوقت</th>
+                        <th style="display:none;">التاريخ والوقت</th>
                         <th>الرقم الوظيفي</th>
                         <th>الفرع</th>
                         <th>إجمالي المبيعات</th>
@@ -183,6 +189,7 @@
 
         let allData = [];
         let currentUser = null;
+        let withdrawalsData = []; // متغير لحفظ بيانات السحوبات
 
         // تسجيل الدخول
         document.getElementById('btnLogin').addEventListener('click', async function() {
@@ -203,32 +210,41 @@
                     .from('employees')
                     .select('*')
                     .eq('employee_id', employeeId)
-                    .eq('password', password);
+                    .eq('password', password)
+                    .single();
 
                 console.log('Query result:', { empData, error });
 
                 if (error) {
                     console.error('Supabase error:', error);
-                    const errorText = error.message || error.details || error.hint || 'خطأ غير معروف';
-                    loginMessage.textContent = `❌ خطأ في الاتصال بقاعدة البيانات: ${errorText}`;
+                    
+                    // معالجة الأخطاء المختلفة
+                    if (error.code === 'PGRST116') {
+                        // لم يتم العثور على أي سجل
+                        loginMessage.textContent = '❌ بيانات الدخول غير صحيحة';
+                    } else if (error.message && error.message.includes('multiple rows')) {
+                        // عدة سجلات متطابقة
+                        loginMessage.textContent = '❌ خطأ في البيانات (رقم وظيفي مكرر)';
+                    } else {
+                        const errorText = error.message || error.details || error.hint || 'خطأ غير معروف';
+                        loginMessage.textContent = `❌ خطأ: ${errorText}`;
+                    }
                     loginMessage.style.color = '#d32f2f';
                     return;
                 }
 
-                if (!empData || empData.length === 0) {
+                if (!empData) {
                     loginMessage.textContent = '❌ بيانات الدخول غير صحيحة';
                     loginMessage.style.color = '#d32f2f';
                     return;
                 }
-
-                const employeeData = empData[0];
                 currentUser = {
-                    id: employeeData.id,
-                    employee_id: employeeData.employee_id,
-                    name: employeeData.name,
-                    branch_id: employeeData.branch_id,
-                    branch_name: employeeData.branch_name,
-                    permissions: employeeData.permissions || []
+                    id: empData.id,
+                    employee_id: empData.employee_id,
+                    name: empData.name,
+                    branch_id: empData.branch_id,
+                    branch_name: empData.branch_name,
+                    permissions: empData.permissions || []
                 };
 
                 // حفظ الجلسة
@@ -247,8 +263,12 @@
                 }, 500);
 
             } catch (err) {
-                console.error(err);
-                loginMessage.textContent = '❌ حدث خطأ في تسجيل الدخول';
+                console.error('تفاصيل الخطأ:', err);
+                if (err.message && err.message.includes('JSON')) {
+                    loginMessage.textContent = '❌ خطأ في معالجة البيانات - حاول مرة أخرى';
+                } else {
+                    loginMessage.textContent = `❌ حدث خطأ: ${err.message || 'خطأ غير معروف'}`;
+                }
                 loginMessage.style.color = '#d32f2f';
             }
         });
@@ -313,9 +333,13 @@
                 document.getElementById('btnClearAll').style.display = 'none';
                 // إخفاء عمود الإجراءات
                 document.getElementById('actionsHeader').style.display = 'none';
+                // إخفاء زر السحوبات والعجز للموظفين العاديين
+                document.getElementById('btnWithdrawalsReport').style.display = 'none';
             } else {
                 document.getElementById('btnClearAll').style.display = 'inline-block';
                 document.getElementById('actionsHeader').style.display = 'table-cell';
+                // إظهار زر السحوبات والعجز للمديرين
+                document.getElementById('btnWithdrawalsReport').style.display = 'inline-block';
             }
 
             if (!hasExport) {
@@ -331,18 +355,32 @@
 
         async function loadData() {
             try {
+                // جلب بيانات المبيعات
                 const { data: records, error } = await supabase
                     .from('sales')
                     .select('*')
                     .order('created_at', { ascending: false });
                 
                 if (error) throw error;
+
+                // جلب بيانات الموظفين لتجميع الأسماء
+                const { data: employees, error: empError } = await supabase
+                    .from('employees')
+                    .select('id, employee_id, name');
+
+                const employeeMap = {};
+                if (employees) {
+                    employees.forEach(emp => {
+                        employeeMap[emp.employee_id] = emp.name;
+                    });
+                }
                 
                 allData = (records || []).map(data => {
                     const createdAt = data.created_at ? new Date(data.created_at) : new Date();
                     return {
                         id: data.id,
                         employeeId: data.employee_id,
+                        employeeName: employeeMap[data.employee_id] || 'غير محدد',
                         branch: data.branch,
                         saleDate: data.sale_date,
                         totalSales: data.total_sales,
@@ -392,9 +430,22 @@
             tableBody.innerHTML = '';
             data.forEach((record, index) => {
                 const row = document.createElement('tr');
+                // لا نضع ألوان هنا - سيتم تطبيقها من CSS تلقائياً
+                
                 const financingNotes = record.financingNotes && record.financingNotes !== '-' ? record.financingNotes : 'لا توجد ملاحظات';
                 const tamaraTooltip = (record.tamara && record.tamara > 0) ? `title="ملاحظات: ${financingNotes}" style="cursor:help;"` : '';
                 const tabbyTooltip = (record.tabby && record.tabby > 0) ? `title="ملاحظات: ${financingNotes}" style="cursor:help;"` : '';
+                
+                // إنشائي حقل قابل للتعديل لتاريخ المبيعات للمديرين فقط
+                let saleDateCell = '';
+                if (hasManagePermission) {
+                    saleDateCell = `<td>
+                        <input type="date" class="sale-date-edit" data-id="${record.id}" value="${record.saleDate || ''}" 
+                            onchange="updateSaleDate('${record.id}', this.value)" style="border:1px solid #ddd;padding:4px;border-radius:4px;width:100%;">
+                    </td>`;
+                } else {
+                    saleDateCell = `<td>${record.saleDate || '-'}</td>`;
+                }
                 
                 // تحديد محتوى عمود الإجراءات حسب الصلاحية
                 let actionsCell = '';
@@ -415,8 +466,8 @@
                 
                 row.innerHTML = `
                     <td>${index + 1}</td>
-                    <td>${record.saleDate || '-'}</td>
-                    <td>${formatDateTime(record.createdAt)}</td>
+                    ${saleDateCell}
+                    <td style="display:none;">${formatDateTime(record.createdAt)}</td>
                     <td>${record.employeeId}</td>
                     <td>${record.branch}</td>
                     <td>${parseFloat(record.totalSales).toFixed(2)}</td>
@@ -704,6 +755,42 @@
 
         window.viewDetails = viewDetails;
 
+        async function updateSaleDate(id, newDate) {
+            // التحقق من الصلاحية
+            if (!currentUser || !currentUser.permissions.includes('manageEmployees')) {
+                alert('⛔ ليس لديك صلاحية تعديل البيانات');
+                return;
+            }
+
+            if (!newDate) {
+                alert('⚠️ الرجاء اختيار تاريخ صحيح');
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('sales')
+                    .update({ saleDate: newDate })
+                    .eq('id', id);
+                
+                if (error) throw error;
+                
+                // تحديث البيانات المحلية
+                const recordIndex = allData.findIndex(r => r.id === id);
+                if (recordIndex !== -1) {
+                    allData[recordIndex].saleDate = newDate;
+                }
+                
+                alert('✅ تم تحديث التاريخ بنجاح');
+                displayData(allData);
+            } catch (err) {
+                console.error(err);
+                alert('❌ تعذر تحديث التاريخ. حاول مرة أخرى');
+            }
+        }
+
+        window.updateSaleDate = updateSaleDate;
+
         async function deleteRecord(id) {
             // التحقق من الصلاحية
             if (!currentUser || !currentUser.permissions.includes('manageEmployees')) {
@@ -804,6 +891,683 @@
         }
 
         window.exportToExcel = exportToExcel;
+
+        function generateHandoverReport() {
+            // الحصول على البيانات المعروضة حالياً (بعد التطبيق الفلاتر)
+            const tableBody = document.getElementById('tableBody');
+            if (!tableBody || tableBody.children.length === 0) {
+                alert('⚠️ لا توجد بيانات للطباعة');
+                return;
+            }
+
+            // جمع بيانات الموظفين الفريدة من البيانات المعروضة
+            const employeesMap = new Map();
+            
+            allData.forEach(record => {
+                // التحقق مما إذا كان السجل مطابقاً للفلاتر المطبقة
+                const filterBranch = document.getElementById('filterBranch').value;
+                const filterDateFrom = document.getElementById('filterDateFrom').value;
+                const filterDateTo = document.getElementById('filterDateTo').value;
+                
+                let isFiltered = true;
+                
+                if (filterBranch && record.branch !== filterBranch) isFiltered = false;
+                if (filterDateFrom && record.saleDate < filterDateFrom) isFiltered = false;
+                if (filterDateTo && record.saleDate > filterDateTo) isFiltered = false;
+                
+                if (!isFiltered) return;
+                
+                const key = `${record.employeeId}-${record.branch}`;
+                
+                if (!employeesMap.has(key)) {
+                    employeesMap.set(key, {
+                        employeeId: record.employeeId,
+                        employeeName: record.employeeName || 'غير محدد',
+                        branch: record.branch || 'غير محدد',
+                        totalCash: 0,
+                        totalExpenses: 0,
+                        recordCount: 0
+                    });
+                }
+                
+                const emp = employeesMap.get(key);
+                emp.totalCash += parseFloat(record.totalCash || 0);
+                emp.totalExpenses += parseFloat(record.expenses || 0);
+                emp.recordCount += 1;
+            });
+
+            if (employeesMap.size === 0) {
+                alert('⚠️ لا توجد بيانات مطابقة للفلاتر المحددة');
+                return;
+            }
+
+            // إنشاء نافذة الطباعة
+            const printWindow = window.open('', '_blank');
+            const reportDate = new Date().toLocaleDateString('ar-EG');
+            const reportTime = new Date().toLocaleTimeString('ar-EG');
+            
+            // الحصول على التواريخ من الفلاتر
+            const filterDateFrom = document.getElementById('filterDateFrom').value;
+            const filterDateTo = document.getElementById('filterDateTo').value;
+            const dateFromFormatted = filterDateFrom ? new Date(filterDateFrom).toLocaleDateString('ar-EG') : 'بداية الفترة';
+            const dateToFormatted = filterDateTo ? new Date(filterDateTo).toLocaleDateString('ar-EG') : 'نهاية الفترة';
+            
+            let htmlContent = `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقرير تسليم العهدة</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 5mm;
+                width: 80mm;
+            }
+            .no-print {
+                display: none;
+            }
+            @page {
+                size: 80mm auto;
+                margin: 0;
+            }
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            direction: rtl;
+            width: 80mm;
+            margin: 0 auto;
+            padding: 10px;
+            background: white;
+            color: #333;
+        }
+        
+        .report-header {
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 2px dashed #333;
+            padding-bottom: 10px;
+        }
+        
+        .report-header h1 {
+            font-size: 16px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .report-header .info {
+            font-size: 11px;
+            margin: 3px 0;
+        }
+        
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+        
+        .report-table th {
+            background: #333;
+            color: white;
+            padding: 5px 2px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #333;
+            font-size: 10px;
+        }
+        
+        .report-table td {
+            padding: 4px 2px;
+            border: 1px solid #ddd;
+            text-align: center;
+            font-size: 11px;
+        }
+        
+        .report-table .label {
+            text-align: right;
+            padding-right: 5px;
+            font-weight: bold;
+        }
+        
+        .report-footer {
+            text-align: center;
+            margin-top: 15px;
+            border-top: 2px dashed #333;
+            padding-top: 10px;
+            font-size: 11px;
+        }
+        
+        .footer-line {
+            margin: 20px 0 5px 0;
+            border-bottom: 1px solid #333;
+            height: 40px;
+        }
+        
+        .signature {
+            font-size: 11px;
+            text-align: center;
+            margin-top: 3px;
+        }
+        
+        .total-row {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+        
+        .total-row td {
+            background: #f0f0f0;
+        }
+        
+        .print-btn {
+            display: block;
+            margin: 10px auto;
+            padding: 8px 20px;
+            background: #6b2d87;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .print-btn:hover {
+            background: #8b3dab;
+        }
+    <\/style>
+<\/head>
+<body>
+    <button class="print-btn no-print" onclick="window.print()">🖨️ طباعة</button>
+    
+    <div class="report-header">
+        <h1>تقرير تسليم العهدة</h1>
+        <div class="info">التاريخ من: ${dateFromFormatted}</div>
+        <div class="info">التاريخ إلى: ${dateToFormatted}</div>
+        <div class="info" style="border-top: 1px dashed #666; padding-top: 8px; margin-top: 8px;">تاريخ الطباعة: ${reportDate}</div>
+        <div class="info">وقت الطباعة: ${reportTime}</div>
+    </div>
+    
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>اسم الموظف</th>
+                <th>الفرع</th>
+                <th>رقم الوظيفي</th>
+                <th>إجمالي الكاش</th>
+                <th>المصروفات</th>
+            </tr>
+        </thead>
+        <tbody>
+`;
+
+            let totalCash = 0;
+            let totalExpenses = 0;
+            let count = 0;
+
+            employeesMap.forEach((emp, key) => {
+                count++;
+                totalCash += emp.totalCash;
+                totalExpenses += emp.totalExpenses;
+                
+                htmlContent += `
+            <tr>
+                <td>${count}</td>
+                <td class="label">${emp.employeeName}</td>
+                <td>${emp.branch}</td>
+                <td>${emp.employeeId}</td>
+                <td>${emp.totalCash.toFixed(2)}</td>
+                <td>${emp.totalExpenses.toFixed(2)}</td>
+            </tr>
+`;
+            });
+
+            htmlContent += `
+            <tr class="total-row">
+                <td colspan="4"><strong>الإجمالي</strong></td>
+                <td><strong>${totalCash.toFixed(2)}</strong></td>
+                <td><strong>${totalExpenses.toFixed(2)}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div class="report-footer">
+        <div style="margin: 10px 0;">
+            <strong>صافي التسليم:</strong> ${(totalCash - totalExpenses).toFixed(2)} ريال
+        </div>
+        
+        <div style="display: flex; justify-content: space-around; margin-top: 20px;">
+            <div>
+                <div class="footer-line"></div>
+                <div class="signature">توقيع الموظف</div>
+            </div>
+            <div>
+                <div class="footer-line"></div>
+                <div class="signature">توقيع المدير</div>
+            </div>
+        </div>
+    </div>
+<\/body>
+<\/html>
+            `;
+
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+        }
+
+        window.generateHandoverReport = generateHandoverReport;
+
+        // تقرير السحوبات والعجز
+        function showWithdrawalsReport() {
+            // التحقق من أن المستخدم لديه صلاحيات المدير
+            if (!currentUser || !Array.isArray(currentUser.permissions) || !currentUser.permissions.includes('manageEmployees')) {
+                alert('❌ عذراً، لا توجد صلاحيات كافية لعرض هذا التقرير');
+                return;
+            }
+
+            // جمع السحوبات من البيانات
+            const withdrawals = [];
+            
+            allData.forEach(record => {
+                // التحقق من وجود سحب أو عجز
+                if (record.withdrawal && parseFloat(record.withdrawal) > 0) {
+                    withdrawals.push({
+                        saleDate: record.saleDate,
+                        employeeName: record.employeeName,
+                        branch: record.branch,
+                        employeeId: record.employeeId,
+                        withdrawal: parseFloat(record.withdrawal),
+                        notes: record.notes || '-'
+                    });
+                }
+            });
+
+            // فرز حسب التاريخ (الأحدث أولاً)
+            withdrawals.sort((a, b) => new Date(b.saleDate) - new Date(a.saleDate));
+
+            if (withdrawals.length === 0) {
+                alert('⚠️ لا توجد سحوبات أو عجز في البيانات المتاحة');
+                return;
+            }
+
+            // حفظ البيانات في متغير عام لاستخدامها في التصدير
+            withdrawalsData = withdrawals;
+
+            // إنشاء نافذة الطباعة
+            const printWindow = window.open('', '_blank');
+            const reportDate = new Date().toLocaleDateString('ar-EG');
+            const reportTime = new Date().toLocaleTimeString('ar-EG');
+            
+            let htmlContent = `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقرير السحوبات والعجز</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 10mm;
+            }
+            .no-print {
+                display: none;
+            }
+            @page {
+                margin: 10mm;
+            }
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            direction: rtl;
+            padding: 20px;
+            background: white;
+            color: #333;
+        }
+        
+        .report-header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #16a085;
+            padding-bottom: 15px;
+        }
+        
+        .report-header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #16a085;
+            font-weight: bold;
+        }
+        
+        .report-header .info {
+            font-size: 13px;
+            margin: 5px 0;
+            color: #555;
+        }
+        
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 13px;
+        }
+        
+        .report-table th {
+            background: #16a085;
+            color: white;
+            padding: 12px;
+            text-align: right;
+            font-weight: bold;
+            border: 1px solid #16a085;
+        }
+        
+        .report-table td {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            text-align: right;
+        }
+        
+        .report-table tr:nth-child(even) {
+            background: #f5f5f5;
+        }
+        
+        .report-table tr:hover {
+            background: #e8f8f5;
+        }
+        
+        .total-row {
+            background: #16a085;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .total-row td {
+            background: #16a085;
+            color: white;
+        }
+        
+        .print-btn {
+            display: block;
+            margin: 20px auto;
+            padding: 12px 30px;
+            background: #16a085;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+        }
+        
+        .print-btn:hover {
+            background: #117a65;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-style: italic;
+        }
+        
+        .summary-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f8f5;
+            border-radius: 6px;
+            border-right: 4px solid #16a085;
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        
+        .summary-item strong {
+            color: #16a085;
+        }
+    <\/style>
+</head>
+<body>
+    <button class="print-btn no-print" onclick="window.print()">🖨️ طباعة</button>
+    <button class="print-btn no-print" onclick="exportWithdrawalsData()" style="background: #f39c12; margin-right: 10px;">📥 تصدير Excel</button>
+    
+    <div class="report-header">
+        <h1>📊 تقرير السحوبات والعجز</h1>
+        <div class="info">📅 التاريخ: ${reportDate}</div>
+        <div class="info">🕐 الوقت: ${reportTime}</div>
+        <div class="info">📋 إجمالي السجلات: ${withdrawals.length}</div>
+    </div>
+    
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>التاريخ</th>
+                <th>اسم الموظف</th>
+                <th>الرقم الوظيفي</th>
+                <th>اسم الفرع</th>
+                <th>قيمة السحب/العجز (ريال)</th>
+                <th>الملاحظات</th>
+            </tr>
+        </thead>
+        <tbody>
+`;
+
+            let totalWithdrawals = 0;
+            let count = 0;
+
+            withdrawals.forEach((record, index) => {
+                count++;
+                totalWithdrawals += record.withdrawal;
+                const dateFormatted = new Date(record.saleDate).toLocaleDateString('ar-EG');
+                
+                htmlContent += `
+            <tr>
+                <td>${count}</td>
+                <td>${dateFormatted}</td>
+                <td><strong>${record.employeeName}</strong></td>
+                <td>${record.employeeId}</td>
+                <td>${record.branch}</td>
+                <td>${record.withdrawal.toFixed(2)}</td>
+                <td>${record.notes}</td>
+            </tr>
+`;
+            });
+
+            htmlContent += `
+            <tr class="total-row">
+                <td colspan="5"><strong>إجمالي السحوبات والعجز</strong></td>
+                <td colspan="2"><strong>${totalWithdrawals.toFixed(2)} ريال</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div class="summary-section">
+        <div class="summary-item">
+            <span>عدد السجلات:</span>
+            <strong>${withdrawals.length}</strong>
+        </div>
+        <div class="summary-item">
+            <span>إجمالي المبلغ:</span>
+            <strong>${totalWithdrawals.toFixed(2)} ريال</strong>
+        </div>
+        <div class="summary-item">
+            <span>متوسط القيمة:</span>
+            <strong>${(totalWithdrawals / withdrawals.length).toFixed(2)} ريال</strong>
+        </div>
+    </div>
+    
+    <div style="margin-top: 40px; text-align: center; border-top: 2px dashed #ccc; padding-top: 20px; font-size: 12px; color: #999;">
+        <p>تم الانشاء بواسطة mazenalgarne</p>
+        <p>© 2026 جميع الحقوق محفوظة</p>
+    </div>
+<\/body>
+<\/html>
+            `;
+
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+        }
+
+        window.showWithdrawalsReport = showWithdrawalsReport;
+
+        // تصدير تقرير السحوبات والعجز إلى Excel
+        function exportWithdrawalsToExcel() {
+            // التحقق من الصلاحيات
+            if (!currentUser || !Array.isArray(currentUser.permissions) || !currentUser.permissions.includes('manageEmployees')) {
+                alert('❌ عذراً، لا توجد صلاحيات كافية لتصدير هذا التقرير');
+                return;
+            }
+
+            // جمع السحوبات من البيانات
+            const withdrawals = [];
+            
+            allData.forEach(record => {
+                // التحقق من وجود سحب أو عجز
+                if (record.withdrawal && parseFloat(record.withdrawal) > 0) {
+                    withdrawals.push({
+                        saleDate: record.saleDate,
+                        employeeName: record.employeeName,
+                        branch: record.branch,
+                        employeeId: record.employeeId,
+                        withdrawal: parseFloat(record.withdrawal),
+                        notes: record.notes || '-'
+                    });
+                }
+            });
+
+            if (withdrawals.length === 0) {
+                alert('⚠️ لا توجد سحوبات أو عجز للتصدير');
+                return;
+            }
+
+            // فرز حسب التاريخ (الأحدث أولاً)
+            withdrawals.sort((a, b) => new Date(b.saleDate) - new Date(a.saleDate));
+
+            // إنشاء CSV
+            let csv = '\uFEFF';
+            csv += 'التاريخ,اسم الموظف,الرقم الوظيفي,اسم الفرع,قيمة السحب/العجز,الملاحظات\n';
+
+            let totalWithdrawals = 0;
+            withdrawals.forEach((record, index) => {
+                totalWithdrawals += record.withdrawal;
+                const dateFormatted = new Date(record.saleDate).toLocaleDateString('ar-EG');
+                
+                csv += `${dateFormatted},`;
+                csv += `${record.employeeName},`;
+                csv += `${record.employeeId},`;
+                csv += `${record.branch},`;
+                csv += `${record.withdrawal.toFixed(2)},`;
+                csv += `"${record.notes}"\n`;
+            });
+
+            // إضافة الإجمالي
+            csv += `\n`;
+            csv += `إجمالي السحوبات والعجز,,,,"${totalWithdrawals.toFixed(2)} ريال"\n`;
+            csv += `عدد السجلات,,,,"${withdrawals.length}"\n`;
+            csv += `متوسط القيمة,,,,"${(totalWithdrawals / withdrawals.length).toFixed(2)} ريال"\n`;
+
+            // إضافة معلومات الطباعة
+            const reportDate = new Date().toLocaleDateString('ar-EG');
+            const reportTime = new Date().toLocaleTimeString('ar-EG');
+            csv += `\n`;
+            csv += `تاريخ التصدير,${reportDate}\n`;
+            csv += `وقت التصدير,${reportTime}\n`;
+            csv += `نوع التقرير,تقرير السحوبات والعجز\n`;
+
+            // تحميل الملف
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `withdrawals_report_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            alert(`✅ تم تصدير ${withdrawals.length} سجل بنجاح`);
+        }
+
+        window.exportWithdrawalsToExcel = exportWithdrawalsToExcel;
+
+        // دالة التصدير المحلية للاستخدام داخل النافذة المنفتحة
+        window.exportWithdrawalsData = function() {
+            // محاولة الحصول على البيانات من النافذة الأم
+            const dataToExport = window.opener && window.opener.withdrawalsData 
+                ? window.opener.withdrawalsData 
+                : [];
+            
+            if (dataToExport.length === 0) {
+                alert('⚠️ لا توجد بيانات للتصدير');
+                return;
+            }
+
+            // إنشاء CSV مع الترميز العربي
+            let csv = '\uFEFF';
+            csv += 'التاريخ,اسم الموظف,الرقم الوظيفي,اسم الفرع,قيمة السحب/العجز,الملاحظات\n';
+
+            let totalValue = 0;
+            dataToExport.forEach(record => {
+                const date = record.saleDate || '-';
+                const name = record.employeeName || '-';
+                const empId = record.employeeId || '-';
+                const branch = record.branch || '-';
+                const amount = record.withdrawal || '0';
+                const notes = (record.notes || '-').replace(/"/g, '""'); // تجنب مشاكل علامات الاقتباس
+                
+                csv += `${date},${name},${empId},${branch},${amount},"${notes}"\n`;
+                totalValue += parseFloat(amount) || 0;
+            });
+
+            // إضافة الإجمالي
+            csv += `\n`;
+            csv += `إجمالي السحوبات والعجز,,,,"${totalValue.toFixed(2)} ريال"\n`;
+            csv += `عدد السجلات,,,,"${dataToExport.length}"\n`;
+            csv += `متوسط القيمة,,,,"${(totalValue / dataToExport.length).toFixed(2)} ريال"\n`;
+
+            // إضافة معلومات الطباعة
+            const reportDate = new Date().toLocaleDateString('ar-EG');
+            const reportTime = new Date().toLocaleTimeString('ar-EG');
+            csv += `\n`;
+            csv += `تاريخ التصدير,${reportDate}\n`;
+            csv += `وقت التصدير,${reportTime}\n`;
+            csv += `نوع التقرير,تقرير السحوبات والعجز\n`;
+
+            // تحميل الملف
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `withdrawals_report_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            alert(`✅ تم تصدير ${dataToExport.length} سجل بنجاح`);
+        };
     </script>
 
     <footer style="position:fixed;bottom:0;left:0;right:0;text-align:center;padding:15px;background:#f8f9fa;border-top:2px solid #e0e0e0;color:#666;font-size:14px;">
