@@ -505,6 +505,20 @@
         }
 
         btnLogin.addEventListener('click', handleLogin);
+        
+        // السماح بتسجيل الدخول عند الضغط على Enter
+        loginEmployeeId.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                btnLogin.click();
+            }
+        });
+        
+        loginPassword.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                btnLogin.click();
+            }
+        });
+        
         setFormEnabled(false);
         secureArea.style.display = 'none';
 

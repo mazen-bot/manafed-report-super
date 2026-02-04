@@ -577,6 +577,20 @@
         }
 
         btnLogin.addEventListener('click', handleLogin);
+        
+        // السماح بتسجيل الدخول عند الضغط على Enter
+        loginEmpId.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                btnLogin.click();
+            }
+        });
+        
+        loginPassword.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                btnLogin.click();
+            }
+        });
+        
         bootstrapAccessIfEmpty();
     </script>
 
