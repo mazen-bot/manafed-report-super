@@ -242,12 +242,41 @@
         </div>
     </div>
 
-    <script type="module">
-        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Initialize Supabase
+        function initializeSupabase() {
+            if (!window.supabase || !window.supabase.createClient) {
+                console.log('⏳ جاري تحميل Supabase...');
+                setTimeout(initializeSupabase, 100);
+                return;
+            }
+            
+            const supabaseUrl = 'https://rgblfimktfasocahzqtg.supabase.co';
+            const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnYmxmaW1rdGZhc29jYWh6cXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NDg5NTQsImV4cCI6MjA4NTUyNDk1NH0.BMKXS1hTX5ntacnOQH5c2I5KDp5jpSWwJeHIDkz2els';
+            
+            window.supabaseLib = window.supabase;
+            window.supabase = window.supabaseLib.createClient(supabaseUrl, supabaseAnonKey);
+            console.log('✅ Supabase تم تحميله بنجاح');
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeSupabase);
+        } else {
+            initializeSupabase();
+        }
+    </script>
+    <script>
+        function runAfterSupabase(callback) {
+            if (window.supabase && typeof window.supabase.from === 'function') {
+                callback();
+            } else {
+                setTimeout(() => runAfterSupabase(callback), 100);
+            }
+        }
 
-        const supabaseUrl = 'https://rgblfimktfasocahzqtg.supabase.co'; // استبدل بـ URL الخاص بك
-        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnYmxmaW1rdGZhc29jYWh6cXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NDg5NTQsImV4cCI6MjA4NTUyNDk1NH0.BMKXS1hTX5ntacnOQH5c2I5KDp5jpSWwJeHIDkz2els';
-        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+        runAfterSupabase(() => {
+            const supabase = window.supabase;
 
         const branchName = document.getElementById('branchName');
         const branchCode = document.getElementById('branchCode');
@@ -592,6 +621,7 @@
         });
         
         bootstrapAccessIfEmpty();
+        }); // نهاية runAfterSupabase callback
     </script>
 
     <footer style="position:fixed;bottom:0;left:0;right:0;text-align:center;padding:15px;background:#f8f9fa;border-top:2px solid #e0e0e0;color:#666;font-size:14px;">

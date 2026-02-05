@@ -250,15 +250,49 @@
     </div>
 
     <script src="https://apis.google.com/js/platform.js" async defer></script>
-    <script type="module">
-        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+    <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Initialize Supabase - دالة تنتظر حتى يتم تحميل المكتبة
+        function initializeSupabase() {
+            if (!window.supabase || !window.supabase.createClient) {
+                console.log('⏳ جاري تحميل Supabase...');
+                setTimeout(initializeSupabase, 100);
+                return;
+            }
+            
+            const supabaseUrl = 'https://rgblfimktfasocahzqtg.supabase.co';
+            const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnYmxmaW1rdGZhc29jYWh6cXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NDg5NTQsImV4cCI6MjA4NTUyNDk1NH0.BMKXS1hTX5ntacnOQH5c2I5KDp5jpSWwJeHIDkz2els';
+            
+            // حفظ المكتبة باسم جديد
+            window.supabaseLib = window.supabase;
+            // استبدال window.supabase بعميل Supabase المهيأ
+            window.supabase = window.supabaseLib.createClient(supabaseUrl, supabaseAnonKey);
+            console.log('✅ Supabase تم تحميله بنجاح');
+        }
+        
+        // بدء التحميل
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeSupabase);
+        } else {
+            initializeSupabase();
+        }
+    </script>
+    <script>
+        // انتظر حتى يكون window.supabase جاهزاً
+        function runAfterSupabase(callback) {
+            if (window.supabase && typeof window.supabase.from === 'function') {
+                callback();
+            } else {
+                setTimeout(() => runAfterSupabase(callback), 100);
+            }
+        }
 
-        const supabaseUrl = 'https://rgblfimktfasocahzqtg.supabase.co'; // استبدل بـ URL الخاص بك
-        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnYmxmaW1rdGZhc29jYWh6cXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NDg5NTQsImV4cCI6MjA4NTUyNDk1NH0.BMKXS1hTX5ntacnOQH5c2I5KDp5jpSWwJeHIDkz2els';
-         const supabase = createClient(supabaseUrl, supabaseAnonKey);
+        runAfterSupabase(() => {
+            // الآن window.supabase متاح وجاهز
+            const supabase = window.supabase;
 
-        const form = document.getElementById('salesForm');
-        const result = document.getElementById('result');
+            const form = document.getElementById('salesForm');
+            const result = document.getElementById('result');
         const expensesInput = document.getElementById('expenses');
         const expenseNotesGroup = document.getElementById('expenseNotesGroup');
         const expenseNotesInput = document.getElementById('expenseNotes');
@@ -958,6 +992,7 @@
     
         secureArea.style.display = 'none';
         bootstrapAccessIfEmpty();
+        }); // نهاية runAfterSupabase callback
     </script>
 
     <footer style="position:fixed;bottom:0;left:0;right:0;text-align:center;padding:15px;background:#f8f9fa;border-top:2px solid #e0e0e0;color:#666;font-size:14px;">
