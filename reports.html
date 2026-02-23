@@ -2,52 +2,117 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>التقارير والبيانات</title>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover, minimal-ui">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="التقارير والبيانات">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="نظام إدارة مبيعات الفروع - لوحة التحكم والتقارير الشاملة">
+    <meta name="keywords" content="التقارير، المبيعات، الفروع، الإدارة">
+    <meta name="author" content="Manafed Systems">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="التقارير والبيانات - لوحة التحكم">
+    <meta property="og:description" content="نظام إدارة مبيعات الفروع العصري">
+    <title>التقارير والبيانات - لوحة التحكم</title>
     <link rel="stylesheet" href="reports-style.css">
+    <style>
+        /* تحسينات إضافية للتوافقية */
+        @supports (padding: max(0px)) {
+            body {
+                padding-bottom: max(100px, env(safe-area-inset-bottom, 0px));
+                padding-left: max(20px, env(safe-area-inset-left, 0px));
+                padding-right: max(20px, env(safe-area-inset-right, 0px));
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="reports-container">
-        <div style="text-align:center;margin-bottom:20px;">
-            <img src="logo.png" alt="Logo" style="height:80px;width:auto;">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <div class="dashboard-header-content">
+                <div style="flex: 1;">
+                    <h1>📊 لوحة التحكم - التقارير والبيانات</h1>
+                    <div style="font-size: 14px; margin-top: 8px; opacity: 0.9;">نظام إدارة مبيعات الفروع العصري</div>
+                </div>
+                <div class="dashboard-header-info">
+                    <div class="dashboard-header-info-item">
+                        <span style="opacity: 0.8;">اليوم</span>
+                        <strong id="dashboardCurrentDate">-</strong>
+                    </div>
+                    <div class="dashboard-header-info-item">
+                        <span style="opacity: 0.8;">الفروع النشطة</span>
+                        <strong id="dashboardActiveBranches">-</strong>
+                    </div>
+                </div>
+                <div id="userHeaderInfo" style="display:none; padding: 12px 16px; background: rgba(255,255,255,0.15); border-radius: 10px; border: 1px solid rgba(255,255,255,0.25); min-width: 240px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+                            <div style="min-width: auto;">
+                                <strong style="color: #ffffff; font-size: 14px;">👤 مرحباً:</strong>
+                                <span id="currentUserName" style="color: #ffffff; font-weight: 600; word-break: break-word; margin-right: 6px;"></span>
+                            </div>
+                            <div style="min-width: auto;">
+                                <strong style="color: #ffffff;">🏢</strong>
+                                <span id="currentUserBranch" style="color: #ffffff; font-weight: 600; word-break: break-word; margin-right: 6px;"></span>
+                            </div>
+                            <div id="userPermissionsInfo" style="color: rgba(255,255,255,0.8); font-size: 12px; display: none;"></div>
+                        </div>
+                        <button id="btnLogout" style="padding: 8px 14px; background: rgba(244,67,54,0.95); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap; flex-shrink: 0; box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);">🚪 تسجيل الخروج</button>
+                    </div>
+                </div>
+                <a href="index.html" style="color: white; text-decoration: none; padding: 10px 20px; background: rgba(255,255,255,0.2); border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); font-weight: 600; transition: all 0.3s;">← العودة للرئيسية</a>
+            </div>
         </div>
-        <div class="header">
-            <h1>📊 تقارير المبيعات اليومية</h1>
-            <a href="index.html" class="btn-back">← العودة للصفحة الرئيسية</a>
+
+        <!-- Summary Stats Cards -->
+        <div id="summaryStats" class="stats-cards" style="display:none;">
+            <div class="stat-card">
+                <div class="stat-label">إجمالي السجلات</div>
+                <div class="stat-value" id="totalRecords">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">إجمالي المبيعات</div>
+                <div class="stat-value" id="totalSalesSum">0 ريال</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">إجمالي الكاش</div>
+                <div class="stat-value" id="totalCashSum">0 ريال</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">إجمالي مدي</div>
+                <div class="stat-value" id="totalCardSum">0 ريال</div>
+            </div>
+            <div class="stat-card stat-expenses">
+                <div class="stat-label">إجمالي المصاريف</div>
+                <div class="stat-value" id="totalExpensesSum">0 ريال</div>
+            </div>
+            <div class="stat-card stat-withdrawals">
+                <div class="stat-label">إجمالي السحوبات</div>
+                <div class="stat-value" id="totalWithdrawalsSum">0 ريال</div>
+            </div>
         </div>
 
         <!-- نموذج تسجيل الدخول -->
-        <div id="loginSection" class="card" style="max-width:500px;margin:20px auto;padding:20px;background:#f8f9fa;border-radius:12px;border:2px solid #e0e0e0;">
-            <h2 style="text-align:center;margin-bottom:16px;color:#333;">🔐 تسجيل الدخول للتقارير</h2>
-            <div style="margin-bottom:12px;">
-                <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;">الرقم الوظيفي:</label>
-                <input type="text" id="loginEmployeeId" placeholder="أدخل الرقم الوظيفي" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:15px;">
+        <div id="loginSection" style="max-width:500px;margin:40px auto;padding:30px;background:white;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.1);">
+            <h2 style="text-align:center;margin-bottom:24px;color:#333;font-size:24px;font-weight:700;">🔐 تسجيل الدخول للتقارير</h2>
+            <div style="margin-bottom:16px;">
+                <label style="display:block;margin-bottom:8px;font-weight:600;color:#555;font-size:14px;">الرقم الوظيفي:</label>
+                <input type="text" id="loginEmployeeId" placeholder="أدخل الرقم الوظيفي" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:15px;transition:all 0.3s;box-sizing:border-box;">
             </div>
-            <div style="margin-bottom:12px;">
-                <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;">كلمة المرور:</label>
-                <input type="password" id="loginPassword" placeholder="أدخل كلمة المرور" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:15px;">
+            <div style="margin-bottom:20px;">
+                <label style="display:block;margin-bottom:8px;font-weight:600;color:#555;font-size:14px;">كلمة المرور:</label>
+                <input type="password" id="loginPassword" placeholder="أدخل كلمة المرور" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:15px;transition:all 0.3s;box-sizing:border-box;">
             </div>
-            <button id="btnLogin" style="width:100%;padding:14px;background:#6b2d87;color:white;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;transition:transform 0.2s;">تسجيل الدخول</button>
-            <div id="loginMessage" style="margin-top:12px;text-align:center;color:#666;font-weight:600;"></div>
+            <button id="btnLogin" style="width:100%;padding:14px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;transition:all 0.3s;box-shadow:0 4px 15px rgba(102, 126, 234, 0.4);">تسجيل الدخول</button>
+            <div id="loginMessage" style="margin-top:16px;text-align:center;color:#666;font-weight:600;font-size:14px;"></div>
         </div>
 
         <div id="reportsContent" style="display:none;">
-            <!-- معلومات المستخدم الحالي -->
-            <div style="margin-bottom:20px;padding:16px;display:flex;justify-content:space-between;align-items:center;">
-                <div style="display:flex;gap:20px;align-items:center;">
-                    <div>
-                        <strong style="color:#2e7d32;font-size:16px;">👤 أهلا:</strong>
-                        <span id="currentUserName" style="color:#1b5e20;font-weight:600;"></span>
-                    </div>
-                    <div>
-                        <strong style="color:#2e7d32;">🏢</strong>
-                        <span id="currentUserBranch" style="color:#1b5e20;font-weight:600;"></span>
-                    </div>
-                    <div id="userPermissionsInfo" style="color:#666;font-size:13px;display:none;"></div>
-                </div>
-                <button id="btnLogout" style="padding:8px 16px;background:#d32f2f;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;">🚪 تسجيل الخروج</button>
-            </div>
-
+        <div class="reports-layout">
+        <div class="reports-main">
+        <section id="reportsSection" class="section-screen active">
         <div class="filters-section">
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="🔍 بحث (الرقم الوظيفي، الفرع، التاريخ...)">
@@ -80,7 +145,7 @@
                 <button class="btn-filter-special" onclick="filterByExpenses()" style="background:linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);color:white;padding:10px 20px;border:none;border-radius:10px;font-weight:700;cursor:pointer;transition:transform 0.2s;box-shadow:0 4px 6px rgba(0,0,0,0.1);" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                     💸 عرض المصروفات فقط
                 </button>
-                <button class="btn-filter-special" onclick="showCardBreakdownReport()" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;padding:10px 20px;border:none;border-radius:10px;font-weight:700;cursor:pointer;transition:transform 0.2s;box-shadow:0 4px 6px rgba(0,0,0,0.1);" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                <button class="btn-filter-special" onclick="showCardBreakdownReport()" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;padding:10px 20px;border:none;border-radius:10px;font-weight:700;cursor:pointer;transition:transform 0.2s;box-shadow:0 4px 6px rgba(0,0,0,0.1);display:none;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                     📊 تقرير تفاصيل الشبكة
                 </button>
                 <button class="btn-filter-special" onclick="generateHandoverReport()" style="background:linear-gradient(135deg, #f39c12 0%, #e67e22 100%);color:white;padding:10px 20px;border:none;border-radius:10px;font-weight:700;cursor:pointer;transition:transform 0.2s;box-shadow:0 4px 6px rgba(0,0,0,0.1);" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
@@ -94,31 +159,30 @@
                 </button>
             </div>
         </div>
+        
+        <div class="finance-stats">
+            <div class="finance-stat">
+                <div>إجمالي سجلات التمويل</div>
+                <strong id="financeTotalRecords">0</strong>
+            </div>
+            <div class="finance-stat">
+                <div>إجمالي تمارا</div>
+                <strong id="financeTamaraTotal">0 ريال</strong>
+            </div>
+            <div class="finance-stat">
+                <div>إجمالي تابي</div>
+                <strong id="financeTabbyTotal">0 ريال</strong>
+            </div>
+        </div>
 
-        <div class="stats-cards">
-            <div class="stat-card">
-                <div class="stat-label">إجمالي السجلات</div>
-                <div class="stat-value" id="totalRecords">0</div>
+        <div class="withdrawals-stats">
+            <div class="withdrawals-stat">
+                <div>إجمالي السحوبات</div>
+                <strong id="withdrawalsTotalSum">0 ريال</strong>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">إجمالي المبيعات</div>
-                <div class="stat-value" id="totalSalesSum">0 ريال</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">إجمالي الكاش</div>
-                <div class="stat-value" id="totalCashSum">0 ريال</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">إجمالي مدي</div>
-                <div class="stat-value" id="totalCardSum">0 ريال</div>
-            </div>
-            <div class="stat-card stat-expenses">
-                <div class="stat-label">إجمالي المصاريف</div>
-                <div class="stat-value" id="totalExpensesSum">0 ريال</div>
-            </div>
-            <div class="stat-card stat-withdrawals">
-                <div class="stat-label">إجمالي السحوبات</div>
-                <div class="stat-value" id="totalWithdrawalsSum">0 ريال</div>
+            <div class="withdrawals-stat">
+                <div>عدد السجلات</div>
+                <strong id="withdrawalsTotalRecords">0</strong>
             </div>
         </div>
 
@@ -126,6 +190,10 @@
         <div class="stats-cards" id="cardBreakdownStats" style="display:none;margin-top:15px;border:3px solid #3498db;border-radius:12px;padding:15px;background:#e3f2fd;">
             <h3 style="text-align:center;color:#1976d2;margin-bottom:15px;font-size:18px;">📊 تفاصيل مبيعات الشبكة</h3>
             <div style="display:flex;gap:15px;justify-content:center;flex-wrap:wrap;">
+                <div class="stat-card" style="background:linear-gradient(135deg, #26c6da 0%, #00acc1 100%);color:white;border:none;">
+                    <div class="stat-label" style="color:#fff;">💳 إجمالي الشبكة</div>
+                    <div class="stat-value" id="totalNetworkSum" style="color:#fff;">0 ريال</div>
+                </div>
                 <div class="stat-card" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;border:none;">
                     <div class="stat-label" style="color:#fff;">💳 إجمالي فيزا</div>
                     <div class="stat-value" id="totalVisaSum" style="color:#fff;">0 ريال</div>
@@ -145,30 +213,32 @@
             </div>
         </div>
 
+       
+
         <div class="table-container">
             <table id="reportsTable">
                 <thead>
                     <tr>
-                        <th>#</th>
-                        <th>تاريخ المبيعات</th>
-                        <th style="display:none;">التاريخ والوقت</th>
-                        <th>الرقم الوظيفي</th>
-                        <th>الفرع</th>
-                        <th>إجمالي المبيعات</th>
-                        <th>الكاش</th>
-                        <th>مدي</th>
-                        <th class="card-breakdown-col" style="background:#f60000;"> فيزا</th>
-                        <th class="card-breakdown-col" style="background:#eec008;"> ماستر</th>
-                        <th class="card-breakdown-col" style="background:#03dbf7;"> مدى</th>
-                        <th>تمارا</th>
-                        <th>تابي</th>
-                        <th>كاش زائد</th>
-                        <th>المصروفات</th>
-                        <th>المردود</th>
-                        <th>السحب</th>
-                        <th>الملاحظات</th>
-                        <th>الملف المرفق</th>
-                        <th id="actionsHeader">الإجراءات</th>
+                        <th class="col-index">#</th>
+                        <th class="col-sale-date">تاريخ المبيعات</th>
+                        <th class="col-created-at" style="display:none;">التاريخ والوقت</th>
+                        <th class="col-employee">الرقم الوظيفي</th>
+                        <th class="col-branch">الفرع</th>
+                        <th class="col-total-sales">إجمالي المبيعات</th>
+                        <th class="col-total-cash">الكاش</th>
+                        <th class="col-total-card">مدي</th>
+                        <th class="col-visa card-breakdown-col" style="background:#f60000;"> فيزا</th>
+                        <th class="col-master card-breakdown-col" style="background:#eec008;"> ماستر</th>
+                        <th class="col-mada card-breakdown-col" style="background:#03dbf7;"> مدى</th>
+                        <th class="col-tamara">تمارا</th>
+                        <th class="col-tabby">تابي</th>
+                        <th class="col-extra-cash">كاش زائد</th>
+                        <th class="col-expenses">المصروفات</th>
+                        <th class="col-returns">المردود</th>
+                        <th class="col-withdrawal">السحب</th>
+                        <th class="col-notes">الملاحظات</th>
+                        <th class="col-attachment">الملف المرفق</th>
+                        <th class="col-actions" id="actionsHeader">الإجراءات</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
@@ -178,7 +248,278 @@
                 </tbody>
             </table>
         </div>
-        </div> <!-- نهاية reportsContent -->
+         <div class="table-controls">
+            <div class="rows-per-page">
+                <label for="rowsPerPage">عدد الصفوف:</label>
+                <select id="rowsPerPage">
+                    <option value="7" selected> 7</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            <div class="pagination-controls">
+                <button type="button" id="prevPage">◀ السابق</button>
+                <span id="pageInfo" class="pagination-info">صفحة 1 من 1</span>
+                <button type="button" id="nextPage">التالي ▶</button>
+            </div>
+        </div>
+        </section>
+
+        <section id="deliveriesSection" class="section-screen">
+        <h2 class="deliveries-title">📦 تقرير تسليم العهدة</h2>
+        <div class="filters-section">
+            <div class="search-box">
+                <input type="text" id="deliveriesSearchInput" placeholder="🔍 بحث في تسليمات العهدة...">
+            </div>
+            
+            <div class="filter-controls">
+                <div class="filter-group">
+                    <label for="deliveriesFilterBranch">فلتر حسب الفرع:</label>
+                    <select id="deliveriesFilterBranch">
+                        <option value="">جميع الفروع</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="deliveriesFilterDateFrom">من تاريخ:</label>
+                    <input type="date" id="deliveriesFilterDateFrom" style="padding:8px;border:2px solid #3498db;border-radius:8px;">
+                </div>
+
+                <div class="filter-group">
+                    <label for="deliveriesFilterDateTo">إلى تاريخ:</label>
+                    <input type="date" id="deliveriesFilterDateTo" style="padding:8px;border:2px solid #3498db;border-radius:8px;">
+                </div>
+
+                <button class="btn-reset-filter" onclick="resetDeliveriesFilters()">🔄 إعادة تعيين</button>
+                <button class="btn-export" onclick="exportDeliveriesToExcel()">📥 تصدير Excel</button>
+            </div>
+        </div>
+
+        <div style="margin: 20px 0;">
+            <button id="btnShowDeliveriesStats" style="padding:10px 16px;background:#6b2d87;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;margin-right:8px;">📊 عرض الإحصائيات</button>
+            <div id="deliveriesStatsSection" style="display:none;margin-top:16px;">
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <span class="stat-label">إجمالي التسليمات</span>
+                        <span class="stat-value" id="deliveriesTotalCount">0</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">إجمالي المبلغ</span>
+                        <span class="stat-value" id="deliveriesTotalAmount">0 ريال</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">عدد الموظفين</span>
+                        <span class="stat-value" id="deliveriesEmployeeCount">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px; overflow-x: auto;">
+            <table id="deliveriesTable" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f5f5f5;">
+                        <th style="padding: 12px; border: 1px solid #e0e0e0; text-align: right;">التاريخ</th>
+                        <th style="padding: 12px; border: 1px solid #e0e0e0; text-align: right;">الفرع</th>
+                        <th style="padding: 12px; border: 1px solid #e0e0e0; text-align: right;">اسم المسلّم</th>
+                        <th style="padding: 12px; border: 1px solid #e0e0e0; text-align: right;">الموظف الرقم</th>
+                        <th style="padding: 12px; border: 1px solid #e0e0e0; text-align: right;">المبلغ (ريال)</th>
+                        <th style="padding: 12px; border: 1px solid #e0e0e0; text-align: right;">الملاحظات</th>
+                        <th style="padding: 12px; border: 1px solid #e0e0e0; text-align: right;">الإجراء</th>
+                    </tr>
+                </thead>
+                <tbody id="deliveriesBody">
+                    <tr class="no-data">
+                        <td colspan="7">لا توجد بيانات متاحة</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-top: 20px; text-align: center;">
+            <button id="deliveriesPrevPage" style="margin: 0 5px; padding: 8px 12px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">← السابق</button>
+            <span id="deliveriesPageInfo" style="margin: 0 10px; font-weight: 600;">الصفحة 1</span>
+            <button id="deliveriesNextPage" style="margin: 0 5px; padding: 8px 12px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">التالي →</button>
+        </div>
+        </section>
+
+        <section id="cashSection" class="section-screen">
+            <h2 class="cash-details-title">تفاصيل الكاش</h2>
+            <!-- تسويات الكاش -->
+            <div class="cash-reconciliation card" style="margin:20px 0;padding:12px;border-radius:10px;border:2px solid #e0e0e0;background:#fff;">
+                <h3 style="margin:6px 0;color:#3f51b5;">💼 تسويات الكاش (عرض وتسليم)</h3>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                    <label style="font-weight:600;">فرع:</label>
+                    <select id="reconBranchFilter" style="padding:8px;border:1px solid #ccc;border-radius:6px;">
+                        <option value="">جميع الفروع</option>
+                    </select>
+                    <label style="font-weight:600;">من:</label>
+                    <input type="date" id="reconDateFrom" style="padding:8px;border:1px solid #ccc;border-radius:6px;">
+                    <label style="font-weight:600;">إلى:</label>
+                    <input type="date" id="reconDateTo" style="padding:8px;border:1px solid #ccc;border-radius:6px;">
+                    <button onclick="computeReconciliations()" style="padding:8px 14px;background:#4caf50;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">🔁 تحديث التسوية</button>
+                    <button onclick="toggleAddDeliveryForm()" style="padding:8px 14px;background:#1976d2;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">➕ إضافة تسليم</button>
+                    <button onclick="exportReconciliationsCSV()" style="padding:8px 14px;background:#f39c12;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">📥 تصدير CSV</button>
+                </div>
+
+                <div id="addDeliveryForm" style="display:none;margin-top:12px;border-top:1px dashed #ddd;padding-top:12px;">
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                        <select id="deliveryBranch" style="padding:8px;border:1px solid #ccc;border-radius:6px;">
+                            <option value="">اختر فرعاً</option>
+                        </select>
+                        <input type="text" id="deliveryRecipient" placeholder="المستلم" style="padding:8px;border:1px solid #ccc;border-radius:6px;">
+                        <input type="number" id="deliveryAmount" placeholder="المبلغ" style="padding:8px;border:1px solid #ccc;border-radius:6px;width:140px;">
+                        <input type="date" id="deliveryDate" style="padding:8px;border:1px solid #ccc;border-radius:6px;">
+                        <input type="text" id="deliveryProof" placeholder="رابط إثبات (اختياري)" style="padding:8px;border:1px solid #ccc;border-radius:6px;">
+                        <button onclick="addDelivery()" style="padding:8px 12px;background:#6b2d87;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">حفظ التسليم</button>
+                        <button onclick="toggleAddDeliveryForm()" style="padding:8px 12px;background:#d32f2f;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">إلغاء</button>
+                    </div>
+                    <div id="deliveryMessage" style="margin-top:8px;color:#666;font-weight:600;"></div>
+                </div>
+
+                <div style="margin-top:12px;overflow:auto;">
+                    <!-- بطاقات إحصائيات الكاش -->
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px;">
+                        <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border-radius:12px;padding:16px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                            <div style="font-size:13px;opacity:0.9;margin-bottom:8px;font-weight:600;">إجمالي المتوقع</div>
+                            <div style="font-size:24px;font-weight:700;" id="reconcileExpectedTotal">0 ر.س</div>
+                        </div>
+                        <div style="background:linear-gradient(135deg,#4caf50 0%,#388e3c 100%);color:white;border-radius:12px;padding:16px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                            <div style="font-size:13px;opacity:0.9;margin-bottom:8px;font-weight:600;">إجمالي المسلّم</div>
+                            <div style="font-size:24px;font-weight:700;" id="reconcileDeliveredTotal">0 ر.س</div>
+                        </div>
+                        <div style="background:linear-gradient(135deg,#ff9800 0%,#f57c00 100%);color:white;border-radius:12px;padding:16px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                            <div style="font-size:13px;opacity:0.9;margin-bottom:8px;font-weight:600;">إجمالي المتبقّي</div>
+                            <div style="font-size:24px;font-weight:700;" id="reconcileRemainingTotal">0 ر.س</div>
+                        </div>
+                        <div style="background:linear-gradient(135deg,#2196f3 0%,#1976d2 100%);color:white;border-radius:12px;padding:16px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                            <div style="font-size:13px;opacity:0.9;margin-bottom:8px;font-weight:600;">عدد الفروع</div>
+                            <div style="font-size:24px;font-weight:700;" id="reconcileBranchCount">0</div>
+                        </div>
+                    </div>
+
+                    <table id="reconciliationTable" style="width:100%;border-collapse:collapse;">
+                        <thead>
+                            <tr style="background:#f5f5f5;">
+                                <th style="padding:8px;border:1px solid #e6e6e6;">الفرع</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">المتوقع (إجمالي الكاش)</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">المسلّم</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">المتبقّي</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">آخر تحديث</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reconciliationBody">
+                            <tr><td colspan="6" style="padding:12px;text-align:center;color:#777;">اضغط "تحديث التسوية" لعرض النتائج</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- موديل تعديل الكاش المسلم -->
+        <div id="editCashModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:2000;align-items:center;justify-content:center;">
+            <div style="background:white;border-radius:12px;padding:30px;max-width:450px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto;">
+                <h2 style="margin:0 0 20px;color:#333;font-size:22px;">✏️ تعديل الكاش المسلّم</h2>
+                <div style="margin-bottom:16px;">
+                    <label style="display:block;margin-bottom:8px;font-weight:600;color:#555;">الفرع:</label>
+                    <input type="text" id="editBranchName" placeholder="اسم الفرع" readonly style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;background:#f5f5f5;font-weight:600;box-sizing:border-box;">
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="display:block;margin-bottom:8px;font-weight:600;color:#555;">المبلغ المتوقع (ريال):</label>
+                    <input type="text" id="editExpectedAmount" placeholder="المبلغ المتوقع" readonly style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;background:#f5f5f5;font-weight:600;box-sizing:border-box;">
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="display:block;margin-bottom:8px;font-weight:600;color:#555;">المبلغ المسلّم (ريال) *</label>
+                    <input type="number" id="editDeliveredAmount" placeholder="أدخل المبلغ المسلم" step="0.01" style="width:100%;padding:12px;border:2px solid #3498db;border-radius:8px;font-size:16px;box-sizing:border-box;" min="0">
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="display:block;margin-bottom:8px;font-weight:600;color:#555;">ملاحظات:</label>
+                    <textarea id="editCashNotes" placeholder="أضف ملاحظات (اختياري)" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;resize:vertical;min-height:80px;box-sizing:border-box;direction:rtl;font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;"></textarea>
+                </div>
+                <div id="editCashMessage" style="margin-bottom:12px;padding:12px;border-radius:8px;text-align:center;font-weight:600;display:none;"></div>
+                <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
+                    <button onclick="viewCashEditHistory()" title="عرض سجل التعديلات" style="padding:12px 20px;background:#2196F3;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px;">📋 السجل</button>
+                    <button onclick="closeCashEditModal()" style="padding:12px 24px;background:#e0e0e0;color:#333;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:15px;">إلغاء</button>
+                    <button onclick="saveCashChanges()" style="padding:12px 24px;background:#4caf50;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:15px;">💾 حفظ</button>
+                </div>
+            </div>
+        </div>
+        <!-- نهاية editCashModal -->
+
+        <!-- موديل عرض سجل التعديلات -->
+        <div id="historyModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:2001;align-items:center;justify-content:center;">
+            <div style="background:white;border-radius:12px;padding:30px;max-width:600px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.3);max-height:85vh;overflow-y:auto;">
+                <h2 style="margin:0 0 20px;color:#333;font-size:22px;">📋 سجل التعديلات - <span id="historyBranchName" style="color:#2196F3;"></span></h2>
+                <div id="historyContent" style="max-height:60vh;overflow-y:auto;border:1px solid #e0e0e0;border-radius:8px;">
+                    <div style="padding:20px;text-align:center;color:#999;">جاري التحميل...</div>
+                </div>
+                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+                    <button onclick="closeHistoryModal()" style="padding:12px 24px;background:#e0e0e0;color:#333;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:15px;">إغلاق</button>
+                    <button onclick="exportHistoryCSV()" style="padding:12px 24px;background:#ff9800;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:15px;">📥 تصدير Excel</button>
+                </div>
+            </div>
+        </div>
+
+        </div>
+        <!-- نهاية reports-main -->
+
+        <aside class="reports-sidebar">
+            <div class="sidebar-card sidebar-card-header">
+                <div class="sidebar-title">
+                    <h3>القائمة</h3>
+                    <button type="button" id="toggleSidebarBtn" class="sidebar-toggle-btn" title="طي/فتح القائمة">▸</button>
+                </div>
+                <nav class="sidebar-nav">
+                    <button type="button" class="sidebar-link active" data-view="reports">التقارير</button>
+                    <button type="button" class="sidebar-link" data-view="finance">تفاصيل التمويل</button>
+                    <button type="button" class="sidebar-link" data-view="network">تقرير تفاصيل الشبكة</button>
+                    <button type="button" class="sidebar-link" data-view="deliveries">تقرير تسليم العهدة</button>
+                    <button type="button" class="sidebar-link" id="sidebarWithdrawalsLink" data-view="withdrawals">تقرير السحوبات والعجز</button>
+                    <button type="button" class="sidebar-link" id="sidebarCashLink" data-view="cash">تفاصيل الكاش</button>
+                    <a href="index.html">الصفحة الرئيسية</a>
+                    <a href="admin.html" id="sidebarAdminLink">لوحة الإدارة</a>
+                </nav>
+            </div>
+            <div class="sidebar-card">
+                <h3>ملخص سريع</h3>
+                <div class="sidebar-stats">
+                    <div><span>إجمالي السجلات</span><strong id="sidebarTotalRecords">0</strong></div>
+                    <div><span>إجمالي المبيعات</span><strong id="sidebarTotalSales">0 ريال</strong></div>
+                    <div><span>إجمالي الكاش</span><strong id="sidebarTotalCash">0 ريال</strong></div>
+                    <div><span>إجمالي مدي</span><strong id="sidebarTotalCard">0 ريال</strong></div>
+                </div>
+            </div>
+            <div class="sidebar-card">
+                <h3>تفاصيل السجل</h3>
+                <div id="sidebarRecordDetails" class="sidebar-details empty">اختر صفا لعرض التفاصيل</div>
+            </div>
+        </aside>
+        </div>
+        <!-- نهاية reports-layout -->
+        </div>
+        <!-- نهاية reportsContent -->
+    </div>
+
+    <!-- زر الطي/الفتح العائم الثابت -->
+    <button type="button" id="sidebarToggleFab" class="sidebar-toggle-fab" title="طي/فتح القائمة">
+        <span class="fab-icon">⏪</span>
+    </button>
+
+    <div id="notesOverlay" class="notes-overlay" aria-hidden="true">
+        <div class="notes-popup" role="dialog" aria-modal="true" aria-labelledby="notesTitle">
+            <div class="notes-popup-header">
+                <span id="notesTitle">📝 الملاحظات</span>
+                <button type="button" id="notesCloseBtn">✕</button>
+            </div>
+            <textarea id="notesEditor" placeholder="اكتب الملاحظات هنا..."></textarea>
+            <div class="notes-popup-actions">
+                <button type="button" class="btn-copy" id="notesCopyBtn">نسخ</button>
+                <button type="button" class="btn-save" id="notesSaveBtn">حفظ</button>
+            </div>
+            <div id="notesCopyMessage" class="notes-copy-message"></div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -219,7 +560,18 @@
 
         let allData = [];
         let currentUser = null;
+        let currentDisplayData = [];
+        let currentPage = 1;
+        let rowsPerPage = 7;
+        let tableControlsInitialized = false;
+        let activeNotesCell = null;
+        let selectedRecordId = null;
+        let currentView = 'reports';
+        let sidebarInitialized = false;
+        let sidebarCollapsed = false;
         let withdrawalsData = []; // متغير لحفظ بيانات السحوبات
+        let cashDeliveries = JSON.parse(localStorage.getItem('cashDeliveries') || '[]');
+        let cashEditHistory = JSON.parse(localStorage.getItem('cashEditHistory') || '[]'); // سجل تعديلات الكاش
 
         // تسجيل الدخول
         document.getElementById('btnLogin').addEventListener('click', async function() {
@@ -289,6 +641,10 @@
                 setTimeout(() => {
                     document.getElementById('loginSection').style.display = 'none';
                     document.getElementById('reportsContent').style.display = 'block';
+                    const summaryStats = document.getElementById('summaryStats');
+                    if (summaryStats) summaryStats.style.display = 'grid';
+                    const userHeaderInfo = document.getElementById('userHeaderInfo');
+                    if (userHeaderInfo) userHeaderInfo.style.display = 'block';
                     initializeReports();
                 }, 500);
 
@@ -323,6 +679,10 @@
                 currentUser = null;
                 document.getElementById('reportsContent').style.display = 'none';
                 document.getElementById('loginSection').style.display = 'block';
+                const summaryStats = document.getElementById('summaryStats');
+                if (summaryStats) summaryStats.style.display = 'none';
+                const userHeaderInfo = document.getElementById('userHeaderInfo');
+                if (userHeaderInfo) userHeaderInfo.style.display = 'none';
                 document.getElementById('loginEmployeeId').value = '';
                 document.getElementById('loginPassword').value = '';
                 document.getElementById('loginMessage').textContent = '';
@@ -342,6 +702,10 @@
                         currentUser = user;
                         document.getElementById('loginSection').style.display = 'none';
                         document.getElementById('reportsContent').style.display = 'block';
+                        const summaryStats = document.getElementById('summaryStats');
+                        if (summaryStats) summaryStats.style.display = 'grid';
+                        const userHeaderInfo = document.getElementById('userHeaderInfo');
+                        if (userHeaderInfo) userHeaderInfo.style.display = 'block';
                         await initializeReports();
                         return;
                     } else {
@@ -354,10 +718,348 @@
             }
         }
 
+        function setupTableControls() {
+            if (tableControlsInitialized) return;
+            tableControlsInitialized = true;
+
+            const rowsSelect = document.getElementById('rowsPerPage');
+            const prevBtn = document.getElementById('prevPage');
+            const nextBtn = document.getElementById('nextPage');
+
+            if (rowsSelect) {
+                rowsSelect.value = String(rowsPerPage);
+                rowsSelect.addEventListener('change', function() {
+                    rowsPerPage = parseInt(this.value, 10) || 7;
+                    currentPage = 1;
+                    renderTablePage();
+                });
+            }
+
+            if (prevBtn) {
+                prevBtn.addEventListener('click', function() {
+                    if (currentPage > 1) {
+                        currentPage -= 1;
+                        renderTablePage();
+                    }
+                });
+            }
+
+            if (nextBtn) {
+                nextBtn.addEventListener('click', function() {
+                    const totalPages = getTotalPages();
+                    if (currentPage < totalPages) {
+                        currentPage += 1;
+                        renderTablePage();
+                    }
+                });
+            }
+
+            const tableBody = document.getElementById('tableBody');
+            if (tableBody) {
+                tableBody.addEventListener('click', function(event) {
+                    const row = event.target.closest('tr');
+                    if (row && row.dataset.recordId) {
+                        selectRecordRow(row.dataset.recordId, row);
+                    }
+
+                    const cell = event.target.closest('.notes-cell');
+                    if (cell) openNotesEditor(cell);
+                });
+            }
+
+            const notesOverlay = document.getElementById('notesOverlay');
+            const notesCloseBtn = document.getElementById('notesCloseBtn');
+            const notesSaveBtn = document.getElementById('notesSaveBtn');
+            const notesCopyBtn = document.getElementById('notesCopyBtn');
+
+            if (notesCloseBtn) notesCloseBtn.addEventListener('click', closeNotesEditor);
+            if (notesSaveBtn) notesSaveBtn.addEventListener('click', saveNotesEditor);
+            if (notesCopyBtn) notesCopyBtn.addEventListener('click', copyNotesEditor);
+
+            if (notesOverlay) {
+                notesOverlay.addEventListener('click', function(event) {
+                    if (event.target === notesOverlay) closeNotesEditor();
+                });
+            }
+
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') closeNotesEditor();
+            });
+        }
+
+        function setupSidebarNavigation() {
+            if (sidebarInitialized) return;
+            sidebarInitialized = true;
+
+            const sidebarToggleBtn = document.getElementById('toggleSidebarBtn');
+            if (sidebarToggleBtn) {
+                sidebarToggleBtn.addEventListener('click', function() {
+                    sidebarCollapsed = !sidebarCollapsed;
+                    document.body.classList.toggle('sidebar-collapsed', sidebarCollapsed);
+                });
+            }
+
+            // الزر العائم الثابت للطي/الفتح
+            const fabToggleBtn = document.getElementById('sidebarToggleFab');
+            if (fabToggleBtn) {
+                fabToggleBtn.addEventListener('click', function() {
+                    sidebarCollapsed = !sidebarCollapsed;
+                    document.body.classList.toggle('sidebar-collapsed', sidebarCollapsed);
+                });
+            }
+
+            const navButtons = document.querySelectorAll('.sidebar-link[data-view]');
+            navButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const view = this.dataset.view;
+                    switchView(view);
+                });
+            });
+
+            switchView(currentView);
+        }
+
+        function switchView(view) {
+            const isManager = currentUser && Array.isArray(currentUser.permissions) && currentUser.permissions.includes('manageEmployees');
+            if (!isManager && (view === 'cash' || view === 'withdrawals')) {
+                view = 'reports';
+            }
+            currentView = view || 'reports';
+
+            const reportsSection = document.getElementById('reportsSection');
+            const cashSection = document.getElementById('cashSection');
+            const deliveriesSection = document.getElementById('deliveriesSection');
+            
+            if (reportsSection) reportsSection.classList.toggle('active', currentView !== 'cash' && currentView !== 'deliveries');
+            if (cashSection) cashSection.classList.toggle('active', currentView === 'cash');
+            if (deliveriesSection) deliveriesSection.classList.toggle('active', currentView === 'deliveries');
+
+            const navButtons = document.querySelectorAll('.sidebar-link[data-view]');
+            navButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.view === currentView);
+            });
+
+            applyFilters();
+        }
+
+        function updateViewPresentation(filteredData = []) {
+            document.body.classList.toggle('finance-view', currentView === 'finance');
+            document.body.classList.toggle('network-view', currentView === 'network');
+            document.body.classList.toggle('withdrawals-view', currentView === 'withdrawals');
+            document.body.classList.toggle('deliveries-view', currentView === 'deliveries');
+
+            if (currentView === 'network') {
+                document.body.classList.add('card-breakdown-view');
+                document.getElementById('cardBreakdownStats').style.display = 'block';
+                updateNetworkBreakdownStats(filteredData);
+                document.getElementById('btnShowAll').style.display = 'inline-block';
+            } else if (currentView === 'finance') {
+                document.body.classList.remove('card-breakdown-view');
+                document.getElementById('cardBreakdownStats').style.display = 'none';
+                document.getElementById('btnShowAll').style.display = 'none';
+                updateFinanceStats(filteredData);
+            } else if (currentView === 'withdrawals') {
+                document.body.classList.remove('card-breakdown-view');
+                document.getElementById('cardBreakdownStats').style.display = 'none';
+                document.getElementById('btnShowAll').style.display = 'none';
+                updateWithdrawalsStats(filteredData);
+            } else if (currentView === 'deliveries') {
+                document.body.classList.remove('card-breakdown-view');
+                document.getElementById('cardBreakdownStats').style.display = 'none';
+                document.getElementById('btnShowAll').style.display = 'none';
+                updateDeliveriesStats(filteredData);
+            } else {
+                document.body.classList.remove('card-breakdown-view');
+                document.getElementById('cardBreakdownStats').style.display = 'none';
+                document.getElementById('btnShowAll').style.display = 'none';
+            }
+        }
+
+        function getViewBaseData(data) {
+            if (!Array.isArray(data)) return [];
+            if (currentView === 'finance') {
+                return data.filter(record => parseFloat(record.tamara || 0) > 0 || parseFloat(record.tabby || 0) > 0);
+            }
+            if (currentView === 'network') {
+                return data.filter(record => parseFloat(record.totalCard || 0) > 0);
+            }
+            if (currentView === 'withdrawals') {
+                return data.filter(record => parseFloat(record.withdrawal || 0) > 0);
+            }
+            if (currentView === 'deliveries') {
+                return data; // عرض جميع السجلات في تقرير تسليم العهدة
+            }
+            return data;
+        }
+
+        function updateNetworkBreakdownStats(data) {
+            const totalNetwork = data.reduce((sum, record) => sum + parseFloat(record.totalCard || 0), 0);
+            const totalVisa = data.reduce((sum, record) => sum + parseFloat(record.visaSales || 0), 0);
+            const totalMaster = data.reduce((sum, record) => sum + parseFloat(record.masterSales || 0), 0);
+            const totalMada = data.reduce((sum, record) => sum + parseFloat(record.madaSales || 0), 0);
+
+            document.getElementById('totalNetworkSum').textContent = totalNetwork.toFixed(2) + ' ريال';
+            document.getElementById('totalVisaSum').textContent = totalVisa.toFixed(2) + ' ريال';
+            document.getElementById('totalMasterSum').textContent = totalMaster.toFixed(2) + ' ريال';
+            document.getElementById('totalMadaSum').textContent = totalMada.toFixed(2) + ' ريال';
+            document.getElementById('totalCardRecords').textContent = data.length;
+        }
+
+        function updateFinanceStats(data) {
+            const totalTamara = data.reduce((sum, record) => sum + parseFloat(record.tamara || 0), 0);
+            const totalTabby = data.reduce((sum, record) => sum + parseFloat(record.tabby || 0), 0);
+
+            document.getElementById('financeTotalRecords').textContent = data.length;
+            document.getElementById('financeTamaraTotal').textContent = totalTamara.toFixed(2) + ' ريال';
+            document.getElementById('financeTabbyTotal').textContent = totalTabby.toFixed(2) + ' ريال';
+        }
+
+        function updateWithdrawalsStats(data) {
+            const totalWithdrawals = data.reduce((sum, record) => sum + parseFloat(record.withdrawal || 0), 0);
+            document.getElementById('withdrawalsTotalSum').textContent = totalWithdrawals.toFixed(2) + ' ريال';
+            document.getElementById('withdrawalsTotalRecords').textContent = data.length;
+        }
+
+        function updateDeliveriesStats(data) {
+            const totalAmount = data.reduce((sum, record) => sum + parseFloat(record.deliveryAmount || 0), 0);
+            const uniqueEmployees = new Set(data.map(record => record.employeeId).filter(id => id));
+            
+            document.getElementById('deliveriesTotalCount').textContent = data.length;
+            document.getElementById('deliveriesTotalAmount').textContent = totalAmount.toFixed(2) + ' ريال';
+            document.getElementById('deliveriesEmployeeCount').textContent = uniqueEmployees.size;
+        }
+
+        function getTotalPages() {
+            if (!currentDisplayData || currentDisplayData.length === 0) return 1;
+            return Math.max(1, Math.ceil(currentDisplayData.length / rowsPerPage));
+        }
+
+        function updatePaginationInfo() {
+            const pageInfo = document.getElementById('pageInfo');
+            const prevBtn = document.getElementById('prevPage');
+            const nextBtn = document.getElementById('nextPage');
+            const totalPages = getTotalPages();
+
+            if (pageInfo) {
+                pageInfo.textContent = `صفحة ${currentPage} من ${totalPages}`;
+            }
+
+            if (prevBtn) prevBtn.disabled = currentPage <= 1;
+            if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+        }
+
+        function selectRecordRow(recordId, rowElement) {
+            selectedRecordId = recordId;
+
+            const rows = document.querySelectorAll('#tableBody tr');
+            rows.forEach(r => r.classList.remove('selected-row'));
+            if (rowElement) rowElement.classList.add('selected-row');
+
+            const record = allData.find(item => String(item.id) === String(recordId));
+            if (record) renderSidebarDetails(record);
+        }
+
+        function clearSidebarDetails() {
+            const details = document.getElementById('sidebarRecordDetails');
+            if (!details) return;
+            details.classList.add('empty');
+            details.innerHTML = 'اختر صفا لعرض التفاصيل';
+        }
+
+        function renderSidebarDetails(record) {
+            const details = document.getElementById('sidebarRecordDetails');
+            if (!details) return;
+
+            details.classList.remove('empty');
+            details.innerHTML = `
+                <div class="detail-row"><span>التاريخ</span><strong>${record.saleDate || '-'}</strong></div>
+                <div class="detail-row"><span>الرقم الوظيفي</span><strong>${record.employeeId || '-'}</strong></div>
+                <div class="detail-row"><span>الفرع</span><strong>${record.branch || '-'}</strong></div>
+                <div class="detail-row"><span>إجمالي المبيعات</span><strong>${parseFloat(record.totalSales || 0).toFixed(2)} ريال</strong></div>
+                <div class="detail-row"><span>الكاش</span><strong>${parseFloat(record.totalCash || 0).toFixed(2)} ريال</strong></div>
+                <div class="detail-row"><span>مدي</span><strong>${parseFloat(record.totalCard || 0).toFixed(2)} ريال</strong></div>
+                <div class="detail-row"><span>المصروفات</span><strong>${parseFloat(record.expenses || 0).toFixed(2)} ريال</strong></div>
+                <div class="detail-row"><span>السحب</span><strong>${parseFloat(record.withdrawal || 0).toFixed(2)} ريال</strong></div>
+                <div class="detail-row"><span>الملاحظات</span><strong>${record.notes || '-'}</strong></div>
+            `;
+        }
+
+        function openNotesEditor(cell) {
+            const notesOverlay = document.getElementById('notesOverlay');
+            const notesEditor = document.getElementById('notesEditor');
+            const notesCopyMessage = document.getElementById('notesCopyMessage');
+            if (!notesOverlay || !notesEditor) return;
+
+            activeNotesCell = cell;
+            const currentNotes = cell.dataset.notes || cell.textContent.trim() || '-';
+            notesEditor.value = currentNotes === '-' ? '' : currentNotes;
+            if (notesCopyMessage) notesCopyMessage.textContent = '';
+
+            notesOverlay.classList.add('active');
+            notesOverlay.setAttribute('aria-hidden', 'false');
+            notesEditor.focus();
+        }
+
+        function closeNotesEditor() {
+            const notesOverlay = document.getElementById('notesOverlay');
+            if (!notesOverlay) return;
+            notesOverlay.classList.remove('active');
+            notesOverlay.setAttribute('aria-hidden', 'true');
+            activeNotesCell = null;
+        }
+
+        function saveNotesEditor() {
+            if (!activeNotesCell) return;
+            const notesEditor = document.getElementById('notesEditor');
+            if (!notesEditor) return;
+
+            const newText = notesEditor.value.trim();
+            const finalText = newText.length ? newText : '-';
+            activeNotesCell.dataset.notes = finalText;
+            activeNotesCell.textContent = finalText;
+
+            const recordId = activeNotesCell.dataset.recordId;
+            if (recordId) {
+                const record = allData.find(item => String(item.id) === String(recordId));
+                if (record) {
+                    if (activeNotesCell.dataset.notesType === 'financing') {
+                        record.financingNotes = finalText;
+                    } else {
+                        record.notes = finalText;
+                    }
+                }
+            }
+
+            closeNotesEditor();
+        }
+
+        async function copyNotesEditor() {
+            const notesEditor = document.getElementById('notesEditor');
+            const notesCopyMessage = document.getElementById('notesCopyMessage');
+            if (!notesEditor) return;
+
+            const textToCopy = notesEditor.value || '';
+
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(textToCopy);
+                } else {
+                    notesEditor.select();
+                    document.execCommand('copy');
+                }
+                if (notesCopyMessage) notesCopyMessage.textContent = '✅ تم نسخ الملاحظات';
+            } catch (err) {
+                if (notesCopyMessage) notesCopyMessage.textContent = '⚠️ تعذر نسخ الملاحظات';
+            }
+        }
+
         async function initializeReports() {
             // عرض معلومات المستخدم
             document.getElementById('currentUserName').textContent = currentUser.name;
             document.getElementById('currentUserBranch').textContent = currentUser.branch_name;
+
+            setupTableControls();
+            setupSidebarNavigation();
 
             // التحقق من الصلاحيات
             const hasViewReports = currentUser.permissions.includes('viewReports');
@@ -376,13 +1078,33 @@
                 document.getElementById('btnClearAll').style.display = 'none';
                 // إخفاء عمود الإجراءات
                 document.getElementById('actionsHeader').style.display = 'none';
-                // إخفاء زر السحوبات والعجز للموظفين العاديين
+                // إخفاء زر السحوبات والعجز وتفاصيل الكاش للموظفين العاديين
                 document.getElementById('btnWithdrawalsReport').style.display = 'none';
+                const sidebarWithdrawals = document.getElementById('sidebarWithdrawalsLink');
+                if (sidebarWithdrawals) sidebarWithdrawals.style.display = 'none';
+                const sidebarCash = document.getElementById('sidebarCashLink');
+                if (sidebarCash) sidebarCash.style.display = 'none';
+                const sidebarAdmin = document.getElementById('sidebarAdminLink');
+                if (sidebarAdmin) sidebarAdmin.style.display = 'none';
+                const cashSection = document.getElementById('cashSection');
+                if (cashSection) cashSection.style.display = 'none';
+                if (currentView === 'cash' || currentView === 'withdrawals') {
+                    currentView = 'reports';
+                    switchView('reports');
+                }
             } else {
                 document.getElementById('btnClearAll').style.display = 'inline-block';
                 document.getElementById('actionsHeader').style.display = 'table-cell';
-                // إظهار زر السحوبات والعجز للمديرين
+                // إظهار زر السحوبات والعجز وتفاصيل الكاش للمديرين
                 document.getElementById('btnWithdrawalsReport').style.display = 'inline-block';
+                const sidebarWithdrawals = document.getElementById('sidebarWithdrawalsLink');
+                if (sidebarWithdrawals) sidebarWithdrawals.style.display = 'inline-flex';
+                const sidebarCash = document.getElementById('sidebarCashLink');
+                if (sidebarCash) sidebarCash.style.display = 'inline-flex';
+                const sidebarAdmin = document.getElementById('sidebarAdminLink');
+                if (sidebarAdmin) sidebarAdmin.style.display = 'inline-flex';
+                const cashSection = document.getElementById('cashSection');
+                if (cashSection) cashSection.style.display = '';
             }
 
             if (!hasExport) {
@@ -445,6 +1167,35 @@
                     };
                 });
 
+                // جلب تسليمات الكاش من Supabase (إن وجد جدول)
+                try {
+                    const { data: deliveries, error: delErr } = await supabase
+                        .from('cash_deliveries')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+
+                    if (!delErr && Array.isArray(deliveries)) {
+                        // دمج مع التسليمات المحلية وتخزينها
+                        const remote = deliveries.map(d => ({
+                            id: d.id || ('r_' + Date.parse(d.created_at || new Date())),
+                            branch: d.branch,
+                            recipient: d.recipient || d.delivered_to || '-',
+                            amount: parseFloat(d.delivered_amount || 0),
+                            date: d.delivered_at ? (new Date(d.delivered_at)).toISOString().split('T')[0] : (d.delivered_at || ''),
+                            proof: d.proof || d.proof_url || '',
+                            createdAt: d.created_at || new Date().toISOString()
+                        }));
+
+                        // إضافة العناصر الغير موجودة محليًا
+                        remote.forEach(rd => {
+                            if (!cashDeliveries.find(cd => String(cd.id) === String(rd.id))) cashDeliveries.push(rd);
+                        });
+                        localStorage.setItem('cashDeliveries', JSON.stringify(cashDeliveries));
+                    }
+                } catch (err) {
+                    console.warn('خطأ عند جلب تسليمات الكاش من Supabase:', err);
+                }
+
                 // تصفية البيانات حسب فرع الموظف
                 if (currentUser && !currentUser.permissions.includes('manageEmployees')) {
                     // الموظفون العاديون يرون فقط تقارير فرعهم
@@ -458,21 +1209,85 @@
                 console.error(err);
                 alert('تعذر تحميل البيانات من Supabase. تحقق من الاتصال أو الإعدادات.');
             }
+
+            // تحديث بطاقات الإحصائيات
+            updateDashboardStats();
         }
 
-        function displayData(data) {
+        function updateDashboardStats() {
+            const dashboardStats = document.getElementById('dashboardStats');
+            const dateEl = document.getElementById('dashboardCurrentDate');
+            const branchesEl = document.getElementById('dashboardActiveBranches');
+
+            if (!allData || allData.length === 0) {
+                if (dashboardStats) dashboardStats.style.display = 'none';
+                if (dateEl) dateEl.textContent = new Date().toLocaleDateString('ar-SA');
+                if (branchesEl) branchesEl.textContent = '0';
+                return;
+            }
+
+            // حساب الإحصائيات
+            const totalSales = allData.reduce((sum, r) => sum + parseFloat(r.totalSales || 0), 0);
+            const totalCash = allData.reduce((sum, r) => sum + parseFloat(r.totalCash || 0), 0);
+            const totalCard = allData.reduce((sum, r) => sum + parseFloat(r.totalCard || 0), 0);
+            const totalReturns = allData.reduce((sum, r) => sum + parseFloat(r.returns || 0), 0);
+
+            // حساب عدد الفروع النشطة
+            const uniqueBranches = new Set(allData.map(r => r.branch)).size;
+
+            if (dashboardStats) {
+                const statTotalSales = document.getElementById('statTotalSales');
+                const statTotalCash = document.getElementById('statTotalCash');
+                const statTotalCard = document.getElementById('statTotalCard');
+                const statTotalReturns = document.getElementById('statTotalReturns');
+
+                if (statTotalSales) statTotalSales.textContent = totalSales.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 });
+                if (statTotalCash) statTotalCash.textContent = totalCash.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 });
+                if (statTotalCard) statTotalCard.textContent = totalCard.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 });
+                if (statTotalReturns) statTotalReturns.textContent = totalReturns.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 });
+
+                dashboardStats.style.display = 'grid';
+            }
+
+            // تحديث معلومات رأس لوحة التحكم
+            if (dateEl) dateEl.textContent = new Date().toLocaleDateString('ar-SA');
+            if (branchesEl) branchesEl.textContent = uniqueBranches;
+        }
+
+        function displayData(data, options = {}) {
+            currentDisplayData = Array.isArray(data) ? data : [];
+            if (options.resetPage !== false) currentPage = 1;
+            if (selectedRecordId) {
+                const stillExists = currentDisplayData.some(item => String(item.id) === String(selectedRecordId));
+                if (!stillExists) {
+                    selectedRecordId = null;
+                    clearSidebarDetails();
+                }
+            } else {
+                clearSidebarDetails();
+            }
+            renderTablePage();
+        }
+
+        function renderTablePage() {
             const tableBody = document.getElementById('tableBody');
-            
-            if (data.length === 0) {
+            if (!tableBody) return;
+
+            if (!currentDisplayData || currentDisplayData.length === 0) {
                 tableBody.innerHTML = '<tr class="no-data"><td colspan="17">لا توجد بيانات متاحة</td></tr>';
+                updatePaginationInfo();
                 return;
             }
 
             const hasManagePermission = currentUser && currentUser.permissions.includes('manageEmployees');
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = startIndex + rowsPerPage;
+            const pageData = currentDisplayData.slice(startIndex, endIndex);
 
             tableBody.innerHTML = '';
-            data.forEach((record, index) => {
+            pageData.forEach((record, index) => {
                 const row = document.createElement('tr');
+                row.dataset.recordId = record.id;
                 // لا نضع ألوان هنا - سيتم تطبيقها من CSS تلقائياً
                 
                 const financingNotes = record.financingNotes && record.financingNotes !== '-' ? record.financingNotes : 'لا توجد ملاحظات';
@@ -508,29 +1323,46 @@
                 }
                 
                 row.innerHTML = `
-                    <td>${index + 1}</td>
-                    ${saleDateCell}
-                    <td style="display:none;">${formatDateTime(record.createdAt)}</td>
-                    <td>${record.employeeId}</td>
-                    <td>${record.branch}</td>
-                    <td>${parseFloat(record.totalSales).toFixed(2)}</td>
-                    <td>${parseFloat(record.totalCash).toFixed(2)}</td>
-                    <td>${parseFloat(record.totalCard).toFixed(2)}</td>
-                    <td class="card-breakdown-col" style="background:#e3f2fd;">${record.visaSales ? parseFloat(record.visaSales).toFixed(2) : '0.00'}</td>
-                    <td class="card-breakdown-col" style="background:#fce4ec;">${record.masterSales ? parseFloat(record.masterSales).toFixed(2) : '0.00'}</td>
-                    <td class="card-breakdown-col" style="background:#e0f7fa;">${record.madaSales ? parseFloat(record.madaSales).toFixed(2) : '0.00'}</td>
-                    <td ${tamaraTooltip}>${parseFloat(record.tamara || 0).toFixed(2)}</td>
-                    <td ${tabbyTooltip}>${parseFloat(record.tabby || 0).toFixed(2)}</td>
-                    <td>${parseFloat(record.extraCash || 0).toFixed(2)}</td>
-                    <td>${parseFloat(record.expenses).toFixed(2)}</td>
-                    <td>${parseFloat(record.returns).toFixed(2)}</td>
-                    <td>${parseFloat(record.withdrawal).toFixed(2)}</td>
-                    <td class="notes-cell">${record.notes || '-'}</td>
-                    <td>${getAttachmentCell(record)}</td>
-                    ${actionsCell}
+                    <td class="col-index">${startIndex + index + 1}</td>
+                    ${saleDateCell.replace('<td>', '<td class="col-sale-date">')}
+                    <td class="col-created-at" style="display:none;">${formatDateTime(record.createdAt)}</td>
+                    <td class="col-employee">${record.employeeId}</td>
+                    <td class="col-branch">${record.branch}</td>
+                    <td class="col-total-sales">${parseFloat(record.totalSales).toFixed(2)}</td>
+                    <td class="col-total-cash">${parseFloat(record.totalCash).toFixed(2)}</td>
+                    <td class="col-total-card">${parseFloat(record.totalCard).toFixed(2)}</td>
+                    <td class="col-visa card-breakdown-col" style="background:#e3f2fd;">${record.visaSales ? parseFloat(record.visaSales).toFixed(2) : '0.00'}</td>
+                    <td class="col-master card-breakdown-col" style="background:#fce4ec;">${record.masterSales ? parseFloat(record.masterSales).toFixed(2) : '0.00'}</td>
+                    <td class="col-mada card-breakdown-col" style="background:#e0f7fa;">${record.madaSales ? parseFloat(record.madaSales).toFixed(2) : '0.00'}</td>
+                    <td class="col-tamara" ${tamaraTooltip}>${parseFloat(record.tamara || 0).toFixed(2)}</td>
+                    <td class="col-tabby" ${tabbyTooltip}>${parseFloat(record.tabby || 0).toFixed(2)}</td>
+                    <td class="col-extra-cash">${parseFloat(record.extraCash || 0).toFixed(2)}</td>
+                    <td class="col-expenses">${parseFloat(record.expenses).toFixed(2)}</td>
+                    <td class="col-returns">${parseFloat(record.returns).toFixed(2)}</td>
+                    <td class="col-withdrawal">${parseFloat(record.withdrawal).toFixed(2)}</td>
+                    <td class="col-notes notes-cell">${record.notes || '-'}</td>
+                    <td class="col-attachment">${getAttachmentCell(record)}</td>
+                    ${actionsCell.replace('<td', '<td class="col-actions"')}
                 `;
+
+                const notesCell = row.querySelector('.notes-cell');
+                if (notesCell) {
+                    const notesSource = currentView === 'finance' ? record.financingNotes : record.notes;
+                    const noteText = notesSource && String(notesSource).trim().length ? notesSource : '-';
+                    notesCell.dataset.notes = noteText;
+                    notesCell.dataset.recordId = record.id;
+                    notesCell.dataset.notesType = currentView === 'finance' ? 'financing' : 'general';
+                    notesCell.textContent = noteText;
+                }
+
+                if (selectedRecordId && String(selectedRecordId) === String(record.id)) {
+                    row.classList.add('selected-row');
+                }
+
                 tableBody.appendChild(row);
             });
+
+            updatePaginationInfo();
         }
 
         function formatDateTime(timestamp) {
@@ -561,6 +1393,16 @@
             document.getElementById('totalCardSum').textContent = totalCard.toFixed(2) + ' ريال';
             document.getElementById('totalExpensesSum').textContent = totalExpenses.toFixed(2) + ' ريال';
             document.getElementById('totalWithdrawalsSum').textContent = totalWithdrawals.toFixed(2) + ' ريال';
+
+            const sidebarTotalRecords = document.getElementById('sidebarTotalRecords');
+            const sidebarTotalSales = document.getElementById('sidebarTotalSales');
+            const sidebarTotalCash = document.getElementById('sidebarTotalCash');
+            const sidebarTotalCard = document.getElementById('sidebarTotalCard');
+
+            if (sidebarTotalRecords) sidebarTotalRecords.textContent = data.length;
+            if (sidebarTotalSales) sidebarTotalSales.textContent = totalSales.toFixed(2) + ' ريال';
+            if (sidebarTotalCash) sidebarTotalCash.textContent = totalCash.toFixed(2) + ' ريال';
+            if (sidebarTotalCard) sidebarTotalCard.textContent = totalCard.toFixed(2) + ' ريال';
         }
 
         function populateBranchFilter() {
@@ -580,11 +1422,386 @@
                 option.textContent = branch;
                 filterBranch.appendChild(option);
             });
+
+            // ملء قوائم الفروع في واجهة التسوية إذا كانت موجودة
+            const reconBranch = document.getElementById('reconBranchFilter');
+            const deliveryBranch = document.getElementById('deliveryBranch');
+            if (reconBranch) {
+                reconBranch.innerHTML = '<option value="">جميع الفروع</option>';
+                branches.forEach(b => {
+                    const o = document.createElement('option');
+                    o.value = b; o.textContent = b; reconBranch.appendChild(o);
+                });
+            }
+            if (deliveryBranch) {
+                deliveryBranch.innerHTML = '<option value="">اختر فرعاً</option>';
+                branches.forEach(b => {
+                    const o = document.createElement('option');
+                    o.value = b; o.textContent = b; deliveryBranch.appendChild(o);
+                });
+            }
         }
 
         document.getElementById('searchInput').addEventListener('input', function() {
             applyFilters();
         });
+
+        // ===== وظائف تسوية الكاش (محلي + محاولة إرسال إلى Supabase إن وجد جدول) =====
+        function toggleAddDeliveryForm() {
+            const form = document.getElementById('addDeliveryForm');
+            if (!form) return;
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            document.getElementById('deliveryMessage').textContent = '';
+        }
+
+        window.toggleAddDeliveryForm = toggleAddDeliveryForm;
+
+        async function addDelivery() {
+            const branch = document.getElementById('deliveryBranch').value;
+            const recipient = document.getElementById('deliveryRecipient').value.trim();
+            const amount = parseFloat(document.getElementById('deliveryAmount').value);
+            const date = document.getElementById('deliveryDate').value || new Date().toISOString().split('T')[0];
+            const proof = document.getElementById('deliveryProof').value.trim();
+            const msg = document.getElementById('deliveryMessage');
+
+            if (!branch || !recipient || isNaN(amount) || amount <= 0) {
+                msg.style.color = '#d32f2f'; msg.textContent = '⚠️ الرجاء إدخال فرع، مستلم ومبلغ صالح'; return;
+            }
+
+            const delivery = {
+                id: 'd_' + Date.now(),
+                branch,
+                recipient,
+                amount: parseFloat(amount.toFixed(2)),
+                date,
+                proof,
+                createdAt: new Date().toISOString()
+            };
+
+            // حفظ محلي
+            cashDeliveries.push(delivery);
+            localStorage.setItem('cashDeliveries', JSON.stringify(cashDeliveries));
+
+            // محاولة إرسال إلى Supabase إذا كان موجوداً جدول cash_deliveries
+            try {
+                if (window.supabase && typeof window.supabase.from === 'function') {
+                    await window.supabase.from('cash_deliveries').insert([{ branch, recipient, delivered_amount: delivery.amount, delivered_at: delivery.date, proof: proof }]);
+                }
+            } catch (err) {
+                console.warn('لم يتم إرسال التسليم إلى Supabase (ربما لا يوجد الجدول)', err);
+            }
+
+            msg.style.color = '#2e7d32'; msg.textContent = '✅ تم حفظ التسليم';
+            toggleAddDeliveryForm();
+            computeReconciliations();
+        }
+
+        window.addDelivery = addDelivery;
+
+        function computeReconciliations() {
+            const reconBranch = document.getElementById('reconBranchFilter').value;
+            const dateFrom = document.getElementById('reconDateFrom').value;
+            const dateTo = document.getElementById('reconDateTo').value;
+
+            // حساب المتوقَّع (إجمالي الكاش) لكل فرع من بيانات المبيعات الحالية
+            const grouped = {};
+            allData.forEach(r => {
+                const saleDate = r.saleDate || new Date(r.createdAt).toISOString().split('T')[0];
+                if (dateFrom && saleDate < dateFrom) return;
+                if (dateTo && saleDate > dateTo) return;
+                if (reconBranch && r.branch !== reconBranch) return;
+                if (!grouped[r.branch]) grouped[r.branch] = {expected:0, collected:0};
+                grouped[r.branch].expected += parseFloat(r.totalCash || 0);
+                grouped[r.branch].collected += parseFloat(r.totalCash || 0);
+            });
+
+            // تجميع المسلّمات من المخزن المحلي
+            const deliveriesByBranch = {};
+            cashDeliveries.forEach(d => {
+                if (dateFrom && d.date < dateFrom) return;
+                if (dateTo && d.date > dateTo) return;
+                if (reconBranch && d.branch !== reconBranch) return;
+                if (!deliveriesByBranch[d.branch]) deliveriesByBranch[d.branch] = {total:0, lastUpdate: null, items: []};
+                deliveriesByBranch[d.branch].total += parseFloat(d.amount || 0);
+                deliveriesByBranch[d.branch].items.push(d);
+                deliveriesByBranch[d.branch].lastUpdate = (!deliveriesByBranch[d.branch].lastUpdate || deliveriesByBranch[d.branch].lastUpdate < d.createdAt) ? d.createdAt : deliveriesByBranch[d.branch].lastUpdate;
+            });
+
+            const reconBody = document.getElementById('reconciliationBody');
+            reconBody.innerHTML = '';
+            const branches = Object.keys(Object.assign({}, grouped, deliveriesByBranch));
+            if (branches.length === 0) {
+                reconBody.innerHTML = '<tr><td colspan="6" style="padding:12px;text-align:center;color:#777;">لا توجد بيانات للتسوية</td></tr>';
+                // تحديث الإجمالياتإلى صفر
+                document.getElementById('reconcileExpectedTotal').textContent = '0 ر.س';
+                document.getElementById('reconcileDeliveredTotal').textContent = '0 ر.س';
+                document.getElementById('reconcileRemainingTotal').textContent = '0 ر.س';
+                document.getElementById('reconcileBranchCount').textContent = '0';
+                return;
+            }
+
+            let totalExpected = 0, totalDelivered = 0, totalRemaining = 0;
+
+            branches.forEach(branch => {
+                const expected = grouped[branch] ? grouped[branch].expected : 0;
+                const delivered = deliveriesByBranch[branch] ? deliveriesByBranch[branch].total : 0;
+                const remaining = parseFloat((expected - delivered).toFixed(2));
+                const lastUpdate = deliveriesByBranch[branch] && deliveriesByBranch[branch].lastUpdate ? new Date(deliveriesByBranch[branch].lastUpdate).toLocaleString('ar-EG') : '-';
+
+                // إضافة إلى الإجمالياتtotalExpected += expected;
+                totalDelivered += delivered;
+                totalRemaining += remaining;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="padding:8px;border:1px solid #e6e6e6;">${branch}</td>
+                    <td style="padding:8px;border:1px solid #e6e6e6;text-align:right;">${expected.toFixed(2)} ريال</td>
+                    <td style="padding:8px;border:1px solid #e6e6e6;text-align:right;">${delivered.toFixed(2)} ريال</td>
+                    <td style="padding:8px;border:1px solid #e6e6e6;text-align:right;color:${remaining>0? '#d84315' : '#2e7d32'};">${remaining.toFixed(2)} ريال</td>
+                    <td style="padding:8px;border:1px solid #e6e6e6;">${lastUpdate}</td>
+                    <td style="padding:8px;border:1px solid #e6e6e6;display:flex;gap:4px;">
+                        <button onclick="openCashEditModal('${branch}')" style="padding:6px 10px;background:#ff9800;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:12px;flex:1;">✏️ تعديل</button>
+                        <button onclick="showBranchDeliveries('${branch}')" style="padding:6px 10px;background:#1976d2;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:12px;flex:1;">📋 عرض</button>
+                    </td>
+                `;
+                reconBody.appendChild(tr);
+            });
+
+            // تحديث بطاقات الإجمالياتdocument.getElementById('reconcileExpectedTotal').textContent = totalExpected.toFixed(2) + ' ر.س';
+            document.getElementById('reconcileDeliveredTotal').textContent = totalDelivered.toFixed(2) + ' ر.س';
+            document.getElementById('reconcileRemainingTotal').textContent = totalRemaining.toFixed(2) + ' ر.س';
+            document.getElementById('reconcileBranchCount').textContent = branches.length;
+        }
+
+        window.computeReconciliations = computeReconciliations;
+
+        function showBranchDeliveries(branch) {
+            const items = cashDeliveries.filter(d => d.branch === branch);
+            if (items.length === 0) { alert('لا توجد تسليمات مسجلة لهذا الفرع'); return; }
+            let txt = `تسليمات الفرع: ${branch}\n\n`;
+            items.forEach((it, idx) => {
+                txt += `${idx+1}. ${it.date} — ${it.amount.toFixed(2)} ريال — ${it.recipient} — إثبات: ${it.proof || '-'}\n`;
+            });
+            txt += '\nاختر OK للنسخ للذاكرة أو Cancel للإغلاق.';
+            if (confirm(txt)) {
+                navigator.clipboard && navigator.clipboard.writeText(items.map(i => `${i.date},${i.amount},${i.recipient}`).join('\n'));
+                alert('✅ نُسِخ النص للحافظة');
+            }
+        }
+
+        window.showBranchDeliveries = showBranchDeliveries;
+
+        // متغير لتخزين بيانات التعديل الحالية
+        let currentEditingDelivery = null;
+
+        // فتح موديل تعديل الكاش المسلم
+        function openCashEditModal(branch) {
+            const expectedAmount = allData
+                .filter(r => r.branch === branch)
+                .reduce((sum, r) => sum + parseFloat(r.totalCash || 0), 0);
+            
+            const deliveredAmount = cashDeliveries
+                .filter(d => d.branch === branch)
+                .reduce((sum, d) => sum + parseFloat(d.amount || 0), 0);
+
+            currentEditingDelivery = {
+                branch: branch,
+                expectedAmount: expectedAmount,
+                currentDelivered: deliveredAmount
+            };
+
+            document.getElementById('editBranchName').value = branch;
+            document.getElementById('editExpectedAmount').value = expectedAmount.toFixed(2);
+            document.getElementById('editDeliveredAmount').value = deliveredAmount.toFixed(2);
+            document.getElementById('editCashNotes').value = '';
+            document.getElementById('editCashMessage').style.display = 'none';
+            document.getElementById('editCashModal').style.display = 'flex';
+        }
+
+        window.openCashEditModal = openCashEditModal;
+
+        // إغلاق موديل التعديل
+        function closeCashEditModal() {
+            document.getElementById('editCashModal').style.display = 'none';
+            currentEditingDelivery = null;
+        }
+
+        window.closeCashEditModal = closeCashEditModal;
+
+        // حفظ التغييرات في الكاش المسلم
+        function saveCashChanges() {
+            if (!currentEditingDelivery) return;
+
+            const newAmount = parseFloat(document.getElementById('editDeliveredAmount').value);
+            const notes = document.getElementById('editCashNotes').value.trim();
+            const messageDiv = document.getElementById('editCashMessage');
+
+            if (isNaN(newAmount) || newAmount < 0) {
+                messageDiv.style.display = 'block';
+                messageDiv.style.background = '#ffebee';
+                messageDiv.style.color = '#c62828';
+                messageDiv.textContent = '❌ الرجاء إدخال مبلغ صحيح';
+                return;
+            }
+
+            // إنشاء تسليم جديد بالفرق بين المبلغ الجديد والقديم
+            const difference = newAmount - currentEditingDelivery.currentDelivered;
+
+            if (Math.abs(difference) < 0.01) {
+                messageDiv.style.display = 'block';
+                messageDiv.style.background = '#e8f5e9';
+                messageDiv.style.color = '#2e7d32';
+                messageDiv.textContent = 'ℹ️ لم يتم أي تغيير';
+                setTimeout(() => {
+                    closeCashEditModal();
+                    computeReconciliations();
+                }, 1500);
+                return;
+            }
+
+            // إضافة تسليم جديد يعكس الفرق
+            const delivery = {
+                id: Date.now(),
+                branch: currentEditingDelivery.branch,
+                date: new Date().toISOString().split('T')[0],
+                amount: Math.abs(difference),
+                recipient: difference > 0 ? 'تصحيح زيادة' : 'تصحيح انخفاض',
+                proof: notes || '-',
+                createdAt: new Date().toISOString()
+            };
+
+            cashDeliveries.push(delivery);
+            localStorage.setItem('cashDeliveries', JSON.stringify(cashDeliveries));
+
+            // تسجيل التعديل في السجل
+            const editRecord = {
+                id: Date.now(),
+                branch: currentEditingDelivery.branch,
+                oldAmount: currentEditingDelivery.currentDelivered,
+                newAmount: newAmount,
+                difference: difference,
+                notes: notes || '-',
+                timestamp: new Date().toISOString(),
+                date: new Date().toISOString().split('T')[0],
+                time: new Date().toLocaleTimeString('ar-SA', { hour12: false })
+            };
+            cashEditHistory.push(editRecord);
+            localStorage.setItem('cashEditHistory', JSON.stringify(cashEditHistory));
+
+            messageDiv.style.display = 'block';
+            messageDiv.style.background = '#e8f5e9';
+            messageDiv.style.color = '#2e7d32';
+            messageDiv.textContent = '✅ تم حفظ التغييرات بنجاح';
+
+            setTimeout(() => {
+                closeCashEditModal();
+                computeReconciliations();
+            }, 1500);
+        }
+
+        window.saveCashChanges = saveCashChanges;
+
+        // عرض سجل التعديلات للفرع
+        function viewCashEditHistory() {
+            if (!currentEditingDelivery) return;
+            const branch = currentEditingDelivery.branch;
+            const branchHistory = cashEditHistory.filter(h => h.branch === branch);
+            
+            document.getElementById('historyBranchName').textContent = branch;
+            
+            if (branchHistory.length === 0) {
+                document.getElementById('historyContent').innerHTML = '<div style="padding:20px;text-align:center;color:#999;font-size:16px;">لا يوجد سجل تعديلات لهذا الفرع</div>';
+            } else {
+                let html = '';
+                branchHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach(record => {
+                    const sign = record.difference > 0 ? '+' : '';
+                    const color = record.difference > 0 ? '#4caf50' : '#f44336';
+                    html += `<div style="border-bottom:1px solid #e0e0e0;padding:16px;\">\n`;
+                    html += `    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;\">\n`;
+                    html += `        <strong style="font-size:14px;">${record.date} - ${record.time}</strong>\n`;
+                    html += `        <span style="background:${color};color:white;padding:4px 12px;border-radius:6px;font-weight:600;font-size:13px;\">${sign}${record.newAmount.toFixed(2)} ريال</span>\n`;
+                    html += `    </div>\n`;
+                    html += `    <div style="margin-bottom:8px;font-size:13px;color:#555;\">\n`;
+                    html += `        <strong>من:</strong> ${record.oldAmount.toFixed(2)} ريال → <strong>إلى:</strong> ${record.newAmount.toFixed(2)} ريال\n`;
+                    html += `    </div>\n`;
+                    if (record.notes && record.notes !== '-') {
+                        html += `    <div style="font-size:13px;color:#666;background:#f5f5f5;padding:8px;border-radius:4px;border-right:3px solid #2196F3;margin-bottom:8px;\">📝 ${record.notes}</div>\n`;
+                    }
+                    html += `</div>\n`;
+                });
+                document.getElementById('historyContent').innerHTML = html;
+            }
+            
+            document.getElementById('historyModal').style.display = 'flex';
+        }
+
+        window.viewCashEditHistory = viewCashEditHistory;
+
+        // إغلاق نافذة السجل
+        function closeHistoryModal() {
+            document.getElementById('historyModal').style.display = 'none';
+        }
+
+        window.closeHistoryModal = closeHistoryModal;
+
+        // تصدير سجل التعديلات إلى CSV
+        function exportHistoryCSV() {
+            if (!currentEditingDelivery) return;
+            const branch = currentEditingDelivery.branch;
+            const branchHistory = cashEditHistory.filter(h => h.branch === branch);
+            
+            if (branchHistory.length === 0) {
+                alert('لا توجد بيانات للتصدير');
+                return;
+            }
+            
+            let csv = '\uFEFF';
+            csv += 'التاريخ,الوقت,المبلغ السابق,المبلغ الجديد,الفرق,الملاحظات\n';
+            branchHistory.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)).forEach(r => {
+                const sign = r.difference > 0 ? '+' : '';
+                csv += `${r.date},${r.time},${r.oldAmount.toFixed(2)},${r.newAmount.toFixed(2)},${sign}${r.difference.toFixed(2)},"${r.notes}"\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `edit_history_${currentEditingDelivery.branch}_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        window.exportHistoryCSV = exportHistoryCSV;
+
+        // إغلاق نافذة السجل عند الضغط خارجها
+        document.getElementById('historyModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeHistoryModal();
+            }
+        });
+        document.getElementById('editCashModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCashEditModal();
+            }
+        });
+
+        function exportReconciliationsCSV() {
+            const reconData = [];
+            const reconBody = document.getElementById('reconciliationBody');
+            for (const row of reconBody.querySelectorAll('tr')) {
+                const cols = row.querySelectorAll('td');
+                if (cols.length < 4) continue;
+                reconData.push({branch: cols[0].textContent.trim(), expected: cols[1].textContent.trim(), delivered: cols[2].textContent.trim(), remaining: cols[3].textContent.trim(), lastUpdate: cols[4].textContent.trim()});
+            }
+            if (reconData.length === 0) { alert('لا توجد بيانات للتصدير'); return; }
+            let csv = '\uFEFF';
+            csv += 'الفرع,المتوقع,المسلّم,المتبقّي,آخر تحديث\n';
+            reconData.forEach(r => { csv += `${r.branch},${r.expected},${r.delivered},${r.remaining},${r.lastUpdate}\n`; });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `reconciliations_${new Date().toISOString().split('T')[0]}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+
+        window.exportReconciliationsCSV = exportReconciliationsCSV;
 
         document.getElementById('filterBranch').addEventListener('change', function() {
             applyFilters();
@@ -604,11 +1821,14 @@
             const dateFrom = document.getElementById('filterDateFrom').value;
             const dateTo = document.getElementById('filterDateTo').value;
 
-            let filteredData = allData.filter(record => {
+            const baseData = getViewBaseData(allData);
+
+            let filteredData = baseData.filter(record => {
+                const notesField = currentView === 'finance' ? record.financingNotes : record.notes;
                 const matchesSearch = searchTerm === '' || 
                     record.employeeId.toLowerCase().includes(searchTerm) ||
                     record.branch.toLowerCase().includes(searchTerm) ||
-                    (record.notes && record.notes.toLowerCase().includes(searchTerm));
+                    (notesField && notesField.toLowerCase().includes(searchTerm));
 
                 const matchesBranch = selectedBranch === '' || record.branch === selectedBranch;
 
@@ -627,6 +1847,11 @@
                 return matchesSearch && matchesBranch && matchesDate;
             });
 
+            if (currentView === 'network' && filteredData.length === 0 && baseData.length === 0) {
+                alert('⚠️ لا توجد عمليات تحتوي على مدفوعات شبكة');
+            }
+
+            updateViewPresentation(filteredData);
             displayData(filteredData);
             updateStats(filteredData);
         }
@@ -636,19 +1861,42 @@
             document.getElementById('filterBranch').value = '';
             document.getElementById('filterDateFrom').value = '';
             document.getElementById('filterDateTo').value = '';
-            
-            // إخفاء أعمدة تفاصيل البطاقات
-            document.body.classList.remove('card-breakdown-view');
-            
-            // إخفاء بطاقات الإحصائيات التفصيلية
-            document.getElementById('cardBreakdownStats').style.display = 'none';
-            
-            document.getElementById('btnShowAll').style.display = 'none';
-            displayData(allData);
-            updateStats(allData);
+
+            applyFilters();
         }
 
         window.resetFilters = resetFilters;
+
+        function resetDeliveriesFilters() {
+            document.getElementById('deliveriesSearchInput').value = '';
+            document.getElementById('deliveriesFilterBranch').value = '';
+            document.getElementById('deliveriesFilterDateFrom').value = '';
+            document.getElementById('deliveriesFilterDateTo').value = '';
+
+            applyFilters();
+        }
+
+        window.resetDeliveriesFilters = resetDeliveriesFilters;
+
+        function exportDeliveriesToExcel() {
+            if (!currentDisplayData || currentDisplayData.length === 0) {
+                alert('⚠️ لا توجد بيانات لتصديرها');
+                return;
+            }
+
+            let csv = 'التاريخ,الفرع,اسم الموظف,رقم الموظف,إجمالي المبيعات,إجمالي الكاش,إجمالي البطاقات\n';
+            currentDisplayData.forEach(record => {
+                csv += `"${record.date}","${record.branch}","${record.employeeName}","${record.employeeId}","${parseFloat(record.totalSales || 0).toFixed(2)}","${parseFloat(record.totalCash || 0).toFixed(2)}","${parseFloat(record.totalCard || 0).toFixed(2)}"\n`;
+            });
+
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `تقرير_تسليم_العهدة_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        window.exportDeliveriesToExcel = exportDeliveriesToExcel;
 
         // فلترة البيانات للعمليات التي تحتوي على مصروفات
         function filterByExpenses() {
@@ -698,57 +1946,7 @@
 
         // عرض تقرير تفاصيل الشبكة مع إجمالي فيزا وماستر كارد ومدى
         function showCardBreakdownReport() {
-            // فلترة العمليات التي تحتوي على مدفوعات شبكة
-            const filteredData = allData.filter(record => {
-                const totalCard = parseFloat(record.totalCard || 0);
-                return totalCard > 0;
-            });
-            
-            if (filteredData.length === 0) {
-                alert('⚠️ لا توجد عمليات تحتوي على مدفوعات شبكة');
-                return;
-            }
-            
-            // التحقق من وجود تفاصيل منفصلة
-            const hasBreakdownDetails = filteredData.some(record => {
-                const visa = parseFloat(record.visaSales || 0);
-                const master = parseFloat(record.masterSales || 0);
-                const mada = parseFloat(record.madaSales || 0);
-                return (visa > 0 || master > 0 || mada > 0);
-            });
-            
-            if (!hasBreakdownDetails) {
-                alert('ℹ️ سيتم عرض جميع عمليات الشبكة.\n\nملاحظة: التفاصيل المنفصلة (فيزا، ماستر، مدى) ستظهر 0.00 للعمليات التي لم يتم إدخال تفاصيلها بشكل منفصل.');
-            }
-            
-            // إظهار أعمدة تفاصيل البطاقات عبر إضافة الفئة
-            document.body.classList.add('card-breakdown-view');
-            
-            // إظهار بطاقات الإحصائيات التفصيلية
-            document.getElementById('cardBreakdownStats').style.display = 'block';
-            
-            // حساب الإجماليات
-            const totalVisa = filteredData.reduce((sum, record) => sum + parseFloat(record.visaSales || 0), 0);
-            const totalMaster = filteredData.reduce((sum, record) => sum + parseFloat(record.masterSales || 0), 0);
-            const totalMada = filteredData.reduce((sum, record) => sum + parseFloat(record.madaSales || 0), 0);
-            
-            // تحديث بطاقات الإحصائيات
-            document.getElementById('totalVisaSum').textContent = totalVisa.toFixed(2) + ' ريال';
-            document.getElementById('totalMasterSum').textContent = totalMaster.toFixed(2) + ' ريال';
-            document.getElementById('totalMadaSum').textContent = totalMada.toFixed(2) + ' ريال';
-            document.getElementById('totalCardRecords').textContent = filteredData.length;
-            
-            // إظهار زر عرض الكل
-            document.getElementById('btnShowAll').style.display = 'inline-block';
-            
-            // عرض البيانات المفلترة
-            displayData(filteredData);
-            updateStats(filteredData);
-            
-            console.log(`✅ تقرير تفاصيل الشبكة: ${filteredData.length} عملية`);
-            console.log(`   💳 فيزا: ${totalVisa.toFixed(2)} ريال`);
-            console.log(`   💳 ماستر كارد: ${totalMaster.toFixed(2)} ريال`);
-            console.log(`   💳 مدى: ${totalMada.toFixed(2)} ريال`);
+            switchView('network');
         }
 
         window.showCardBreakdownReport = showCardBreakdownReport;
@@ -1218,6 +2416,9 @@
                 return;
             }
 
+            switchView('withdrawals');
+            return;
+
             // جمع السحوبات من البيانات
             const withdrawals = [];
             
@@ -1611,6 +2812,159 @@
 
             alert(`✅ تم تصدير ${dataToExport.length} سجل بنجاح`);
         };
+
+        // معالج أزرار تقرير تسليم العهدة
+        const btnShowDeliveriesStats = document.getElementById('btnShowDeliveriesStats');
+        if (btnShowDeliveriesStats) {
+            btnShowDeliveriesStats.addEventListener('click', function() {
+                const statsSection = document.getElementById('deliveriesStatsSection');
+                statsSection.style.display = statsSection.style.display === 'none' ? 'grid' : 'none';
+                updateDeliveriesStats(currentDisplayData);
+            });
+        }
+
+        // معالج البحث في تقرير تسليم العهدة
+        const deliveriesSearchInput = document.getElementById('deliveriesSearchInput');
+        if (deliveriesSearchInput) {
+            deliveriesSearchInput.addEventListener('keyup', function() {
+                applyFilters();
+            });
+        }
+
+        // معالج فلاتر تقرير تسليم العهدة
+        const deliveriesBranchFilter = document.getElementById('deliveriesFilterBranch');
+        const deliveriesDateFrom = document.getElementById('deliveriesFilterDateFrom');
+        const deliveriesDateTo = document.getElementById('deliveriesFilterDateTo');
+
+        if (deliveriesBranchFilter) deliveriesBranchFilter.addEventListener('change', applyFilters);
+        if (deliveriesDateFrom) deliveriesDateFrom.addEventListener('change', applyFilters);
+        if (deliveriesDateTo) deliveriesDateTo.addEventListener('change', applyFilters);
+
+        // معالج أزرار الصفحات لتقرير تسليم العهدة
+        const deliveriesPrevBtn = document.getElementById('deliveriesPrevPage');
+        const deliveriesNextBtn = document.getElementById('deliveriesNextPage');
+
+        if (deliveriesPrevBtn) {
+            deliveriesPrevBtn.addEventListener('click', function() {
+                if (currentPage > 1) {
+                    currentPage--;
+                    displayData(currentDisplayData);
+                    updatePaginationInfo();
+                }
+            });
+        }
+
+        if (deliveriesNextBtn) {
+            deliveriesNextBtn.addEventListener('click', function() {
+                if (currentPage < getTotalPages()) {
+                    currentPage++;
+                    displayData(currentDisplayData);
+                    updatePaginationInfo();
+                }
+            });
+        }
+
+        // تعبئة branch filter في section deliveries
+        function populateDeliveriesBranchFilter() {
+            const branches = [...new Set(allData.map(record => record.branch).filter(b => b))];
+            const branchFilter = document.getElementById('deliveriesFilterBranch');
+            if (branchFilter) {
+                branches.forEach(branch => {
+                    const option = document.createElement('option');
+                    option.value = branch;
+                    option.textContent = branch;
+                    branchFilter.appendChild(option);
+                });
+            }
+        }
+
+        // تحديث جدول deliveries
+        function updateDeliveriesTable(data) {
+            const tbody = document.getElementById('deliveriesBody');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr class="no-data"><td colspan="7">لا توجد بيانات متاحة</td></tr>';
+                return;
+            }
+
+            data.forEach(record => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="padding:12px;border:1px solid #e0e0e0;">${record.saleDate || '-'}</td>
+                    <td style="padding:12px;border:1px solid #e0e0e0;">${record.branch || '-'}</td>
+                    <td style="padding:12px;border:1px solid #e0e0e0;">${record.employeeName || '-'}</td>
+                    <td style="padding:12px;border:1px solid #e0e0e0;">${record.employeeId || '-'}</td>
+                    <td style="padding:12px;border:1px solid #e0e0e0;">${parseFloat(record.totalCash || 0).toFixed(2)}</td>
+                    <td style="padding:12px;border:1px solid #e0e0e0;">${record.notes || '-'}</td>
+                    <td style="padding:12px;border:1px solid #e0e0e0;"><button onclick="editRecord('${record.id}')" style="padding:6px 12px;background:#3498db;color:white;border:none;border-radius:5px;cursor:pointer;font-size:12px;">تحرير</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // عرض صفحة deliveries مع pagination
+        function renderDeliveriesPage() {
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = startIndex + rowsPerPage;
+            const pageData = currentDisplayData.slice(startIndex, endIndex);
+
+            updateDeliveriesTable(pageData);
+            updatePaginationInfo();
+        }
+
+        // تطبيق الفلاتر على deliveries
+        const originalApplyFilters = applyFilters;
+        window.applyFilters = function() {
+            originalApplyFilters.call(this);
+
+            if (currentView === 'deliveries') {
+                const searchValue = document.getElementById('deliveriesSearchInput')?.value.toLowerCase() || '';
+                const branchValue = document.getElementById('deliveriesFilterBranch')?.value || '';
+                const dateFromValue = document.getElementById('deliveriesFilterDateFrom')?.value || '';
+                const dateToValue = document.getElementById('deliveriesFilterDateTo')?.value || '';
+
+                let filtered = getViewBaseData(allData);
+
+                if (searchValue) {
+                    filtered = filtered.filter(record =>
+                        (record.employeeName || '').toLowerCase().includes(searchValue) ||
+                        (record.employeeId || '').toLowerCase().includes(searchValue) ||
+                        (record.branch || '').toLowerCase().includes(searchValue)
+                    );
+                }
+
+                if (branchValue) {
+                    filtered = filtered.filter(record => record.branch === branchValue);
+                }
+
+                if (dateFromValue) {
+                    filtered = filtered.filter(record => (record.saleDate || '') >= dateFromValue);
+                }
+
+                if (dateToValue) {
+                    filtered = filtered.filter(record => (record.saleDate || '') <= dateToValue);
+                }
+
+                currentDisplayData = filtered;
+                currentPage = 1;
+
+                renderDeliveriesPage();
+                updateViewPresentation(filtered);
+            }
+        };
+
+        // استدعاء populateDeliveriesBranchFilter عند تحميل البيانات
+        function loadDeliveriesData() {
+            populateDeliveriesBranchFilter();
+            currentDisplayData = getViewBaseData(allData);
+            renderDeliveriesPage();
+        }
+
+        // تحديث البيانات والأزرار عند تحميل الصفحة
+        loadDeliveriesData();
+
         }); // نهاية runAfterSupabase callback
     </script>
 
