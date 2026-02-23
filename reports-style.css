@@ -74,14 +74,11 @@ body {
 
 .reports-layout {
     display: grid;
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: minmax(0, 1fr) 320px;
     gap: 20px;
     align-items: start;
     direction: ltr;
     padding: 20px;
-    max-width: 1600px;
-    margin: 0 auto;
-    width: 100%;
 }
 
 /* ===== Dashboard Header ===== */
@@ -90,9 +87,11 @@ body {
     padding: 40px 20px;
     border-radius: 0;
     color: white;
-    margin: 0 0 30px 0;
+    margin: 0;
     box-shadow: var(--shadow-lg);
-    position: relative;
+    position: sticky;
+    top: 0;
+    z-index: 100;
     overflow: hidden;
 }
 
@@ -158,6 +157,55 @@ body {
     color: white;
     font-size: 18px;
     font-weight: 700;
+}
+
+.dashboard-user-menu {
+    display: none;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-info-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 11px;
+}
+
+.user-name-text {
+    color: white;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0.9;
+}
+
+.user-branch-text {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 10px;
+    white-space: nowrap;
+    opacity: 0.8;
+}
+
+.menu-icon-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.3s;
+    flex-shrink: 0;
+}
+
+.menu-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+.menu-icon-btn:active {
+    transform: scale(0.95);
 }
 
 /* ===== Stats Cards ===== */
@@ -399,44 +447,23 @@ body.sidebar-collapsed .sidebar-toggle-btn {
 
 /* زر الطي/الفتح العائم الثابت */
 .sidebar-toggle-fab {
-    position: fixed;
-    right: 20px;
-    bottom: 100px;
-    z-index: 10001;
-    pointer-events: auto;
-    background: linear-gradient(135deg, #6b2d87 0%, #8b3dab 100%);
-    color: #ffffff;
-    border: none;
-    border-radius: 50%;
-    width: 56px;
-    height: 56px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 10px 28px rgba(107, 45, 135, 0.35);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 24px;
-    font-weight: bold;
+    display: none !important;
 }
 
 .sidebar-toggle-fab:hover {
-    transform: scale(1.1);
-    box-shadow: 0 12px 32px rgba(107, 45, 135, 0.45);
+    display: none !important;
 }
 
 .sidebar-toggle-fab:active {
-    transform: scale(0.95);
+    display: none !important;
 }
 
 .sidebar-toggle-fab .fab-icon {
-    display: block;
-    transition: transform 0.3s ease;
+    display: none !important;
 }
 
 body.sidebar-collapsed .sidebar-toggle-fab .fab-icon {
-    transform: rotate(180deg);
+    display: none !important;
 }
 
 .sidebar-card {
@@ -908,41 +935,88 @@ button:hover {
 
 .table-controls {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin: 12px 0 8px;
-}
-
-.rows-per-page,
-.pagination-controls {
-    display: flex;
+    justify-content: center;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
+    margin: 6px 0 4px;
+    padding: 0;
+}
+
+.rows-per-page {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
 }
 
 .rows-per-page label {
     font-weight: 600;
     color: #555;
+    font-size: 13px;
 }
 
 .rows-per-page select {
     width: auto;
-    min-width: 90px;
-    padding: 6px 10px;
-    border-radius: 8px;
+    min-width: 70px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    font-size: 12px;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .pagination-controls button {
-    padding: 6px 12px;
-    font-size: 14px;
-    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 13px;
+    border-radius: 6px;
+    background: #6b2d87;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 32px;
+    height: 32px;
+}
+
+.pagination-controls button:hover {
+    background: #5a1f6f;
+    transform: scale(1.05);
+}
+
+.pagination-controls button:active {
+    transform: scale(0.95);
 }
 
 .pagination-info {
-    font-weight: 600;
-    color: #555;
+    display: flex !important;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+    color: #6b2d87;
+    font-size: 12px;
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+.pagination-info span {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+}
+
+.pagination-info span::before {
+    content: '📄';
+    font-size: 13px;
 }
 
 table {
@@ -1143,13 +1217,87 @@ td a:hover {
 /* الهواتف الذكية (تحت 768px) */
 @media (max-width: 768px) {
     body {
-        padding: 15px 15px 100px 15px;
+        padding: 0;
+        margin: 0;
+        overflow-x: hidden;
     }
     
     .reports-container {
-        padding: 20px;
-        border-radius: 12px;
-        margin-bottom: 20px;
+        padding: 0 !important;
+        margin: 0 !important;
+        border-radius: 0;
+        box-shadow: none;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* === تقليل ارتفاع Header بنسبة 60% === */
+    .dashboard-header {
+        border-radius: 0 0 24px 24px;
+        padding: 12px 16px !important;
+        text-align: center;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .dashboard-header h1 {
+        display: none !important;
+    }
+
+    .dashboard-header-content {
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .dashboard-header-content > div:first-child {
+        display: none;
+    }
+
+    .dashboard-header-content::before {
+        content: '📊 التقارير';
+        font-size: 14px;
+        font-weight: 700;
+        color: white;
+        flex: 0 0 auto;
+    }
+
+    .dashboard-header-info {
+        display: none !important;
+    }
+
+    /* إظهار معلومات المستخدم القائمة في الهيدر */
+    .dashboard-user-menu {
+        display: flex !important;
+    }
+
+    /* إخفاء العناصر القديمة */
+    #userHeaderInfo {
+        display: none !important;
+    }
+
+    /* تحويل زر الخروج إلى أيقونة صغيرة */
+    #btnLogout {
+        background: rgba(244, 67, 54, 0.8) !important;
+        padding: 6px 12px !important;
+        font-size: 16px !important;
+        border-radius: 6px !important;
+        display: block !important;
+        flex-shrink: 0;
+        border: none !important;
+        margin: 0 !important;
+        width: auto !important;
+        height: auto !important;
+    }
+
+    /* إخفاء رابط العودة */
+    .dashboard-header-content > a {
+        display: none !important;
     }
     
     .header {
@@ -1180,14 +1328,163 @@ td a:hover {
     }
 
     .reports-layout {
-        grid-template-columns: 1fr;
-        gap: 15px;
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden;
     }
 
+    .reports-main {
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden;
+    }
+
+    /* === تحويل Sidebar إلى Dropdown === */
     .reports-sidebar {
-        position: sticky;
-        top: 10px;
-        order: 2;
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 100%;
+        right: auto;
+        z-index: 1000;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        padding: 12px;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease, padding 0.3s ease;
+    }
+
+    /* Dropdown مفتوح */
+    .reports-sidebar.dropdown-open {
+        max-height: 500px;
+        padding: 12px;
+        overflow-y: auto;
+    }
+
+    .sidebar-card {
+        background: transparent;
+        border: none;
+        padding: 8px 0;
+        box-shadow: none;
+    }
+
+    .sidebar-card-header {
+        background: transparent;
+        border: none;
+        padding: 0 !important;
+    }
+
+    .sidebar-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .sidebar-title h3 {
+        font-size: 14px;
+        margin: 0;
+        font-weight: 700;
+        color: #333;
+    }
+
+    .sidebar-toggle-btn {
+        display: none;
+    }
+
+    .sidebar-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .sidebar-nav a,
+    .sidebar-nav button {
+        padding: 10px 12px;
+        font-size: 13px;
+        border: 1px solid #e0e0e0;
+        background: white;
+        border-radius: 8px;
+        text-align: right;
+        color: #333;
+    }
+
+    .sidebar-nav a.active,
+    .sidebar-nav button.active {
+        background: #e8eaf6;
+        border-color: #6b2d87;
+        color: #6b2d87;
+        font-weight: 600;
+    }
+
+    /* تنسيق خاص لزر التقارير المفقودة على الموبايل */
+    #sidebarMissingReportsLink {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%) !important;
+        color: white !important;
+        border: none !important;
+        position: relative !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 14px !important;
+        gap: 8px;
+    }
+
+    #sidebarMissingReportsLink span:first-child {
+        flex: 1;
+        font-size: 13px;
+        font-weight: 600;
+        text-align: right;
+    }
+
+    #missingBranchesCount {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        background: rgba(255, 255, 255, 0.95) !important;
+        color: #ff6b6b !important;
+        padding: 4px 10px !important;
+        border-radius: 12px !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        min-width: 28px;
+        text-align: center;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    /* إخفاء البطاقات الأخرى في السايدبار */
+    .sidebar-card:not(.sidebar-card-header) {
+        display: none;
+    }
+
+    /* زر فتح/إغلاق القائمة العائم للموبايل */
+    .dropdown-toggle-btn {
+        display: none !important;
+    }
+
+    .filters-section {
+        border-radius: 0;
+        padding: 16px;
+        box-shadow: none;
+        background: white;
+        margin-bottom: 0;
+        margin-top: 15px;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden;
     }
     
     .stats-cards {
@@ -1219,6 +1516,14 @@ td a:hover {
     button {
         padding: 12px 20px;
         font-size: 15px;
+    }
+
+    .section-content {
+        border-radius: 0;
+        padding: 16px;
+        margin-bottom: 0;
+        box-shadow: none;
+        border-top: 1px solid #e0e0e0;
     }
 }
 
@@ -1289,7 +1594,7 @@ th {
     padding: 16px 12px;
     text-align: right;
     font-weight: 700;
-    color: var(--text-dark);
+    color: #ffff;
     border-bottom: 2px solid #e0e0e0;
     font-size: 14px;
 }
@@ -1298,7 +1603,8 @@ td {
     padding: 14px 12px;
     border-bottom: 1px solid #f0f0f0;
     font-size: 14px;
-    color: var(--text-dark);
+    color: #0a0a0a;
+
 }
 
 tbody tr {
@@ -1430,33 +1736,82 @@ tbody tr:hover {
 @media (max-width: 480px) {
     body {
         padding: 0;
+        margin: 0;
         background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         min-height: 100vh;
+        overflow-x: hidden;
     }
     
     .reports-container {
         padding: 0 !important;
         border-radius: 0;
         box-shadow: none;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
 
+    /* === تقليل ارتفاع Header بنسبة 60% === */
     .dashboard-header {
         border-radius: 0 0 24px 24px;
-        padding: 30px 16px;
+        padding: 16px !important;
     }
 
     .dashboard-header h1 {
-        font-size: 24px;
+        display: none !important;
     }
 
     .dashboard-header-content {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .dashboard-header-content > div:first-child {
+        display: none;
+    }
+
+    /* عرض الكلمة "التقارير" فقط */
+    .dashboard-header-content::before {
+        content: '📊 التقارير';
+        font-size: 16px;
+        font-weight: 700;
+        color: white;
+        flex: 1;
     }
 
     .dashboard-header-info {
+        display: none !important;
         width: 100%;
         gap: 20px;
+    }
+
+    /* إخفاء معلومات المستخدم في الهيدر */
+    #userHeaderInfo {
+        display: none !important;
+    }
+
+    /* تحويل زر الخروج إلى أيقونة صغيرة */
+    #btnLogout {
+        background: rgba(244, 67, 54, 0.9) !important;
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+        border-radius: 50% !important;
+        width: 36px !important;
+        height: 36px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0;
+    }
+
+    /* إخفاء رابط العودة في الهيدر للهواتف */
+    .dashboard-header-content > a {
+        display: none !important;
     }
 
     .dashboard-stats {
@@ -1480,18 +1835,177 @@ tbody tr:hover {
     }
 
     .reports-layout {
-        grid-template-columns: 1fr;
-        gap: 0;
-        padding: 0;
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden;
     }
 
     .reports-main {
         padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden;
     }
 
+    /* === تحويل Sidebar إلى Dropdown === */
     .reports-sidebar {
-        position: static;
-        top: auto;
+        position: fixed;
+        top: 75px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 90%;
+        right: auto;
+        z-index: 1000;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        padding: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+        margin: 10px auto 0;
+    }
+
+    /* Dropdown مفتوح */
+    .reports-sidebar.dropdown-open {
+        max-height: 70vh;
+        padding: 12px;
+        overflow-y: auto;
+    }
+
+    .sidebar-card {
+        background: transparent;
+        border: none;
+        padding: 8px 0;
+        box-shadow: none;
+    }
+
+    .sidebar-card-header {
+        background: transparent;
+        border: none;
+        padding: 0 !important;
+    }
+
+    .sidebar-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .sidebar-title h3 {
+        font-size: 14px;
+        margin: 0;
+        font-weight: 700;
+        color: #333;
+    }
+
+    .sidebar-toggle-btn {
+        display: none;
+    }
+
+    .sidebar-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .sidebar-nav a,
+    .sidebar-nav button {
+        padding: 10px 12px;
+        font-size: 13px;
+        border: 1px solid #e0e0e0;
+        background: white;
+        border-radius: 8px;
+        text-align: right;
+        color: #333;
+    }
+
+    .sidebar-nav a.active,
+    .sidebar-nav button.active {
+        background: #e8eaf6;
+        border-color: #6b2d87;
+        color: #6b2d87;
+        font-weight: 600;
+    }
+
+    /* تنسيق خاص لزر التقارير المفقودة على الشاشات الصغيرة */
+    #sidebarMissingReportsLink {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%) !important;
+        color: white !important;
+        border: none !important;
+        position: relative !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 14px !important;
+        gap: 8px;
+    }
+
+    #sidebarMissingReportsLink span:first-child {
+        flex: 1;
+        font-size: 12px;
+        font-weight: 600;
+        text-align: right;
+    }
+
+    #missingBranchesCount {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        background: rgba(255, 255, 255, 0.95) !important;
+        color: #ff6b6b !important;
+        padding: 3px 9px !important;
+        border-radius: 12px !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        min-width: 26px;
+        text-align: center;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    /* إخفاء البطاقات الأخرى في السايدبار */
+    .sidebar-card:not(.sidebar-card-header) {
+        display: none;
+    }
+
+    /* زر فتح/إغلاق القائمة العائم للموبايل */
+    .dropdown-toggle-btn {
+        position: fixed;
+        top: 45px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #6b2d87 0%, #8b3dab 100%);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 20px;
+        font-weight: 700;
+        z-index: 998;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(107, 45, 135, 0.4);
+        font-size: 14px;
+        display: block;
+        margin: 10px auto;
+        white-space: nowrap;
+        transition: all 0.3s ease;
+    }
+
+    .dropdown-toggle-btn:hover {
+        transform: translateX(-50%) translateY(-2px);
+        box-shadow: 0 6px 20px rgba(107, 45, 135, 0.5);
+    }
+
+    .dropdown-toggle-btn:active {
+        transform: translateX(-50%) translateY(0);
     }
 
     .section-content {
@@ -1500,6 +2014,9 @@ tbody tr:hover {
         margin-bottom: 0;
         box-shadow: none;
         border-top: 1px solid #e0e0e0;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     .section-title {
@@ -1513,12 +2030,19 @@ tbody tr:hover {
         box-shadow: none;
         background: white;
         margin-bottom: 0;
+        margin-top: 70px;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden;
     }
 
     .search-box input {
         padding: 12px;
         font-size: 16px;
         border-radius: 8px;
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     .filter-controls {
@@ -1558,6 +2082,9 @@ tbody tr:hover {
         display: block;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     th, td {

@@ -33,8 +33,8 @@
         <div class="dashboard-header">
             <div class="dashboard-header-content">
                 <div style="flex: 1;">
-                    <h1>📊 لوحة التحكم - التقارير والبيانات</h1>
-                    <div style="font-size: 14px; margin-top: 8px; opacity: 0.9;">نظام إدارة مبيعات الفروع العصري</div>
+                    <h2>📊 التقارير والبيانات</h2>
+
                 </div>
                 <div class="dashboard-header-info">
                     <div class="dashboard-header-info-item">
@@ -46,22 +46,15 @@
                         <strong id="dashboardActiveBranches">-</strong>
                     </div>
                 </div>
-                <div id="userHeaderInfo" style="display:none; padding: 12px 16px; background: rgba(255,255,255,0.15); border-radius: 10px; border: 1px solid rgba(255,255,255,0.25); min-width: 240px;">
-                    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
-                        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
-                            <div style="min-width: auto;">
-                                <strong style="color: #ffffff; font-size: 14px;">👤 مرحباً:</strong>
-                                <span id="currentUserName" style="color: #ffffff; font-weight: 600; word-break: break-word; margin-right: 6px;"></span>
-                            </div>
-                            <div style="min-width: auto;">
-                                <strong style="color: #ffffff;">🏢</strong>
-                                <span id="currentUserBranch" style="color: #ffffff; font-weight: 600; word-break: break-word; margin-right: 6px;"></span>
-                            </div>
-                            <div id="userPermissionsInfo" style="color: rgba(255,255,255,0.8); font-size: 12px; display: none;"></div>
-                        </div>
-                        <button id="btnLogout" style="padding: 8px 14px; background: rgba(244,67,54,0.95); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap; flex-shrink: 0; box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);">🚪 تسجيل الخروج</button>
+                <!-- معلومات المستخدم والقائمة في الهيدر -->
+                <div class="dashboard-user-menu">
+                    <div class="user-info-compact">
+                        <span id="compactUserName" class="user-name-text"></span>
+                        <span id="compactUserBranch" class="user-branch-text"></span>
                     </div>
+                    <button type="button" id="dropdownToggleBtnInHeader" class="menu-icon-btn" title="القائمة">☰</button>
                 </div>
+                <button id="btnLogout" style="padding: 8px 14px; background: rgba(244,67,54,0.95); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap; flex-shrink: 0; box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);">🚪</button>
                 <a href="index.html" style="color: white; text-decoration: none; padding: 10px 20px; background: rgba(255,255,255,0.2); border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); font-weight: 600; transition: all 0.3s;">← العودة للرئيسية</a>
             </div>
         </div>
@@ -344,6 +337,74 @@
         </div>
         </section>
 
+        <!-- Missing Reports Section -->
+        <section id="missingReportsSection" class="section-screen">
+            <h2 style="color: #ff6b6b; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <span>⚠️</span>
+                <span>تقرير الفروع التي لم ترسل التقارير</span>
+            </h2>
+            
+            <div class="filters-section">
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <label for="missingReportsDays">عدد الأيام للفحص:</label>
+                        <select id="missingReportsDays" style="padding:8px;border:2px solid #ff6b6b;border-radius:8px;">
+                            <option value="1">اليوم فقط</option>
+                            <option value="3">آخر 3 أيام</option>
+                            <option value="7" selected>آخر 7 أيام</option>
+                            <option value="30">آخر 30 يوم</option>
+                        </select>
+                    </div>
+                    <button class="btn-export" onclick="exportMissingReportsToExcel()" style="background: #ff6b6b;">📥 تصدير Excel</button>
+                </div>
+            </div>
+
+            <div style="margin: 20px 0;">
+                <div class="stats-cards">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);">
+                        <span class="stat-label" style="color: white;">إجمالي الفروع المفقودة</span>
+                        <span class="stat-value" id="missingBranchesTotal" style="color: white;">0</span>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%);">
+                        <span class="stat-label" style="color: white;">إجمالي الأيام المفقودة</span>
+                        <span class="stat-value" id="missingDaysTotal" style="color: white;">0</span>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);">
+                        <span class="stat-label" style="color: white;">الفروع الملتزمة</span>
+                        <span class="stat-value" id="compliantBranchesTotal" style="color: white;">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Duplicate Reports Alert -->
+            <div id="duplicateReportsAlert" style="display: none; background: #fff3cd; border: 2px solid #ffc107; padding: 16px; border-radius: 12px; margin-bottom: 20px;">
+                <h3 style="color: #856404; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                    <span>🔄</span>
+                    <span>تقارير مكررة تم اكتشافها</span>
+                </h3>
+                <div id="duplicateReportsList" style="font-size: 14px; color: #856404;"></div>
+            </div>
+
+            <div style="margin-top: 20px; overflow-x: auto;">
+                <table id="missingReportsTable" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f5f5f5;">
+                            <th style="padding: 12px; border: 1px solid #e0e0e0; text-align: right;">الفرع</th>
+                            <th style="padding: 12px; border: 1px solid #e0e0e0; text-align: right;">عدد الأيام المفقودة</th>
+                            <th style="padding: 12px; border: 1px solid #e0e0e0; text-align: right;">التواريخ المفقودة</th>
+                            <th style="padding: 12px; border: 1px solid #e0e0e0; text-align: right;">آخر تقرير مرسل</th>
+                            <th style="padding: 12px; border: 1px solid #e0e0e0; text-align: right;">الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody id="missingReportsBody">
+                        <tr class="no-data">
+                            <td colspan="5" style="text-align: center; padding: 20px;">جاري التحميل...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <section id="cashSection" class="section-screen">
             <h2 class="cash-details-title">تفاصيل الكاش</h2>
             <!-- تسويات الكاش -->
@@ -482,6 +543,10 @@
                     <button type="button" class="sidebar-link" data-view="deliveries">تقرير تسليم العهدة</button>
                     <button type="button" class="sidebar-link" id="sidebarWithdrawalsLink" data-view="withdrawals">تقرير السحوبات والعجز</button>
                     <button type="button" class="sidebar-link" id="sidebarCashLink" data-view="cash">تفاصيل الكاش</button>
+                    <button type="button" class="sidebar-link" id="sidebarMissingReportsLink" data-view="missingReports" style="display:none; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); color: white; position: relative;">
+                        <span>⚠️ فروع لم ترسل التقرير</span>
+                        <span id="missingBranchesCount" style="position: absolute; top: 4px; left: 4px; background: rgba(255,255,255,0.9); color: #ff6b6b; padding: 2px 6px; border-radius: 10px; font-size: 11px; font-weight: 700;">0</span>
+                    </button>
                     <a href="index.html">الصفحة الرئيسية</a>
                     <a href="admin.html" id="sidebarAdminLink">لوحة الإدارة</a>
                 </nav>
@@ -505,11 +570,6 @@
         </div>
         <!-- نهاية reportsContent -->
     </div>
-
-    <!-- زر الطي/الفتح العائم الثابت -->
-    <button type="button" id="sidebarToggleFab" class="sidebar-toggle-fab" title="طي/فتح القائمة">
-        <span class="fab-icon">⏪</span>
-    </button>
 
     <div id="notesOverlay" class="notes-overlay" aria-hidden="true">
         <div class="notes-popup" role="dialog" aria-modal="true" aria-labelledby="notesTitle">
@@ -859,6 +919,107 @@
             });
         }
 
+        // إدارة الدروب داون للقائمة على الهواتف والتابلت
+        function setupMobileDropdown() {
+            const docWidth = document.documentElement.clientWidth;
+            
+            // فقط على الأجهزة الصغيرة (تحت 768px)
+            if (docWidth > 768) return;
+
+            const sidebar = document.querySelector('.reports-sidebar');
+            if (!sidebar) return;
+
+            // التحقق من وجود الزر الجديد في الـ header
+            const headerBtn = document.getElementById('dropdownToggleBtnInHeader');
+            
+            // إذا كان الزر الجديد موجود، لا نفعل شيء لأن setupHeaderMenuButton سيتولى أمره
+            if (headerBtn) return;
+
+            const sidebarLinks = document.querySelectorAll('.sidebar-link');
+
+            // إنشاء الزر العائم لفتح القائمة (للأجهزة القديمة التي لا تملك header menu)
+            let dropdownBtn = document.querySelector('.dropdown-toggle-btn');
+            if (!dropdownBtn) {
+                dropdownBtn = document.createElement('button');
+                dropdownBtn.className = 'dropdown-toggle-btn';
+                dropdownBtn.textContent = '☰ القائمة';
+                dropdownBtn.type = 'button';
+                document.body.appendChild(dropdownBtn);
+            }
+
+            // فتح/إغلاق القائمة عند الضغط على الزر
+            dropdownBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                sidebar.classList.toggle('dropdown-open');
+                dropdownBtn.textContent = sidebar.classList.contains('dropdown-open') ? '✕ إغلاق' : '☰ القائمة';
+            });
+
+            // إغلاق القائمة عند اختيار عنصر
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    setTimeout(() => {
+                        sidebar.classList.remove('dropdown-open');
+                        dropdownBtn.textContent = '☰ القائمة';
+                    }, 100);
+                });
+            });
+
+            // إغلاق القائمة عند النقر خارجها
+            document.addEventListener('click', function(e) {
+                const isClickInsideSidebar = sidebar.contains(e.target);
+                const isClickOnBtn = dropdownBtn.contains(e.target);
+                
+                if (!isClickInsideSidebar && !isClickOnBtn && sidebar.classList.contains('dropdown-open')) {
+                    sidebar.classList.remove('dropdown-open');
+                    dropdownBtn.textContent = '☰ القائمة';
+                }
+            });
+        }
+
+        function setupHeaderMenuButton() {
+            const headerMenuBtn = document.getElementById('dropdownToggleBtnInHeader');
+            const sidebar = document.querySelector('.reports-sidebar');
+            const sidebarLinks = document.querySelectorAll('.sidebar-link');
+
+            if (!headerMenuBtn || !sidebar) return;
+
+            const docWidth = document.documentElement.clientWidth;
+            
+            // فقط على الأجهزة الصغيرة (تحت 768px)
+            if (docWidth > 768) {
+                headerMenuBtn.style.display = 'none';
+                return;
+            }
+
+            // فتح/إغلاق القائمة عند الضغط على زر الهيدر
+            headerMenuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                sidebar.classList.toggle('dropdown-open');
+                headerMenuBtn.textContent = sidebar.classList.contains('dropdown-open') ? '✕' : '☰';
+            });
+
+            // إغلاق القائمة عند اختيار عنصر
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    setTimeout(() => {
+                        sidebar.classList.remove('dropdown-open');
+                        headerMenuBtn.textContent = '☰';
+                    }, 100);
+                });
+            });
+
+            // إغلاق القائمة عند النقر خارجها
+            document.addEventListener('click', function(e) {
+                const isClickInsideSidebar = sidebar.contains(e.target);
+                const isClickOnBtn = headerMenuBtn.contains(e.target);
+                
+                if (!isClickInsideSidebar && !isClickOnBtn && sidebar.classList.contains('dropdown-open')) {
+                    sidebar.classList.remove('dropdown-open');
+                    headerMenuBtn.textContent = '☰';
+                }
+            });
+        }
+
         function setupSidebarNavigation() {
             if (sidebarInitialized) return;
             sidebarInitialized = true;
@@ -866,15 +1027,6 @@
             const sidebarToggleBtn = document.getElementById('toggleSidebarBtn');
             if (sidebarToggleBtn) {
                 sidebarToggleBtn.addEventListener('click', function() {
-                    sidebarCollapsed = !sidebarCollapsed;
-                    document.body.classList.toggle('sidebar-collapsed', sidebarCollapsed);
-                });
-            }
-
-            // الزر العائم الثابت للطي/الفتح
-            const fabToggleBtn = document.getElementById('sidebarToggleFab');
-            if (fabToggleBtn) {
-                fabToggleBtn.addEventListener('click', function() {
                     sidebarCollapsed = !sidebarCollapsed;
                     document.body.classList.toggle('sidebar-collapsed', sidebarCollapsed);
                 });
@@ -893,7 +1045,7 @@
 
         function switchView(view) {
             const isManager = currentUser && Array.isArray(currentUser.permissions) && currentUser.permissions.includes('manageEmployees');
-            if (!isManager && (view === 'cash' || view === 'withdrawals')) {
+            if (!isManager && (view === 'cash' || view === 'withdrawals' || view === 'missingReports')) {
                 view = 'reports';
             }
             currentView = view || 'reports';
@@ -901,10 +1053,12 @@
             const reportsSection = document.getElementById('reportsSection');
             const cashSection = document.getElementById('cashSection');
             const deliveriesSection = document.getElementById('deliveriesSection');
+            const missingReportsSection = document.getElementById('missingReportsSection');
             
-            if (reportsSection) reportsSection.classList.toggle('active', currentView !== 'cash' && currentView !== 'deliveries');
+            if (reportsSection) reportsSection.classList.toggle('active', currentView !== 'cash' && currentView !== 'deliveries' && currentView !== 'missingReports');
             if (cashSection) cashSection.classList.toggle('active', currentView === 'cash');
             if (deliveriesSection) deliveriesSection.classList.toggle('active', currentView === 'deliveries');
+            if (missingReportsSection) missingReportsSection.classList.toggle('active', currentView === 'missingReports');
 
             const navButtons = document.querySelectorAll('.sidebar-link[data-view]');
             navButtons.forEach(btn => {
@@ -916,6 +1070,11 @@
                 loadCashData();
             }
 
+            // تحميل تقرير الفروع المفقودة
+            if (currentView === 'missingReports') {
+                updateMissingReportsView();
+            }
+
             applyFilters();
         }
 
@@ -924,6 +1083,7 @@
             document.body.classList.toggle('network-view', currentView === 'network');
             document.body.classList.toggle('withdrawals-view', currentView === 'withdrawals');
             document.body.classList.toggle('deliveries-view', currentView === 'deliveries');
+            document.body.classList.toggle('missing-reports-view', currentView === 'missingReports');
 
             if (currentView === 'network') {
                 document.body.classList.add('card-breakdown-view');
@@ -1131,14 +1291,25 @@
         }
 
         async function initializeReports() {
-            // عرض معلومات المستخدم
-            document.getElementById('currentUserName').textContent = currentUser.name;
-            document.getElementById('currentUserBranch').textContent = currentUser.branch_name;
+            try {
+                // تحديث المعلومات في الهيدر الجديد
+                const compactNameEl = document.getElementById('compactUserName');
+                const compactBranchEl = document.getElementById('compactUserBranch');
+                if (compactNameEl && currentUser) compactNameEl.textContent = currentUser.name || 'موظف';
+                if (compactBranchEl && currentUser) compactBranchEl.textContent = currentUser.branch_name || 'الرئيسية';
 
-            setupTableControls();
-            setupSidebarNavigation();
+                setupTableControls();
+                setupSidebarNavigation();
+                setupMobileDropdown();
+                
+                // محاولة إعداد زر الهيدر مع التعامل مع الأخطاء
+                try {
+                    setupHeaderMenuButton();
+                } catch (headerErr) {
+                    console.warn('[INIT] تحذير: خطأ في إعداد زر الهيدر:', headerErr);
+                }
 
-            // التحقق من الصلاحيات
+                // التحقق من الصلاحيات
             const hasViewReports = currentUser.permissions.includes('viewReports');
             const hasManageEmployees = currentUser.permissions.includes('manageEmployees');
             const hasExport = currentUser.permissions.includes('export');
@@ -1147,16 +1318,21 @@
             if (hasViewReports) permissionsText += 'عرض التقارير ';
             if (hasManageEmployees) permissionsText += '| إدارة كاملة ';
             if (hasExport) permissionsText += '| تصدير البيانات ';
-            document.getElementById('userPermissionsInfo').textContent = permissionsText;
+            
+            const userPermissionsEl = document.getElementById('userPermissionsInfo');
+            if (userPermissionsEl) userPermissionsEl.textContent = permissionsText;
 
             // إخفاء/إظهار الأزرار حسب الصلاحيات
             if (!hasManageEmployees) {
                 // إخفاء زر مسح جميع البيانات للموظفين العاديين
-                document.getElementById('btnClearAll').style.display = 'none';
+                const btnClearAllEl = document.getElementById('btnClearAll');
+                if (btnClearAllEl) btnClearAllEl.style.display = 'none';
                 // إخفاء عمود الإجراءات
-                document.getElementById('actionsHeader').style.display = 'none';
+                const actionsHeaderEl = document.getElementById('actionsHeader');
+                if (actionsHeaderEl) actionsHeaderEl.style.display = 'none';
                 // إخفاء زر السحوبات والعجز وتفاصيل الكاش للموظفين العاديين
-                document.getElementById('btnWithdrawalsReport').style.display = 'none';
+                const btnWithdrawalsEl = document.getElementById('btnWithdrawalsReport');
+                if (btnWithdrawalsEl) btnWithdrawalsEl.style.display = 'none';
                 const sidebarWithdrawals = document.getElementById('sidebarWithdrawalsLink');
                 if (sidebarWithdrawals) sidebarWithdrawals.style.display = 'none';
                 const sidebarCash = document.getElementById('sidebarCashLink');
@@ -1170,10 +1346,13 @@
                     switchView('reports');
                 }
             } else {
-                document.getElementById('btnClearAll').style.display = 'inline-block';
-                document.getElementById('actionsHeader').style.display = 'table-cell';
+                const btnClearAllEl = document.getElementById('btnClearAll');
+                if (btnClearAllEl) btnClearAllEl.style.display = 'inline-block';
+                const actionsHeaderEl = document.getElementById('actionsHeader');
+                if (actionsHeaderEl) actionsHeaderEl.style.display = 'table-cell';
                 // إظهار زر السحوبات والعجز وتفاصيل الكاش للمديرين
-                document.getElementById('btnWithdrawalsReport').style.display = 'inline-block';
+                const btnWithdrawalsEl = document.getElementById('btnWithdrawalsReport');
+                if (btnWithdrawalsEl) btnWithdrawalsEl.style.display = 'inline-block';
                 const sidebarWithdrawals = document.getElementById('sidebarWithdrawalsLink');
                 if (sidebarWithdrawals) sidebarWithdrawals.style.display = 'inline-flex';
                 const sidebarCash = document.getElementById('sidebarCashLink');
@@ -1185,10 +1364,15 @@
             }
 
             if (!hasExport) {
-                document.getElementById('btnExport').style.display = 'none';
+                const btnExportEl = document.getElementById('btnExport');
+                if (btnExportEl) btnExportEl.style.display = 'none';
             }
 
             await loadData();
+            } catch (err) {
+                console.error('[INIT] خطأ في initializeReports:', err);
+                throw err;
+            }
         }
 
         window.onload = function() {
@@ -1282,6 +1466,9 @@
                 displayData(allData);
                 updateStats(allData);
                 populateBranchFilter();
+                
+                // فحص الفروع التي لم ترسل تقارير اليوم
+                checkMissingBranchReports();
             } catch (err) {
                 console.error(err);
                 alert('تعذر تحميل البيانات من Supabase. تحقق من الاتصال أو الإعدادات.');
@@ -1290,6 +1477,330 @@
             // تحديث بطاقات الإحصائيات
             updateDashboardStats();
         }
+
+        async function checkMissingBranchReports() {
+            try {
+                // فقط للمديرين
+                if (!currentUser || !currentUser.permissions.includes('manageEmployees')) return;
+
+                // جلب جميع الفروع من جدول الموظفين
+                const { data: employees, error } = await supabase
+                    .from('employees')
+                    .select('branch_name');
+
+                if (error) throw error;
+
+                // استخراج الفروع الفريدة
+                const allBranches = [...new Set(employees.map(emp => emp.branch_name).filter(b => b))];
+                
+                // الحصول على تاريخ اليوم
+                const today = new Date().toISOString().split('T')[0];
+                
+                // الفروع التي أرسلت تقارير اليوم
+                const branchesWithReports = [...new Set(
+                    allData
+                        .filter(record => record.saleDate === today)
+                        .map(record => record.branch)
+                )];
+
+                // الفروع المفقودة
+                const missingBranches = allBranches.filter(branch => !branchesWithReports.includes(branch));
+
+                // تحديث العداد في الـ sidebar
+                const missingCountEl = document.getElementById('missingBranchesCount');
+                const missingLinkEl = document.getElementById('sidebarMissingReportsLink');
+                
+                if (missingCountEl) missingCountEl.textContent = missingBranches.length;
+                if (missingLinkEl) {
+                    missingLinkEl.style.display = missingBranches.length > 0 ? 'block' : 'none';
+                }
+
+                if (missingBranches.length > 0) {
+                    showMissingBranchesAlert(missingBranches);
+                }
+                
+                // فحص التقارير المكررة
+                checkDuplicateReports();
+            } catch (err) {
+                console.warn('خطأ في فحص الفروع المفقودة:', err);
+            }
+        }
+
+        function checkDuplicateReports() {
+            const duplicates = [];
+            const seen = new Map();
+
+            allData.forEach(record => {
+                const key = `${record.branch}_${record.saleDate}`;
+                if (seen.has(key)) {
+                    const existing = seen.get(key);
+                    duplicates.push({
+                        branch: record.branch,
+                        date: record.saleDate,
+                        ids: [existing.id, record.id],
+                        count: seen.get(key).count + 1
+                    });
+                    seen.get(key).count++;
+                } else {
+                    seen.set(key, { id: record.id, count: 1 });
+                }
+            });
+
+            if (duplicates.length > 0) {
+                displayDuplicateReports(duplicates);
+            }
+        }
+
+        function displayDuplicateReports(duplicates) {
+            const alertDiv = document.getElementById('duplicateReportsAlert');
+            const listDiv = document.getElementById('duplicateReportsList');
+            
+            if (!alertDiv || !listDiv) return;
+
+            let html = '<ul style="margin: 10px 0; padding-right: 20px;">';
+            duplicates.forEach(dup => {
+                html += `<li style="margin: 8px 0;">الفرع: <strong>${dup.branch}</strong> - التاريخ: <strong>${dup.date}</strong> - عدد النسخ: <strong>${dup.count}</strong></li>`;
+            });
+            html += '</ul>';
+            html += '<button onclick="showDuplicateReportDetails()" style="padding: 8px 16px; background: #ffc107; color: #856404; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 10px;">عرض التفاصيل وحل المشكلة</button>';
+
+            listDiv.innerHTML = html;
+            alertDiv.style.display = 'block';
+        }
+
+        async function generateMissingReportsData(days = 7) {
+            try {
+                // جلب جميع الفروع
+                const { data: employees, error } = await supabase
+                    .from('employees')
+                    .select('branch_name');
+
+                if (error) throw error;
+
+                const allBranches = [...new Set(employees.map(emp => emp.branch_name).filter(b => b))];
+                const today = new Date();
+                const reportData = [];
+
+                allBranches.forEach(branch => {
+                    const missingDates = [];
+                    let lastReportDate = null;
+
+                    // فحص كل يوم في النطاق المحدد
+                    for (let i = 0; i < days; i++) {
+                        const checkDate = new Date(today);
+                        checkDate.setDate(today.getDate() - i);
+                        const dateStr = checkDate.toISOString().split('T')[0];
+
+                        const hasReport = allData.some(record => 
+                            record.branch === branch && record.saleDate === dateStr
+                        );
+
+                        if (!hasReport) {
+                            missingDates.push(dateStr);
+                        }
+                    }
+
+                    // العثور على آخر تقرير
+                    const branchReports = allData
+                        .filter(r => r.branch === branch)
+                        .sort((a, b) => new Date(b.saleDate) - new Date(a.saleDate));
+
+                    if (branchReports.length > 0) {
+                        lastReportDate = branchReports[0].saleDate;
+                    }
+
+                    if (missingDates.length > 0) {
+                        reportData.push({
+                            branch,
+                            missingDays: missingDates.length,
+                            missingDates: missingDates.sort().reverse(),
+                            lastReport: lastReportDate || 'لا يوجد',
+                            status: missingDates.length >= 3 ? 'خطر' : missingDates.length >= 1 ? 'تحذير' : 'جيد'
+                        });
+                    }
+                });
+
+                return {
+                    data: reportData,
+                    totalMissing: reportData.length,
+                    totalDays: reportData.reduce((sum, r) => sum + r.missingDays, 0),
+                    compliant: allBranches.length - reportData.length
+                };
+            } catch (err) {
+                console.error('خطأ في توليد بيانات الفروع المفقودة:', err);
+                return { data: [], totalMissing: 0, totalDays: 0, compliant: 0 };
+            }
+        }
+
+        async function updateMissingReportsView() {
+            const daysSelect = document.getElementById('missingReportsDays');
+            const days = daysSelect ? parseInt(daysSelect.value) : 7;
+
+            const result = await generateMissingReportsData(days);
+            const tbody = document.getElementById('missingReportsBody');
+
+            // تحديث الإحصائيات
+            const totalEl = document.getElementById('missingBranchesTotal');
+            const daysEl = document.getElementById('missingDaysTotal');
+            const compliantEl = document.getElementById('compliantBranchesTotal');
+
+            if (totalEl) totalEl.textContent = result.totalMissing;
+            if (daysEl) daysEl.textContent = result.totalDays;
+            if (compliantEl) compliantEl.textContent = result.compliant;
+
+            // تحديث الجدول
+            if (!tbody) return;
+
+            if (result.data.length === 0) {
+                tbody.innerHTML = '<tr class="no-data"><td colspan="5" style="text-align: center; padding: 20px; color: #4caf50; font-weight: 600;">✅ جميع الفروع ملتزمة بإرسال التقارير</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = result.data.map(item => `
+                <tr style="background: ${item.status === 'خطر' ? '#ffebee' : item.status === 'تحذير' ? '#fff3e0' : 'white'};">
+                    <td style="padding: 12px; border: 1px solid #e0e0e0; font-weight: 600;">${item.branch}</td>
+                    <td style="padding: 12px; border: 1px solid #e0e0e0; text-align: center;">
+                        <span style="background: ${item.status === 'خطر' ? '#f44336' : '#ff9800'}; color: white; padding: 4px 12px; border-radius: 12px; font-weight: 600;">
+                            ${item.missingDays} يوم
+                        </span>
+                    </td>
+                    <td style="padding: 12px; border: 1px solid #e0e0e0; font-size: 12px;">${item.missingDates.slice(0, 5).join(', ')}${item.missingDates.length > 5 ? '...' : ''}</td>
+                    <td style="padding: 12px; border: 1px solid #e0e0e0;">${item.lastReport}</td>
+                    <td style="padding: 12px; border: 1px solid #e0e0e0; text-align: center;">
+                        <span style="color: ${item.status === 'خطر' ? '#f44336' : '#ff9800'}; font-weight: 700;">
+                            ${item.status === 'خطر' ? '🔴' : '⚠️'} ${item.status}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function exportMissingReportsToExcel() {
+            const daysSelect = document.getElementById('missingReportsDays');
+            const days = daysSelect ? parseInt(daysSelect.value) : 7;
+            
+            generateMissingReportsData(days).then(result => {
+                if (result.data.length === 0) {
+                    alert('✅ لا توجد فروع مفقودة للتصدير');
+                    return;
+                }
+
+                let csv = '\uFEFF';
+                csv += 'الفرع,عدد الأيام المفقودة,التواريخ المفقودة,آخر تقرير,الحالة\n';
+                result.data.forEach(item => {
+                    csv += `${item.branch},${item.missingDays},"${item.missingDates.join(', ')}",${item.lastReport},${item.status}\n`;
+                });
+
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `missing_reports_${days}days_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+
+        function showDuplicateReportDetails() {
+            alert('سيتم إضافة واجهة تفاعلية لحل مشكلة التقارير المكررة قريباً.\n\nحالياً يمكنك مراجعة التقارير المكررة يدوياً وحذف النسخ الزائدة.');
+        }
+
+        function showMissingBranchesAlert(branches) {
+            // إنشاء عنصر تنبيه
+            const alertDiv = document.createElement('div');
+            alertDiv.id = 'missingBranchesAlert';
+            alertDiv.style.cssText = `
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+                color: white;
+                padding: 16px 20px;
+                border-radius: 12px;
+                box-shadow: 0 8px 24px rgba(255, 107, 107, 0.4);
+                z-index: 1000;
+                max-width: 350px;
+                animation: slideInRight 0.5s ease-out;
+                border: 2px solid rgba(255, 255, 255, 0.3);
+            `;
+
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = '✕';
+            closeBtn.style.cssText = `
+                position: absolute;
+                top: 8px;
+                left: 8px;
+                background: rgba(255, 255, 255, 0.2);
+                border: none;
+                color: white;
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                cursor: pointer;
+                font-size: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s;
+            `;
+            closeBtn.onmouseover = () => closeBtn.style.background = 'rgba(255, 255, 255, 0.3)';
+            closeBtn.onmouseout = () => closeBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+            closeBtn.onclick = () => alertDiv.remove();
+
+            alertDiv.innerHTML = `
+                <div style="margin-bottom: 8px; font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                    <span>⚠️</span>
+                    <span>فروع لم ترسل تقارير اليوم</span>
+                </div>
+                <div style="font-size: 13px; margin-bottom: 10px; opacity: 0.95;">
+                    ${branches.length} فرع لم يرسل التقرير اليومي حتى الآن:
+                </div>
+                <ul style="margin: 0 0 12px 0; padding-right: 20px; font-size: 13px; line-height: 1.8; max-height: 120px; overflow-y: auto;">
+                    ${branches.slice(0, 5).map(b => `<li>${b}</li>`).join('')}
+                    ${branches.length > 5 ? `<li style="opacity: 0.7;">... و ${branches.length - 5} فروع أخرى</li>` : ''}
+                </ul>
+                <button onclick="switchView('missingReports'); document.getElementById('missingBranchesAlert').remove();" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.9); color: #ff6b6b; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 14px; transition: all 0.3s;">
+                    📊 عرض التقرير التفصيلي
+                </button>
+            `;
+
+            alertDiv.appendChild(closeBtn);
+            document.body.appendChild(alertDiv);
+
+            // إزالة تلقائياً بعد 20 ثانية (زيادة الوقت لأنه يحتوي على زر)
+            setTimeout(() => {
+                if (alertDiv.parentElement) {
+                    alertDiv.style.animation = 'slideOutRight 0.5s ease-in';
+                    setTimeout(() => alertDiv.remove(), 500);
+                }
+            }, 20000);
+        }
+
+        // إضافة الأنيميشن للـ CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes slideOutRight {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
 
         function updateDashboardStats() {
             const dashboardStats = document.getElementById('dashboardStats');
@@ -1485,9 +1996,13 @@
         function populateBranchFilter() {
             const filterBranch = document.getElementById('filterBranch');
             
+            // إذا كان العنصر غير موجود، لا نفعل شيء
+            if (!filterBranch) return;
+            
             // للموظفين العاديين، إخفاء فلتر الفرع لأنهم يرون فرعهم فقط
             if (currentUser && !currentUser.permissions.includes('manageEmployees')) {
-                filterBranch.closest('.filter-group').style.display = 'none';
+                const filterGroup = filterBranch.closest('.filter-group');
+                if (filterGroup) filterGroup.style.display = 'none';
                 return;
             }
 
@@ -2189,23 +2704,31 @@
 
         window.exportReconciliationsCSV = exportReconciliationsCSV;
 
-        document.getElementById('filterBranch').addEventListener('change', function() {
+        const filterBranchEl = document.getElementById('filterBranch');
+        if (filterBranchEl) filterBranchEl.addEventListener('change', function() {
             applyFilters();
         });
 
-        document.getElementById('filterDateFrom').addEventListener('change', function() {
+        const filterDateFromEl = document.getElementById('filterDateFrom');
+        if (filterDateFromEl) filterDateFromEl.addEventListener('change', function() {
             applyFilters();
         });
 
-        document.getElementById('filterDateTo').addEventListener('change', function() {
+        const filterDateToEl = document.getElementById('filterDateTo');
+        if (filterDateToEl) filterDateToEl.addEventListener('change', function() {
             applyFilters();
         });
 
         function applyFilters() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const selectedBranch = document.getElementById('filterBranch').value;
-            const dateFrom = document.getElementById('filterDateFrom').value;
-            const dateTo = document.getElementById('filterDateTo').value;
+            const searchInputEl = document.getElementById('searchInput');
+            const filterBranchEl = document.getElementById('filterBranch');
+            const filterDateFromEl = document.getElementById('filterDateFrom');
+            const filterDateToEl = document.getElementById('filterDateTo');
+            
+            const searchTerm = searchInputEl ? searchInputEl.value.toLowerCase() : '';
+            const selectedBranch = filterBranchEl ? filterBranchEl.value : '';
+            const dateFrom = filterDateFromEl ? filterDateFromEl.value : '';
+            const dateTo = filterDateToEl ? filterDateToEl.value : '';
 
             const baseData = getViewBaseData(allData);
 
@@ -2243,10 +2766,15 @@
         }
 
         function resetFilters() {
-            document.getElementById('searchInput').value = '';
-            document.getElementById('filterBranch').value = '';
-            document.getElementById('filterDateFrom').value = '';
-            document.getElementById('filterDateTo').value = '';
+            const searchInputEl = document.getElementById('searchInput');
+            const filterBranchEl = document.getElementById('filterBranch');
+            const filterDateFromEl = document.getElementById('filterDateFrom');
+            const filterDateToEl = document.getElementById('filterDateTo');
+            
+            if (searchInputEl) searchInputEl.value = '';
+            if (filterBranchEl) filterBranchEl.value = '';
+            if (filterDateFromEl) filterDateFromEl.value = '';
+            if (filterDateToEl) filterDateToEl.value = '';
 
             applyFilters();
         }
@@ -3204,8 +3732,10 @@
         if (btnShowDeliveriesStats) {
             btnShowDeliveriesStats.addEventListener('click', function() {
                 const statsSection = document.getElementById('deliveriesStatsSection');
-                statsSection.style.display = statsSection.style.display === 'none' ? 'grid' : 'none';
-                updateDeliveriesStats(currentDisplayData);
+                if (statsSection) {
+                    statsSection.style.display = statsSection.style.display === 'none' ? 'grid' : 'none';
+                    updateDeliveriesStats(currentDisplayData);
+                }
             });
         }
 
@@ -3225,6 +3755,16 @@
         if (deliveriesBranchFilter) deliveriesBranchFilter.addEventListener('change', applyFilters);
         if (deliveriesDateFrom) deliveriesDateFrom.addEventListener('change', applyFilters);
         if (deliveriesDateTo) deliveriesDateTo.addEventListener('change', applyFilters);
+
+        // معالج فلتر تقرير الفروع المفقودة
+        const missingReportsDaysFilter = document.getElementById('missingReportsDays');
+        if (missingReportsDaysFilter) {
+            missingReportsDaysFilter.addEventListener('change', function() {
+                if (currentView === 'missingReports') {
+                    updateMissingReportsView();
+                }
+            });
+        }
 
         // معالج أزرار الصفحات لتقرير تسليم العهدة
         const deliveriesPrevBtn = document.getElementById('deliveriesPrevPage');
