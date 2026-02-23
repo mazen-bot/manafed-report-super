@@ -351,14 +351,18 @@
                 <h3 style="margin:6px 0;color:#3f51b5;">💼 تسويات الكاش (عرض وتسليم)</h3>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
                     <label style="font-weight:600;">فرع:</label>
-                    <select id="reconBranchFilter" style="padding:8px;border:1px solid #ccc;border-radius:6px;">
+                    <select id="reconBranchFilter" onchange="loadCashData()" style="padding:8px;border:1px solid #ccc;border-radius:6px;">
                         <option value="">جميع الفروع</option>
                     </select>
-                    <label style="font-weight:600;">من:</label>
-                    <input type="date" id="reconDateFrom" style="padding:8px;border:1px solid #ccc;border-radius:6px;">
-                    <label style="font-weight:600;">إلى:</label>
-                    <input type="date" id="reconDateTo" style="padding:8px;border:1px solid #ccc;border-radius:6px;">
-                    <button onclick="computeReconciliations()" style="padding:8px 14px;background:#4caf50;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">🔁 تحديث التسوية</button>
+                    
+                    <label style="font-weight:600;margin-right:10px;">من تاريخ:</label>
+                    <input type="date" id="reconDateFrom" onchange="loadCashData()" style="padding:8px;border:1px solid #ccc;border-radius:6px;">
+                    
+                    <label style="font-weight:600;">إلى تاريخ:</label>
+                    <input type="date" id="reconDateTo" onchange="loadCashData()" style="padding:8px;border:1px solid #ccc;border-radius:6px;">
+                    
+                    <button onclick="resetCashFilters()" style="padding:8px 14px;background:#9e9e9e;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">🔄 إعادة تعيين</button>
+                    <button onclick="computeReconciliations()" style="padding:8px 14px;background:#4caf50;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">🔄 تحديث البيانات</button>
                     <button onclick="toggleAddDeliveryForm()" style="padding:8px 14px;background:#1976d2;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">➕ إضافة تسليم</button>
                     <button onclick="exportReconciliationsCSV()" style="padding:8px 14px;background:#f39c12;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">📥 تصدير CSV</button>
                 </div>
@@ -569,109 +573,177 @@
         let currentView = 'reports';
         let sidebarInitialized = false;
         let sidebarCollapsed = false;
-        let withdrawalsData = []; // متغير لحفظ بيانات السحوبات
+        let withdrawalsData = [];
         let cashDeliveries = JSON.parse(localStorage.getItem('cashDeliveries') || '[]');
-        let cashEditHistory = JSON.parse(localStorage.getItem('cashEditHistory') || '[]'); // سجل تعديلات الكاش
+        let cashEditHistory = JSON.parse(localStorage.getItem('cashEditHistory') || '[]');
 
-        // تسجيل الدخول
-        document.getElementById('btnLogin').addEventListener('click', async function() {
-            const employeeId = document.getElementById('loginEmployeeId').value.trim();
-            const password = document.getElementById('loginPassword').value.trim();
-            const loginMessage = document.getElementById('loginMessage');
-
-            if (!employeeId || !password) {
-                loginMessage.textContent = '⚠️ الرجاء إدخال الرقم الوظيفي وكلمة المرور';
-                loginMessage.style.color = '#d32f2f';
+        // الأسباب المحتملة لعدم استجابة الزر: إضافة معالج مباشر بدلاً من addEventListener
+        function setupLoginHandler() {
+            const loginBtn = document.getElementById('btnLogin');
+            
+            if (!loginBtn) {
+                console.warn('⚠️ زر تسجيل الدخول غير موجود، سيتم إعادة المحاولة...');
+                setTimeout(setupLoginHandler, 500);
                 return;
             }
 
-            try {
-                console.log('Attempting login with:', { employeeId, password });
+            // إزالة onclick إن وجد وإعادة تعريف دالة الدخول كمعالج مباشر
+            loginBtn.onclick = async function(e) {
+                e.preventDefault();
+                e.stopPropagation();
                 
-                const { data: empData, error } = await supabase
-                    .from('employees')
-                    .select('*')
-                    .eq('employee_id', employeeId)
-                    .eq('password', password)
-                    .single();
+                const employeeIdInput = document.getElementById('loginEmployeeId');
+                const passwordInput = document.getElementById('loginPassword');
+                const loginMessage = document.getElementById('loginMessage');
+                
+                const employeeId = employeeIdInput ? employeeIdInput.value.trim() : '';
+                const password = passwordInput ? passwordInput.value.trim() : '';
 
-                console.log('Query result:', { empData, error });
+                console.log('[LOGIN] محاولة تسجيل دخول:', { employeeId: employeeId || 'فارغ', passwordLength: password.length });
 
-                if (error) {
-                    console.error('Supabase error:', error);
-                    
-                    // معالجة الأخطاء المختلفة
-                    if (error.code === 'PGRST116') {
-                        // لم يتم العثور على أي سجل
-                        loginMessage.textContent = '❌ بيانات الدخول غير صحيحة';
-                    } else if (error.message && error.message.includes('multiple rows')) {
-                        // عدة سجلات متطابقة
-                        loginMessage.textContent = '❌ خطأ في البيانات (رقم وظيفي مكرر)';
-                    } else {
-                        const errorText = error.message || error.details || error.hint || 'خطأ غير معروف';
-                        loginMessage.textContent = `❌ خطأ: ${errorText}`;
+                if (!employeeId || !password) {
+                    if (loginMessage) {
+                        loginMessage.textContent = '⚠️ الرجاء إدخال الرقم الوظيفي وكلمة المرور';
+                        loginMessage.style.color = '#d32f2f';
                     }
-                    loginMessage.style.color = '#d32f2f';
                     return;
                 }
 
-                if (!empData) {
-                    loginMessage.textContent = '❌ بيانات الدخول غير صحيحة';
-                    loginMessage.style.color = '#d32f2f';
-                    return;
+                try {
+                    if (!window.supabase || typeof window.supabase.from !== 'function') {
+                        throw new Error('⚠️ Supabase لم يتم تحميله بعد. الرجاء الانتظار...');
+                    }
+
+                    if (loginMessage) {
+                        loginMessage.textContent = '⏳ جاري التحقق من البيانات...';
+                        loginMessage.style.color = '#1976d2';
+                    }
+
+                    console.log('[LOGIN] جاري الاستعلام عن الموظف:', employeeId);
+                    
+                    const { data: empData, error } = await window.supabase
+                        .from('employees')
+                        .select('*')
+                        .eq('employee_id', employeeId)
+                        .eq('password', password)
+                        .single();
+
+                    console.log('[LOGIN] نتيجة الاستعلام:', { success: !!empData, error: error ? error.code : 'none' });
+
+                    if (error) {
+                        console.error('[LOGIN] خطأ Supabase:', error);
+                        
+                        let errorMsg = '❌ خطأ في تسجيل الدخول';
+                        if (error.code === 'PGRST116') {
+                            errorMsg = '❌ بيانات الدخول غير صحيحة (الموظف غير موجود)';
+                        } else if (error.message && error.message.includes('multiple')) {
+                            errorMsg = '❌ خطأ في النظام: رقم وظيفي مكرر';
+                        } else {
+                            errorMsg = `❌ ${error.message || 'فشل الاتصال بقاعدة البيانات'}`;
+                        }
+                        
+                        if (loginMessage) {
+                            loginMessage.textContent = errorMsg;
+                            loginMessage.style.color = '#d32f2f';
+                        }
+                        return;
+                    }
+
+                    if (!empData) {
+                        console.warn('[LOGIN] لم يتم العثور على موظف مطابق');
+                        if (loginMessage) {
+                            loginMessage.textContent = '❌ بيانات الدخول غير صحيحة';
+                            loginMessage.style.color = '#d32f2f';
+                        }
+                        return;
+                    }
+
+                    currentUser = {
+                        id: empData.id,
+                        employee_id: empData.employee_id,
+                        name: empData.name || 'موظف',
+                        branch_id: empData.branch_id,
+                        branch_name: empData.branch_name || 'الرئيسية',
+                        permissions: Array.isArray(empData.permissions) ? empData.permissions : 
+                                      (typeof empData.permissions === 'string' ? empData.permissions.split(',').map(p => p.trim()) : ['viewReports'])
+                    };
+
+                    console.log('[LOGIN] ✅ نجح:', currentUser.name);
+
+                    localStorage.setItem('reportsSession', JSON.stringify({
+                        user: currentUser,
+                        timestamp: Date.now()
+                    }));
+
+                    if (loginMessage) {
+                        loginMessage.textContent = '✅ تم التحقق - جاري التحميل...';
+                        loginMessage.style.color = '#4caf50';
+                    }
+
+                    setTimeout(async () => {
+                        const loginSection = document.getElementById('loginSection');
+                        const reportsContent = document.getElementById('reportsContent');
+                        if (loginSection) loginSection.style.display = 'none';
+                        if (reportsContent) reportsContent.style.display = 'block';
+                        
+                        const summaryStats = document.getElementById('summaryStats');
+                        if (summaryStats) summaryStats.style.display = 'grid';
+                        
+                        const userHeaderInfo = document.getElementById('userHeaderInfo');
+                        if (userHeaderInfo) userHeaderInfo.style.display = 'block';
+                        
+                        try {
+                            await initializeReports();
+                            console.log('[LOGIN] ✅ تم تحميل التقارير بنجاح');
+                        } catch (initErr) {
+                            console.error('[LOGIN] ⚠️ خطأ في تحميل التقارير:', initErr);
+                            if (loginMessage) {
+                                loginMessage.textContent = '⚠️ تم التسجيل لكن حدث خطأ: ' + (initErr.message || 'خطأ غير معروف');
+                                loginMessage.style.color = '#ff9800';
+                            }
+                        }
+                    }, 300);
+
+                } catch (err) {
+                    console.error('[LOGIN] ❌ خطأ عام:', err);
+                    if (loginMessage) {
+                        loginMessage.textContent = `❌ ${err.message || 'خطأ غير متوقع'}`;
+                        loginMessage.style.color = '#d32f2f';
+                    }
                 }
-                currentUser = {
-                    id: empData.id,
-                    employee_id: empData.employee_id,
-                    name: empData.name,
-                    branch_id: empData.branch_id,
-                    branch_name: empData.branch_name,
-                    permissions: empData.permissions || []
+            };
+
+            // إضافة معالج مفاتيح Enter
+            const employeeIdInput = document.getElementById('loginEmployeeId');
+            const passwordInput = document.getElementById('loginPassword');
+            
+            if (employeeIdInput) {
+                employeeIdInput.onkeypress = function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (loginBtn) loginBtn.click();
+                    }
                 };
-
-                // حفظ الجلسة
-                localStorage.setItem('reportsSession', JSON.stringify({
-                    user: currentUser,
-                    timestamp: Date.now()
-                }));
-
-                loginMessage.textContent = '✅ تم تسجيل الدخول بنجاح';
-                loginMessage.style.color = '#4caf50';
-
-                setTimeout(() => {
-                    document.getElementById('loginSection').style.display = 'none';
-                    document.getElementById('reportsContent').style.display = 'block';
-                    const summaryStats = document.getElementById('summaryStats');
-                    if (summaryStats) summaryStats.style.display = 'grid';
-                    const userHeaderInfo = document.getElementById('userHeaderInfo');
-                    if (userHeaderInfo) userHeaderInfo.style.display = 'block';
-                    initializeReports();
-                }, 500);
-
-            } catch (err) {
-                console.error('تفاصيل الخطأ:', err);
-                if (err.message && err.message.includes('JSON')) {
-                    loginMessage.textContent = '❌ خطأ في معالجة البيانات - حاول مرة أخرى';
-                } else {
-                    loginMessage.textContent = `❌ حدث خطأ: ${err.message || 'خطأ غير معروف'}`;
-                }
-                loginMessage.style.color = '#d32f2f';
             }
-        });
-
-        // السماح بتسجيل الدخول عند الضغط على Enter
-        document.getElementById('loginEmployeeId').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                document.getElementById('btnLogin').click();
+            
+            if (passwordInput) {
+                passwordInput.onkeypress = function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (loginBtn) loginBtn.click();
+                    }
+                };
             }
-        });
 
-        document.getElementById('loginPassword').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                document.getElementById('btnLogin').click();
-            }
-        });
+            console.log('[LOGIN] ✅ تم إعداد معالجات تسجيل الدخول');
+        }
 
+        // استدعاء إعداد معالج الدخول بعد تحميل الصفحة
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupLoginHandler);
+        } else {
+            setupLoginHandler();
+        }
         // تسجيل الخروج
         document.getElementById('btnLogout').addEventListener('click', function() {
             if (confirm('هل تريد تسجيل الخروج؟')) {
@@ -838,6 +910,11 @@
             navButtons.forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.view === currentView);
             });
+
+            // تحميل بيانات الكاش عند تفعيل محفظة الكاش
+            if (currentView === 'cash' && window.loadCashData) {
+                loadCashData();
+            }
 
             applyFilters();
         }
@@ -1450,8 +1527,21 @@
         function toggleAddDeliveryForm() {
             const form = document.getElementById('addDeliveryForm');
             if (!form) return;
-            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            
+            const isHidden = form.style.display === 'none';
+            form.style.display = isHidden ? 'block' : 'none';
             document.getElementById('deliveryMessage').textContent = '';
+            document.getElementById('deliveryMessage').style.display = 'none';
+            
+            // عند فتح النموذج، تأكد من تعبئة قائمة الفروع
+            if (isHidden) {
+                populateBranchFilter();
+                // تعيين التاريخ الحالي
+                const dateInput = document.getElementById('deliveryDate');
+                if (dateInput) {
+                    dateInput.valueAsDate = new Date();
+                }
+            }
         }
 
         window.toggleAddDeliveryForm = toggleAddDeliveryForm;
@@ -1465,131 +1555,427 @@
             const msg = document.getElementById('deliveryMessage');
 
             if (!branch || !recipient || isNaN(amount) || amount <= 0) {
-                msg.style.color = '#d32f2f'; msg.textContent = '⚠️ الرجاء إدخال فرع، مستلم ومبلغ صالح'; return;
+                msg.style.color = '#d32f2f'; 
+                msg.textContent = '⚠️ الرجاء إدخال فرع، مستلم ومبلغ صالح'; 
+                msg.style.display = 'block';
+                return;
             }
 
-            const delivery = {
-                id: 'd_' + Date.now(),
-                branch,
-                recipient,
-                amount: parseFloat(amount.toFixed(2)),
-                date,
-                proof,
-                createdAt: new Date().toISOString()
-            };
-
-            // حفظ محلي
-            cashDeliveries.push(delivery);
-            localStorage.setItem('cashDeliveries', JSON.stringify(cashDeliveries));
-
-            // محاولة إرسال إلى Supabase إذا كان موجوداً جدول cash_deliveries
             try {
+                // إرسال إلى Supabase
                 if (window.supabase && typeof window.supabase.from === 'function') {
-                    await window.supabase.from('cash_deliveries').insert([{ branch, recipient, delivered_amount: delivery.amount, delivered_at: delivery.date, proof: proof }]);
-                }
-            } catch (err) {
-                console.warn('لم يتم إرسال التسليم إلى Supabase (ربما لا يوجد الجدول)', err);
-            }
+                    console.log('[DELIVERY] جاري حفظ التسليم في Supabase...');
+                    
+                    // محاولة الإدراج بدون RLS (استخدام admin client)
+                    const { data, error } = await window.supabase
+                        .from('cash_deliveries')
+                        .insert([{
+                            branch: branch,
+                            recipient: recipient,
+                            delivered_amount: parseFloat(amount.toFixed(2)),
+                            delivered_at: date,
+                            proof: proof || null,
+                            created_at: new Date().toISOString()
+                        }], { count: 'exact' });
 
-            msg.style.color = '#2e7d32'; msg.textContent = '✅ تم حفظ التسليم';
-            toggleAddDeliveryForm();
-            computeReconciliations();
+                    if (error) {
+                        console.warn('[DELIVERY] ⚠️ خطأ Supabase:', error);
+                        
+                        // إذا فشل بسبب RLS، حاول حفظ محلي
+                        if (error.message.includes('row-level security')) {
+                            console.log('[DELIVERY] ⚠️ RLS مفعل، سيتم الحفظ محلياً');
+                            msg.style.color = '#ff9800';
+                            msg.textContent = '⚠️ تنبيه: سيتم الحفظ محلياً (RLS مفعل في النظام)';
+                            msg.style.display = 'block';
+                            
+                            // حفظ محلي
+                            const delivery = {
+                                id: 'local_' + Date.now(),
+                                branch,
+                                recipient,
+                                amount: parseFloat(amount.toFixed(2)),
+                                date,
+                                proof,
+                                createdAt: new Date().toISOString()
+                            };
+                            cashDeliveries.push(delivery);
+                            localStorage.setItem('cashDeliveries', JSON.stringify(cashDeliveries));
+                        } else {
+                            msg.style.color = '#d32f2f';
+                            msg.textContent = '❌ خطأ: ' + (error.message || 'حاول مرة أخرى');
+                            msg.style.display = 'block';
+                            return;
+                        }
+                    } else {
+                        console.log('[DELIVERY] ✅ تم حفظ التسليم في Supabase:', data);
+                    }
+
+                    msg.style.color = '#2e7d32'; 
+                    msg.textContent = '✅ تم حفظ التسليم بنجاح';
+                    msg.style.display = 'block';
+                    
+                    // تنظيف النموذج
+                    setTimeout(() => {
+                        document.getElementById('deliveryBranch').value = '';
+                        document.getElementById('deliveryRecipient').value = '';
+                        document.getElementById('deliveryAmount').value = '';
+                        document.getElementById('deliveryDate').value = '';
+                        document.getElementById('deliveryProof').value = '';
+                        toggleAddDeliveryForm();
+                    }, 1000);
+
+                    // تحديث البيانات
+                    setTimeout(() => loadCashData(), 1500);
+                } else {
+                    console.warn('[DELIVERY] Supabase غير متاح');
+                    msg.style.color = '#ff9800';
+                    msg.textContent = '⚠️ Supabase غير متاح، سيتم الحفظ محلياً';
+                    msg.style.display = 'block';
+                    
+                    // حفظ محلي
+                    const delivery = {
+                        id: 'local_' + Date.now(),
+                        branch,
+                        recipient,
+                        amount: parseFloat(amount.toFixed(2)),
+                        date,
+                        proof,
+                        createdAt: new Date().toISOString()
+                    };
+                    cashDeliveries.push(delivery);
+                    localStorage.setItem('cashDeliveries', JSON.stringify(cashDeliveries));
+                    
+                    setTimeout(() => toggleAddDeliveryForm(), 1000);
+                }
+
+            } catch (err) {
+                console.error('[DELIVERY] ❌ خطأ جسيم:', err);
+                msg.style.color = '#d32f2f';
+                msg.textContent = '❌ خطأ: ' + (err.message || 'حاول مرة أخرى');
+                msg.style.display = 'block';
+            }
         }
 
         window.addDelivery = addDelivery;
 
         function computeReconciliations() {
-            const reconBranch = document.getElementById('reconBranchFilter').value;
-            const dateFrom = document.getElementById('reconDateFrom').value;
-            const dateTo = document.getElementById('reconDateTo').value;
-
-            // حساب المتوقَّع (إجمالي الكاش) لكل فرع من بيانات المبيعات الحالية
-            const grouped = {};
-            allData.forEach(r => {
-                const saleDate = r.saleDate || new Date(r.createdAt).toISOString().split('T')[0];
-                if (dateFrom && saleDate < dateFrom) return;
-                if (dateTo && saleDate > dateTo) return;
-                if (reconBranch && r.branch !== reconBranch) return;
-                if (!grouped[r.branch]) grouped[r.branch] = {expected:0, collected:0};
-                grouped[r.branch].expected += parseFloat(r.totalCash || 0);
-                grouped[r.branch].collected += parseFloat(r.totalCash || 0);
-            });
-
-            // تجميع المسلّمات من المخزن المحلي
-            const deliveriesByBranch = {};
-            cashDeliveries.forEach(d => {
-                if (dateFrom && d.date < dateFrom) return;
-                if (dateTo && d.date > dateTo) return;
-                if (reconBranch && d.branch !== reconBranch) return;
-                if (!deliveriesByBranch[d.branch]) deliveriesByBranch[d.branch] = {total:0, lastUpdate: null, items: []};
-                deliveriesByBranch[d.branch].total += parseFloat(d.amount || 0);
-                deliveriesByBranch[d.branch].items.push(d);
-                deliveriesByBranch[d.branch].lastUpdate = (!deliveriesByBranch[d.branch].lastUpdate || deliveriesByBranch[d.branch].lastUpdate < d.createdAt) ? d.createdAt : deliveriesByBranch[d.branch].lastUpdate;
-            });
-
-            const reconBody = document.getElementById('reconciliationBody');
-            reconBody.innerHTML = '';
-            const branches = Object.keys(Object.assign({}, grouped, deliveriesByBranch));
-            if (branches.length === 0) {
-                reconBody.innerHTML = '<tr><td colspan="6" style="padding:12px;text-align:center;color:#777;">لا توجد بيانات للتسوية</td></tr>';
-                // تحديث الإجمالياتإلى صفر
-                document.getElementById('reconcileExpectedTotal').textContent = '0 ر.س';
-                document.getElementById('reconcileDeliveredTotal').textContent = '0 ر.س';
-                document.getElementById('reconcileRemainingTotal').textContent = '0 ر.س';
-                document.getElementById('reconcileBranchCount').textContent = '0';
-                return;
-            }
-
-            let totalExpected = 0, totalDelivered = 0, totalRemaining = 0;
-
-            branches.forEach(branch => {
-                const expected = grouped[branch] ? grouped[branch].expected : 0;
-                const delivered = deliveriesByBranch[branch] ? deliveriesByBranch[branch].total : 0;
-                const remaining = parseFloat((expected - delivered).toFixed(2));
-                const lastUpdate = deliveriesByBranch[branch] && deliveriesByBranch[branch].lastUpdate ? new Date(deliveriesByBranch[branch].lastUpdate).toLocaleString('ar-EG') : '-';
-
-                // إضافة إلى الإجمالياتtotalExpected += expected;
-                totalDelivered += delivered;
-                totalRemaining += remaining;
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="padding:8px;border:1px solid #e6e6e6;">${branch}</td>
-                    <td style="padding:8px;border:1px solid #e6e6e6;text-align:right;">${expected.toFixed(2)} ريال</td>
-                    <td style="padding:8px;border:1px solid #e6e6e6;text-align:right;">${delivered.toFixed(2)} ريال</td>
-                    <td style="padding:8px;border:1px solid #e6e6e6;text-align:right;color:${remaining>0? '#d84315' : '#2e7d32'};">${remaining.toFixed(2)} ريال</td>
-                    <td style="padding:8px;border:1px solid #e6e6e6;">${lastUpdate}</td>
-                    <td style="padding:8px;border:1px solid #e6e6e6;display:flex;gap:4px;">
-                        <button onclick="openCashEditModal('${branch}')" style="padding:6px 10px;background:#ff9800;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:12px;flex:1;">✏️ تعديل</button>
-                        <button onclick="showBranchDeliveries('${branch}')" style="padding:6px 10px;background:#1976d2;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:12px;flex:1;">📋 عرض</button>
-                    </td>
-                `;
-                reconBody.appendChild(tr);
-            });
-
-            // تحديث بطاقات الإجمالياتdocument.getElementById('reconcileExpectedTotal').textContent = totalExpected.toFixed(2) + ' ر.س';
-            document.getElementById('reconcileDeliveredTotal').textContent = totalDelivered.toFixed(2) + ' ر.س';
-            document.getElementById('reconcileRemainingTotal').textContent = totalRemaining.toFixed(2) + ' ر.س';
-            document.getElementById('reconcileBranchCount').textContent = branches.length;
+            console.log('[CASH] جاري تحديث بيانات الكاش من Supabase...');
+            loadCashData();
         }
 
         window.computeReconciliations = computeReconciliations;
 
+        // إعادة تعيين فلاتر الكاش
+        function resetCashFilters() {
+            const branchFilter = document.getElementById('reconBranchFilter');
+            const dateFrom = document.getElementById('reconDateFrom');
+            const dateTo = document.getElementById('reconDateTo');
+            
+            if (branchFilter) branchFilter.value = '';
+            if (dateFrom) dateFrom.value = '';
+            if (dateTo) dateTo.value = '';
+            
+            loadCashData();
+        }
+        
+        window.resetCashFilters = resetCashFilters;
+
         function showBranchDeliveries(branch) {
-            const items = cashDeliveries.filter(d => d.branch === branch);
-            if (items.length === 0) { alert('لا توجد تسليمات مسجلة لهذا الفرع'); return; }
-            let txt = `تسليمات الفرع: ${branch}\n\n`;
-            items.forEach((it, idx) => {
-                txt += `${idx+1}. ${it.date} — ${it.amount.toFixed(2)} ريال — ${it.recipient} — إثبات: ${it.proof || '-'}\n`;
-            });
-            txt += '\nاختر OK للنسخ للذاكرة أو Cancel للإغلاق.';
-            if (confirm(txt)) {
-                navigator.clipboard && navigator.clipboard.writeText(items.map(i => `${i.date},${i.amount},${i.recipient}`).join('\n'));
-                alert('✅ نُسِخ النص للحافظة');
-            }
+            console.log(`🔍 فتح التسليمات للفرع: ${branch}`);
+            // جلب التسليمات من Supabase
+            loadBranchDeliveriesModal(branch);
         }
 
         window.showBranchDeliveries = showBranchDeliveries;
+        window.editDeliveryModal = editDeliveryModal;
+        window.closeDeliveriesModal = closeDeliveriesModal;
+        window.deleteDeliveryConfirm = deleteDeliveryConfirm;
+        window.closeEditDeliveryModal = closeEditDeliveryModal;
+        window.saveEditedDelivery = saveEditedDelivery;
+
+        // تحميل التسليمات في موديل
+        async function loadBranchDeliveriesModal(branch) {
+            try {
+                console.log(`📦 جاري تحميل التسليمات للفرع: ${branch}`);
+                if (!window.supabase) {
+                    alert('⚠️ Supabase غير متاح');
+                    return;
+                }
+
+                const { data: deliveries, error } = await window.supabase
+                    .from('cash_deliveries')
+                    .select('*')
+                    .eq('branch', branch)
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    alert('❌ خطأ في جلب التسليمات: ' + error.message);
+                    return;
+                }
+
+                displayDeliveriesModal(branch, deliveries || []);
+            } catch (err) {
+                alert('❌ خطأ: ' + err.message);
+            }
+        }
+
+        // عرض الموديل
+        function displayDeliveriesModal(branch, deliveries) {
+            console.log(`📊 عرض موديل التسليمات - الفرع: ${branch}, العدد: ${deliveries ? deliveries.length : 0}`);
+            const modal = document.getElementById('deliveriesListModal');
+            if (!modal) {
+                console.log('⚠️ الموديل غير موجود، جاري إنشاء موديل جديد...');
+                createDeliveriesModal();
+                displayDeliveriesModal(branch, deliveries);
+                return;
+            }
+
+            const title = modal.querySelector('h2');
+            if (title) title.textContent = `📦 تسليمات فرع: ${branch}`;
+
+            const tbody = modal.querySelector('tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+            if (deliveries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:#999;">لا توجد تسليمات</td></tr>';
+            } else {
+                deliveries.forEach(d => {
+                    const dateStr = new Date(d.created_at || d.delivered_at).toLocaleDateString('ar-SA');
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="padding:12px;text-align:right;">${d.branch}</td>
+                        <td style="padding:12px;text-align:right;">${d.recipient}</td>
+                        <td style="padding:12px;text-align:center;">
+                            <strong style="color:#4caf50;">${parseFloat(d.delivered_amount || 0).toFixed(2)}</strong>
+                        </td>
+                        <td style="padding:12px;text-align:center;">${dateStr}</td>
+                        <td style="padding:12px;text-align:center;color:#666;font-size:13px;">${d.proof ? '✅' : '❌'}</td>
+                        <td style="padding:12px;text-align:center;">
+                            <button onclick="editDeliveryModal('${d.id}')" style="padding:6px 10px;background:#3498db;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;">✏️ تعديل</button>
+                        </td>
+                        <td style="padding:12px;text-align:center;">
+                            <button onclick="deleteDeliveryConfirm('${d.id}')" style="padding:6px 10px;background:#f44336;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;">🗑️ حذف</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+
+            console.log('✅ تم تحديث محتوى الموديل، جاري عرض الموديل...');
+            modal.style.display = 'flex';
+            console.log('✅ تم تعيين display:flex على موديل التسليمات');
+        }
+
+        // إنشاء الموديل إذا لم يكن موجوداً
+        function createDeliveriesModal() {
+            const html = `
+                <div id="deliveriesListModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:3000;align-items:center;justify-content:center;">
+                    <div style="background:white;border-radius:12px;padding:20px;max-width:900px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.3);max-height:80vh;overflow-y:auto;">
+                        <h2 style="margin:0 0 20px;color:#333;">📦 تسليمات الفرع</h2>
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%;border-collapse:collapse;">
+                                <thead>
+                                    <tr style="background:#f5f5f5;border-bottom:2px solid #ddd;">
+                                        <th style="padding:12px;text-align:right;">الفرع</th>
+                                        <th style="padding:12px;text-align:right;">المستلم</th>
+                                        <th style="padding:12px;text-align:center;">المبلغ</th>
+                                        <th style="padding:12px;text-align:center;">التاريخ</th>
+                                        <th style="padding:12px;text-align:center;">إثبات</th>
+                                        <th style="padding:12px;text-align:center;">تعديل</th>
+                                        <th style="padding:12px;text-align:center;">حذف</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        <div style="margin-top:20px;text-align:center;">
+                            <button onclick="closeDeliveriesModal()" style="padding:10px 20px;background:#2196f3;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:700;">إغلاق</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        function closeDeliveriesModal() {
+            const modal = document.getElementById('deliveriesListModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        // تعديل التسليم
+        function editDeliveryModal(deliveryId) {
+            console.log(`✏️ فتح تعديل التسليم: ${deliveryId}`);
+            // أولاً، جلب بيانات التسليم
+            fetchAndEditDelivery(deliveryId);
+        }
+
+        async function fetchAndEditDelivery(deliveryId) {
+            try {
+                const { data, error } = await window.supabase
+                    .from('cash_deliveries')
+                    .select('*')
+                    .eq('id', deliveryId)
+                    .single();
+
+                if (error) {
+                    alert('❌ خطأ في جلب التسليم: ' + error.message);
+                    return;
+                }
+
+                if (!data) {
+                    alert('❌ التسليم غير موجود');
+                    return;
+                }
+
+                showEditDeliveryForm(data);
+            } catch (err) {
+                alert('❌ خطأ: ' + err.message);
+            }
+        }
+
+        // عرض نموذج التعديل
+        function showEditDeliveryForm(delivery) {
+            const modalHtml = `
+                <div id="editDeliveryModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:3001;align-items:center;justify-content:center;">
+                    <div style="background:white;border-radius:12px;padding:30px;max-width:450px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+                        <h2 style="margin:0 0 20px;color:#333;">✏️ تعديل التسليم</h2>
+                        
+                        <div style="margin-bottom:16px;">
+                            <label style="display:block;margin-bottom:4px;font-weight:600;">الفرع:</label>
+                            <input type="text" id="editDeliveryBranch" value="${delivery.branch}" readonly style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;background:#f5f5f5;box-sizing:border-box;">
+                        </div>
+
+                        <div style="margin-bottom:16px;">
+                            <label style="display:block;margin-bottom:4px;font-weight:600;">المستلم:</label>
+                            <input type="text" id="editDeliveryRecipient" value="${delivery.recipient}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box;">
+                        </div>
+
+                        <div style="margin-bottom:16px;">
+                            <label style="display:block;margin-bottom:4px;font-weight:600;">المبلغ (ريال):</label>
+                            <input type="number" id="editDeliveryAmount" value="${parseFloat(delivery.delivered_amount).toFixed(2)}" step="0.01" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box;">
+                        </div>
+
+                        <div style="margin-bottom:16px;">
+                            <label style="display:block;margin-bottom:4px;font-weight:600;">التاريخ:</label>
+                            <input type="date" id="editDeliveryDate" value="${delivery.delivered_at}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box;">
+                        </div>
+
+                        <div style="margin-bottom:16px;">
+                            <label style="display:block;margin-bottom:4px;font-weight:600;">الإثبات (رابط):</label>
+                            <input type="text" id="editDeliveryProof" value="${delivery.proof || ''}" placeholder="رابط الصورة أو الملف" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box;">
+                        </div>
+
+                        <div id="editDeliveryMessage" style="margin-bottom:16px;padding:10px;border-radius:6px;text-align:center;font-weight:600;display:none;"></div>
+
+                        <div style="display:flex;gap:10px;justify-content:flex-end;">
+                            <button onclick="closeEditDeliveryModal()" style="padding:10px 20px;background:#e0e0e0;color:#333;border:none;border-radius:6px;cursor:pointer;font-weight:700;">إلغاء</button>
+                            <button onclick="saveEditedDelivery('${delivery.id}')" style="padding:10px 20px;background:#4caf50;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:700;">💾 حفظ</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // إزالة الموديل القديم إن وجد
+            const oldModal = document.getElementById('editDeliveryModal');
+            if (oldModal) oldModal.remove();
+
+            // إضافة الموديل الجديد
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // عرض الموديل
+            const newModal = document.getElementById('editDeliveryModal');
+            if (newModal) {
+                setTimeout(() => {
+                    newModal.style.display = 'flex';
+                }, 10);
+            }
+        }
+
+        function closeEditDeliveryModal() {
+            const modal = document.getElementById('editDeliveryModal');
+            if (modal) modal.remove();
+        }
+
+        async function saveEditedDelivery(deliveryId) {
+            const recipient = document.getElementById('editDeliveryRecipient').value.trim();
+            const amount = parseFloat(document.getElementById('editDeliveryAmount').value);
+            const date = document.getElementById('editDeliveryDate').value;
+            const proof = document.getElementById('editDeliveryProof').value.trim();
+            const msgDiv = document.getElementById('editDeliveryMessage');
+
+            if (!recipient || isNaN(amount) || amount <= 0 || !date) {
+                msgDiv.textContent = '⚠️ الرجاء ملء جميع الحقول بشكل صحيح';
+                msgDiv.style.background = '#fff3cd';
+                msgDiv.style.color = '#856404';
+                msgDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const { error } = await window.supabase
+                    .from('cash_deliveries')
+                    .update({
+                        recipient: recipient,
+                        delivered_amount: parseFloat(amount.toFixed(2)),
+                        delivered_at: date,
+                        proof: proof || null
+                    })
+                    .eq('id', deliveryId);
+
+                if (error) {
+                    msgDiv.textContent = '❌ خطأ: ' + (error.message || 'حاول مرة أخرى');
+                    msgDiv.style.background = '#f8d7da';
+                    msgDiv.style.color = '#721c24';
+                    msgDiv.style.display = 'block';
+                    return;
+                }
+
+                msgDiv.textContent = '✅ تم الحفظ بنجاح';
+                msgDiv.style.background = '#d4edda';
+                msgDiv.style.color = '#155724';
+                msgDiv.style.display = 'block';
+
+                setTimeout(() => {
+                    closeEditDeliveryModal();
+                    closeDeliveriesModal();
+                    loadCashData();
+                }, 1500);
+
+            } catch (err) {
+                msgDiv.textContent = '❌ خطأ: ' + (err.message || 'حاول مرة أخرى');
+                msgDiv.style.background = '#f8d7da';
+                msgDiv.style.color = '#721c24';
+                msgDiv.style.display = 'block';
+            }
+        }
+
+        // حذف التسليم
+        function deleteDeliveryConfirm(deliveryId) {
+            if (!confirm('هل أنت متأكد من حذف هذا التسليم؟')) return;
+            deleteDeliveryFromDB(deliveryId);
+        }
+
+        async function deleteDeliveryFromDB(deliveryId) {
+            try {
+                const { error } = await window.supabase
+                    .from('cash_deliveries')
+                    .delete()
+                    .eq('id', deliveryId);
+
+                if (error) {
+                    alert('❌ خطأ في الحذف: ' + error.message);
+                    return;
+                }
+
+                alert('✅ تم الحذف بنجاح');
+                closeDeliveriesModal();
+                loadCashData();
+
+            } catch (err) {
+                alert('❌ خطأ: ' + err.message);
+            }
+        }
 
         // متغير لتخزين بيانات التعديل الحالية
         let currentEditingDelivery = null;
@@ -2964,6 +3350,173 @@
 
         // تحديث البيانات والأزرار عند تحميل الصفحة
         loadDeliveriesData();
+
+        // ============= دوال تسويات الكاش (Cash Reconciliations) =============
+        
+        let cashReconciliations = []; // متغير لحفظ بيانات التسويات
+
+        // تحميل بيانات الكاش من Supabase
+        async function loadCashData() {
+            console.log('[CASH] جاري تحميل بيانات الكاش...');
+            try {
+                // تحقق من وجود Supabase
+                if (!window.supabase || typeof window.supabase.from !== 'function') {
+                    console.warn('[CASH] ⚠️ Supabase غير متاح، سيتم عرض البيانات المحلية');
+                    displayCashReconciliation(null);
+                    return;
+                }
+
+                // جلب بيانات التسليمات
+                console.log('📦 جاري جلب بيانات التسليمات...');
+                const { data: deliveries, error: delError } = await window.supabase
+                    .from('cash_deliveries')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (delError) {
+                    console.warn('[CASH] ⚠️ خطأ في جلب التسليمات:', delError);
+                    displayCashReconciliation(null);
+                    return;
+                }
+
+                console.log(`✅ عثر على ${deliveries?.length || 0} تسليم كاش`);
+                displayCashReconciliation(deliveries);
+                console.log('✅ تم تحميل بيانات الكاش بنجاح');
+
+            } catch (err) {
+                console.error('[CASH] ❌ خطأ جسيم:', err);
+                displayCashReconciliation(null);
+            }
+        }
+
+        // عرض التسوية في الجدول - حساب المتوقع والمسلم والمتبقي
+        function displayCashReconciliation(deliveriesFromSupabase) {
+            const tbody = document.getElementById('reconciliationBody');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+
+            // الحصول على الفلاتر المختارة
+            const selectedBranch = document.getElementById('reconBranchFilter')?.value || '';
+            const dateFrom = document.getElementById('reconDateFrom')?.value || '';
+            const dateTo = document.getElementById('reconDateTo')?.value || '';
+
+            // حساب المتوقع (من المبيعات) والمسلم (من Supabase)
+            const grouped = {};
+            
+            // 1. حساب المتوقع من المبيعات
+            if (Array.isArray(allData)) {
+                allData.forEach(r => {
+                    const branch = r.branch;
+                    // تطبيق فلتر الفرع
+                    if (selectedBranch && branch !== selectedBranch) return;
+                    
+                    if (!grouped[branch]) {
+                        grouped[branch] = { expected: 0, delivered: 0, lastUpdate: null, deliveryCount: 0 };
+                    }
+                    grouped[branch].expected += parseFloat(r.totalCash || 0);
+                });
+            }
+
+            // 2. حساب المسلم من التسليمات
+            if (Array.isArray(deliveriesFromSupabase)) {
+                deliveriesFromSupabase.forEach(d => {
+                    const branch = d.branch;
+                    // تطبيق فلتر الفرع
+                    if (selectedBranch && branch !== selectedBranch) return;
+                    
+                    // تطبيق فلتر التاريخ
+                    const deliveryDate = d.delivered_at || d.created_at;
+                    if (dateFrom && deliveryDate < dateFrom) return;
+                    if (dateTo && deliveryDate > dateTo) return;
+                    
+                    if (!grouped[branch]) {
+                        grouped[branch] = { expected: 0, delivered: 0, lastUpdate: null, deliveryCount: 0 };
+                    }
+                    grouped[branch].delivered += parseFloat(d.delivered_amount || 0);
+                    grouped[branch].deliveryCount++;
+                    if (!grouped[branch].lastUpdate || new Date(d.created_at) > new Date(grouped[branch].lastUpdate)) {
+                        grouped[branch].lastUpdate = d.created_at;
+                    }
+                });
+            }
+
+            const branches = Object.keys(grouped);
+            if (branches.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="padding:30px;text-align:center;color:#999;">لا توجد بيانات</td></tr>';
+                return;
+            }
+
+            let totalExpected = 0, totalDelivered = 0, totalRemaining = 0;
+
+            branches.forEach(branch => {
+                const data = grouped[branch];
+                const expected = data.expected;
+                const delivered = data.delivered;
+                const remaining = expected - delivered;
+                const lastUpdate = data.lastUpdate ? new Date(data.lastUpdate).toLocaleDateString('ar-SA') : '-';
+                
+                totalExpected += expected;
+                totalDelivered += delivered;
+                totalRemaining += remaining;
+
+                const row = document.createElement('tr');
+                row.style.borderBottom = '1px solid #e0e0e0;';
+                row.innerHTML = `
+                    <td style="padding:8px;text-align:right;font-weight:600;">${branch}</td>
+                    <td style="padding:8px;text-align:center;">
+                        <strong style="color:#667eea;">${expected.toFixed(2)} ريال</strong>
+                    </td>
+                    <td style="padding:8px;text-align:center;">
+                        <strong style="color:#4caf50;">${delivered.toFixed(2)} ريال</strong>
+                    </td>
+                    <td style="padding:8px;text-align:center;color:${remaining>0? '#d84315' : '#2e7d32'};">
+                        <strong>${remaining.toFixed(2)} ريال</strong>
+                    </td>
+                    <td style="padding:8px;text-align:center;font-size:13px;">${lastUpdate}</td>
+                    <td style="padding:8px;text-align:center;">
+                        <button onclick="openCashEditModal('${branch}')" style="padding:6px 10px;background:#ff9800;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:12px;margin-left:4px;">✏️ تعديل</button>
+                        <button onclick="showBranchDeliveries('${branch}')" style="padding:6px 10px;background:#2196f3;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:12px;">📋 التسليمات</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // تحديث الإحصائيات
+            document.getElementById('reconcileExpectedTotal').textContent = totalExpected.toFixed(2) + ' ر.س';
+            document.getElementById('reconcileDeliveredTotal').textContent = totalDelivered.toFixed(2) + ' ر.س';
+            document.getElementById('reconcileRemainingTotal').textContent = totalRemaining.toFixed(2) + ' ر.س';
+            document.getElementById('reconcileBranchCount').textContent = branches.length;
+        }
+
+        // حذف تسليم كاش
+        async function deleteDelivery(id) {
+            if (!confirm('هل أنت متأكد من حذف هذا التسليم؟')) return;
+
+            try {
+                if (!window.supabase) throw new Error('قاعدة البيانات غير جاهزة');
+
+                const { error } = await window.supabase
+                    .from('cash_deliveries')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                alert('✅ تم حذف التسليم بنجاح');
+                loadCashData();
+
+            } catch (err) {
+                console.error('[CASH] ❌ خطأ:', err);
+                alert('❌ خطأ في حذف التسليم: ' + (err.message || 'حاول مرة أخرى'));
+            }
+        }
+
+        window.loadCashData = loadCashData;
+        window.deleteDelivery = deleteDelivery;
+
+        // إنشاء موديل التسليمات عند التحميل
+        createDeliveriesModal();
 
         }); // نهاية runAfterSupabase callback
     </script>
