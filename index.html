@@ -25,6 +25,9 @@
             box-shadow: 0 4px 12px rgba(107, 45, 135, 0.2);
         }
     </style>
+    <!-- Custom Alerts System / نظام التنبيهات المخصصة -->
+    <script src="custom-alerts.js"></script>
+    <script src="override-alerts.js"></script>
 </head>
 <body>
         <div class="container">
@@ -252,25 +255,39 @@
     <script src="https://apis.google.com/js/platform.js" async defer></script>
     <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Initialize Supabase - دالة تنتظر حتى يتم تحميل المكتبة
+        // تأخير صغير للتأكد من تحميل Supabase بنجاح
+        let supabaseAttempts = 0;
+        const maxAttempts = 50; // 5 ثواني كحد أقصى
+        
         function initializeSupabase() {
-            if (!window.supabase || !window.supabase.createClient) {
-                console.log('⏳ جاري تحميل Supabase...');
-                setTimeout(initializeSupabase, 100);
+            supabaseAttempts++;
+            
+            // تحقق من وجود المكتبة
+            if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
+                if (supabaseAttempts < maxAttempts) {
+                    console.log(`⏳ انتظار تحميل Supabase... (محاولة ${supabaseAttempts}/${maxAttempts})`);
+                    setTimeout(initializeSupabase, 100);
+                } else {
+                    console.error('❌ فشل تحميل مكتبة Supabase من CDN');
+                    alert('❌ خطأ في الاتصال: تعذر تحميل مكتبة قاعدة البيانات. يرجى إعادة تحميل الصفحة.');
+                }
                 return;
             }
             
+            // إذا وصلنا هنا، المكتبة تم تحميلها بنجاح
             const supabaseUrl = 'https://rgblfimktfasocahzqtg.supabase.co';
             const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnYmxmaW1rdGZhc29jYWh6cXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NDg5NTQsImV4cCI6MjA4NTUyNDk1NH0.BMKXS1hTX5ntacnOQH5c2I5KDp5jpSWwJeHIDkz2els';
             
-            // حفظ المكتبة باسم جديد
-            window.supabaseLib = window.supabase;
-            // استبدال window.supabase بعميل Supabase المهيأ
-            window.supabase = window.supabaseLib.createClient(supabaseUrl, supabaseAnonKey);
-            console.log('✅ Supabase تم تحميله بنجاح');
+            try {
+                window.supabaseInstance = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+                console.log('✅ Supabase تم تحميله وتهيئته بنجاح');
+            } catch (err) {
+                console.error('❌ خطأ في تهيئة Supabase:', err);
+                alert('❌ خطأ في تهيئة قاعدة البيانات. يرجى إعادة تحميل الصفحة.');
+            }
         }
         
-        // بدء التحميل
+        // بدء التهيئة فور تحميل الصفحة
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initializeSupabase);
         } else {
@@ -278,18 +295,25 @@
         }
     </script>
     <script>
-        // انتظر حتى يكون window.supabase جاهزاً
-        function runAfterSupabase(callback) {
-            if (window.supabase && typeof window.supabase.from === 'function') {
-                callback();
-            } else {
-                setTimeout(() => runAfterSupabase(callback), 100);
+        // انتظر حتى يكون supabase جاهز ثم ابدأ الكود الرئيسي
+        let mainScriptAttempts = 0;
+        const mainMaxAttempts = 100; // 10 ثواني كحد أقصى
+        
+        function startMainScript() {
+            mainScriptAttempts++;
+            
+            if (!window.supabaseInstance) {
+                if (mainScriptAttempts < mainMaxAttempts) {
+                    setTimeout(startMainScript, 100);
+                    return;
+                } else {
+                    console.error('❌ انتهاء المحاولات: Supabase لم يحمل');
+                    return;
+                }
             }
-        }
-
-        runAfterSupabase(() => {
-            // الآن window.supabase متاح وجاهز
-            const supabase = window.supabase;
+            
+            // الآن يمكننا استخدام supabase بأمان
+            const supabase = window.supabaseInstance;
 
             const form = document.getElementById('salesForm');
             const result = document.getElementById('result');
@@ -477,7 +501,7 @@
             }
 
             if (withdrawalValue > 0 && !withdrawalAlertShown) {
-                alert('⚠️ تأكد من تبليغ مديرك بالمبلغ');
+                showCustomWarning('تأكد من تبليغ مديرك بالمبلغ', 'تحذير مهم');
                 withdrawalAlertShown = true;
             }
         });
@@ -560,7 +584,7 @@
             e.preventDefault();
 
             if (!currentEmployee) {
-                alert('الرجاء تسجيل الدخول قبل الحفظ');
+                showCustomError('الرجاء تسجيل الدخول قبل الحفظ');
                 return;
             }
 
@@ -570,9 +594,10 @@
             
             // التحقق من البيانات المطلوبة
             if (!employeeId || !branch || !saleDate) {
-                alert('❌ البيانات الأساسية ناقصة:\n- رقم الموظف: ' + (employeeId ? '✅' : '❌') + 
-                      '\n- الفرع: ' + (branch ? '✅' : '❌') + 
-                      '\n- التاريخ: ' + (saleDate ? '✅' : '❌'));
+                showCustomError('البيانات الأساسية ناقصة: ' + 
+                      (!employeeId ? 'رقم الموظف' : '') +
+                      (!branch ? ' الفرع' : '') + 
+                      (!saleDate ? ' التاريخ' : ''), 'بيانات ناقصة');
                 return;
             }
             
@@ -585,7 +610,7 @@
             const expenses = parseFloat(document.getElementById('expenses').value) || 0;
             
             if ((tamara > 0 || tabby > 0) && !document.getElementById('financingNotes').value.trim()) {
-                alert('يرجى إدخال ملاحظة توضح سبب التمويل (تمارا/تابي)');
+                showCustomError('يرجى إدخال ملاحظة توضح سبب التمويل (تمارا/تابي)', 'ملاحظة مطلوبة');
                 document.getElementById('financingNotes').focus();
                 return;
             }
@@ -597,19 +622,19 @@
             const withdrawalNotes = withdrawalNotesInput.value.trim();
 
             if (expenses > 0 && !expenseNotes) {
-                alert('يرجى إدخال ملاحظة توضح سبب المصروفات');
+                showCustomError('يرجى إدخال ملاحظة توضح سبب المصروفات', 'ملاحظة مطلوبة');
                 expenseNotesInput.focus();
                 return;
             }
 
             if (returns > 0 && !returnsNotes) {
-                alert('يرجى إدخال ملاحظة توضح سبب المردود');
+                showCustomError('يرجى إدخال ملاحظة توضح سبب المردود', 'ملاحظة مطلوبة');
                 returnsNotesInput.focus();
                 return;
             }
 
             if (withdrawal > 0 && !withdrawalNotes) {
-                alert('يرجى إدخال ملاحظة توضح سبب السحب/العجز');
+                showCustomError('يرجى إدخال ملاحظة توضح سبب السحب/العجز', 'ملاحظة مطلوبة');
                 withdrawalNotesInput.focus();
                 return;
             }
@@ -622,26 +647,44 @@
 
             const total = totalCash + totalCard;
 
-            // إظهار رسالة تأكيد مع ملخص المدخلات
-            let confirmMessage = '===== ملخص المدخلات =====\n\n';
-            confirmMessage += 'الفرع: ' + branch + '\n';
-            confirmMessage += 'التاريخ: ' + saleDate + '\n';
-            confirmMessage += 'الموظف: ' + employeeId + '\n';
-            confirmMessage += '----------------------------\n';
-            confirmMessage += 'إجمالي المبيعات: ' + totalSales.toFixed(2) + ' ريال\n';
-            confirmMessage += 'الكاش: ' + totalCash.toFixed(2) + ' ريال **\n';
-            confirmMessage += 'مدي: ' + totalCard.toFixed(2) + ' ريال\n';
-            if (tamara > 0) confirmMessage += 'تمارا: ' + tamara.toFixed(2) + ' ريال\n';
-            if (tabby > 0) confirmMessage += 'تابي: ' + tabby.toFixed(2) + ' ريال\n';
-            if (extraCash > 0) confirmMessage += 'كاش زائد: ' + extraCash.toFixed(2) + ' ريال\n';
-            if (expenses > 0) confirmMessage += 'المصروفات: ' + expenses.toFixed(2) + ' ريال\n';
-            if (returns > 0) confirmMessage += 'المردود: ' + returns.toFixed(2) + ' ريال\n';
-            if (withdrawal > 0) confirmMessage += 'السحب: ' + withdrawal.toFixed(2) + ' ريال\n';
-            confirmMessage += '----------------------------\n';
-            confirmMessage += 'هل تؤكد حفظ هذه البيانات؟';
+            // إعداد ملخص المدخلات المرتب
+            const summaryItems = [
+                // بيانات عامة
+                { category: 'بيانات عامة', label: '📍 الفرع', value: branch },
+                { category: 'بيانات عامة', label: '📅 التاريخ', value: saleDate },
+                { category: 'بيانات عامة', label: '👤 الموظف', value: employeeId },
+                
+                // المبيعات
+                { category: 'المبيعات', label: '🛍️ إجمالي المبيعات', value: totalSales.toFixed(2) + ' ريال', highlight: true },
+                { category: 'المبيعات', label: '💵 الكاش', value: totalCash.toFixed(2) + ' ريال' },
+                { category: 'المبيعات', label: '💳 مدي', value: totalCard.toFixed(2) + ' ريال' },
+            ];
+
+            // إضافة بيانات التمويل إن وجدت
+            if (tamara > 0 || tabby > 0) {
+                const financingItems = [];
+                if (tamara > 0) financingItems.push({ category: 'التمويل', label: '🏦 تمارا', value: tamara.toFixed(2) + ' ريال' });
+                if (tabby > 0) financingItems.push({ category: 'التمويل', label: '🏦 تابي', value: tabby.toFixed(2) + ' ريال' });
+                summaryItems.push(...financingItems);
+            }
+
+            // إضافة العمليات الإضافية إن وجدت
+            if (extraCash > 0 || expenses > 0 || returns > 0 || withdrawal > 0) {
+                const additionalItems = [];
+                if (extraCash > 0) additionalItems.push({ category: 'العمليات الإضافية', label: '💰 كاش زائد', value: extraCash.toFixed(2) + ' ريال' });
+                if (expenses > 0) additionalItems.push({ category: 'العمليات الإضافية', label: '📤 المصروفات', value: expenses.toFixed(2) + ' ريال' });
+                if (returns > 0) additionalItems.push({ category: 'العمليات الإضافية', label: '↩️ المردود', value: returns.toFixed(2) + ' ريال' });
+                if (withdrawal > 0) additionalItems.push({ category: 'العمليات الإضافية', label: '📉 السحب/العجز', value: withdrawal.toFixed(2) + ' ريال' });
+                summaryItems.push(...additionalItems);
+            }
 
             console.log('Showing confirmation dialog...');
-            const userConfirmed = confirm(confirmMessage);
+            const userConfirmed = await showSummaryConfirm(
+                '✅ تأكيد حفظ البيانات',
+                summaryItems,
+                'نعم، احفظ البيانات',
+                'إلغاء'
+            );
             console.log('User confirmation:', userConfirmed);
             
             if (!userConfirmed) {
@@ -764,7 +807,7 @@
                 } else {
                     errorMessage += `❌ ${err.message || 'خطأ غير معروف'}`;
                 }
-                alert(errorMessage);
+                showCustomError(errorMessage, 'بيانات ناقصة');
             }
         });
 
@@ -772,7 +815,7 @@
             const id = loginEmployeeId.value.trim();
             const pass = loginPassword.value.trim();
             if (!id || !pass) {
-                alert('أدخل الرقم الوظيفي وكلمة المرور');
+                showCustomError('أدخل الرقم الوظيفي وكلمة المرور');
                 return;
             }
             try {
@@ -784,7 +827,7 @@
                     .single();
                 
                 if (error || !empData) {
-                    alert('بيانات الدخول غير صحيحة');
+                    showCustomError('بيانات الدخول غير صحيحة');
                     return;
                 }
                 const data = empData;
@@ -814,7 +857,7 @@
                 loginCard.style.display = 'none';
             } catch (err) {
                 console.error(err);
-                alert('تعذر تسجيل الدخول. تحقق من الاتصال.');
+                showCustomError('تعذر تسجيل الدخول. تحقق من الاتصال.', 'خطأ الاتصال');
             }
         }
 
@@ -892,7 +935,7 @@
 
             // التحقق من حجم الملف (5MB)
             if (file.size > 5 * 1024 * 1024) {
-                alert('❌ حجم الصورة كبير جداً. الحد الأقصى 5MB');
+                showCustomError('❌ حجم الصورة كبير جداً. الحد الأقصى 5MB', 'حجم كبير');
                 imageUploadInput.value = '';
                 return;
             }
@@ -900,7 +943,7 @@
             // التحقق من نوع الملف
             const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
             if (!allowedTypes.includes(file.type)) {
-                alert('❌ نوع الملف غير مدعوم. استخدم: JPG, PNG, GIF, WEBP');
+                showCustomError('❌ نوع الملف غير مدعوم. استخدم: JPG, PNG, GIF, WEBP', 'نوع ملف غير دعم');
                 imageUploadInput.value = '';
                 return;
             }
@@ -982,7 +1025,7 @@
         function checkGoogleDriveSetup() {
             if (GOOGLE_CLIENT_ID.includes('YOUR_') || GOOGLE_API_KEY.includes('YOUR_')) {
                 console.warn('⚠️ تنبيه: لم يتم تحديث بيانات Google Drive!');
-                alert('⚠️ تحذير: بيانات Google Drive لم تُحدّث بعد!\n\nاقرأ ملف: FIX_AUTHORIZATION_ERROR.md');
+                showCustomWarning('تحذير: بيانات Google Drive لم تُحدّث بعد!\n\nاقرأ ملف: FIX_AUTHORIZATION_ERROR.md', 'تحذير');
             } else {
                 console.log('✅ بيانات Google Drive محدثة بنجاح');
             }
@@ -992,7 +1035,10 @@
     
         secureArea.style.display = 'none';
         bootstrapAccessIfEmpty();
-        }); // نهاية runAfterSupabase callback
+        } // نهاية دالة startMainScript
+        
+        // استدعاء الدالة الرئيسية بعد تحضير البيانات
+        startMainScript();
     </script>
 
     <footer style="position:fixed;bottom:0;left:0;right:0;text-align:center;padding:15px;background:#f8f9fa;border-top:2px solid #e0e0e0;color:#666;font-size:14px;">

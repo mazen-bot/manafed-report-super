@@ -26,6 +26,9 @@
             }
         }
     </style>
+    <!-- Custom Alerts System / نظام التنبيهات المخصصة -->
+    <script src="custom-alerts.js"></script>
+    <script src="override-alerts.js"></script>
 </head>
 <body>
     <div class="reports-container">
@@ -48,9 +51,12 @@
                 </div>
                 <!-- معلومات المستخدم والقائمة في الهيدر -->
                 <div class="dashboard-user-menu">
-                    <div class="user-info-compact">
-                        <span id="compactUserName" class="user-name-text"></span>
-                        <span id="compactUserBranch" class="user-branch-text"></span>
+                    <div class="user-info-compact" id="userInfoDisplay" style="display: none;">
+                        <span class="user-info-icon">👤</span>
+                        <div class="user-info-text">
+                            <span id="compactUserName" class="user-name-text">-</span>
+                            <span id="compactUserBranch" class="user-branch-text">-</span>
+                        </div>
                     </div>
                     <button type="button" id="dropdownToggleBtnInHeader" class="menu-icon-btn" title="القائمة">☰</button>
                 </div>
@@ -131,6 +137,9 @@
 
                 <button class="btn-reset-filter" onclick="resetFilters()">🔄 إعادة تعيين</button>
                 <button class="btn-export" onclick="exportToExcel()" id="btnExport">📥 تصدير Excel</button>
+                <button class="btn-backup" onclick="downloadBackup()" id="btnDownloadBackup" style="display:none;background:linear-gradient(135deg,#27ae60,#229954);color:white;padding:10px 16px;border:none;border-radius:8px;font-weight:600;cursor:pointer;">💾 تحميل نسخة احتياطية</button>
+                <button class="btn-restore" onclick="document.getElementById('backupFileInput').click()" id="btnRestoreBackup" style="display:none;background:linear-gradient(135deg,#2980b9,#1f618d);color:white;padding:10px 16px;border:none;border-radius:8px;font-weight:600;cursor:pointer;">📤 رفع نسخة احتياطية</button>
+                <input type="file" id="backupFileInput" accept=".json" style="display:none;">
                 <button class="btn-clear-all" onclick="clearAllData()" id="btnClearAll" style="display:none;">🗑️ مسح جميع البيانات</button>
             </div>
             
@@ -423,9 +432,9 @@
                     <input type="date" id="reconDateTo" onchange="loadCashData()" style="padding:8px;border:1px solid #ccc;border-radius:6px;">
                     
                     <button onclick="resetCashFilters()" style="padding:8px 14px;background:#9e9e9e;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">🔄 إعادة تعيين</button>
-                    <button onclick="computeReconciliations()" style="padding:8px 14px;background:#4caf50;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">🔄 تحديث البيانات</button>
-                    <button onclick="toggleAddDeliveryForm()" style="padding:8px 14px;background:#1976d2;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">➕ إضافة تسليم</button>
-                    <button onclick="exportReconciliationsCSV()" style="padding:8px 14px;background:#f39c12;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">📥 تصدير CSV</button>
+                    <button id="btnReconRefresh" onclick="computeReconciliations()" style="padding:8px 14px;background:#4caf50;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">🔄 تحديث البيانات</button>
+                    <button id="btnReconAddDelivery" onclick="toggleAddDeliveryForm()" style="padding:8px 14px;background:#1976d2;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">➕ إضافة تسليم</button>
+                    <button id="btnReconExport" onclick="exportReconciliationsCSV()" style="padding:8px 14px;background:#f39c12;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">📥 تصدير CSV</button>
                 </div>
 
                 <div id="addDeliveryForm" style="display:none;margin-top:12px;border-top:1px dashed #ddd;padding-top:12px;">
@@ -472,7 +481,7 @@
                                 <th style="padding:8px;border:1px solid #e6e6e6;">المسلّم</th>
                                 <th style="padding:8px;border:1px solid #e6e6e6;">المتبقّي</th>
                                 <th style="padding:8px;border:1px solid #e6e6e6;">آخر تحديث</th>
-                                <th style="padding:8px;border:1px solid #e6e6e6;">إجراء</th>
+                                <th id="reconActionHeader" style="padding:8px;border:1px solid #e6e6e6;">إجراء</th>
                             </tr>
                         </thead>
                         <tbody id="reconciliationBody">
@@ -483,8 +492,66 @@
             </div>
         </section>
 
+        <!-- موديل تعديل بيانات التقرير -->
+        <div id="editReportModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:2000;align-items:center;justify-content:center;flex-direction:column;">
+            <div style="background:white;border-radius:16px;padding:24px;max-width:500px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                <div style="background:linear-gradient(135deg,#6b2d87,#8b3dab);color:white;padding:16px;margin:-24px -24px 20px -24px;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center;">
+                    <h3 style="margin:0;font-size:18px;">✏️ تعديل السجل</h3>
+                    <button onclick="closeEditReportModal()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;">✕</button>
+                </div>
+                
+                <div style="display:grid;gap:12px;">
+                    <div>
+                        <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px;">التاريخ</label>
+                        <input type="date" id="editReportDate" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;">
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px;">إجمالي المبيعات</label>
+                        <input type="number" id="editReportTotalSales" step="0.01" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;">
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px;">الكاش (يُحسب تلقائياً)</label>
+                        <input type="number" id="editReportCash" step="0.01" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;background:#f5f5f5;font-weight:600;" readonly>
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px;">مدي</label>
+                        <input type="number" id="editReportCard" step="0.01" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;">
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px;">المصروفات</label>
+                        <input type="number" id="editReportExpenses" step="0.01" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;">
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px;">المردود</label>
+                        <input type="number" id="editReportReturns" step="0.01" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;">
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px;">السحب/العجز</label>
+                        <input type="number" id="editReportWithdrawal" step="0.01" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;">
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px;">🏦 تمارا</label>
+                        <input type="number" id="editReportTamara" step="0.01" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;">
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px;">🏦 تابي</label>
+                        <input type="number" id="editReportTabby" step="0.01" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;">
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px;">الملاحظات</label>
+                        <textarea id="editReportNotes" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;min-height:60px;resize:vertical;"></textarea>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap;">
+                    <button onclick="closeEditReportModal()" style="padding:10px 16px;background:#e0e0e0;color:#333;border:none;border-radius:8px;cursor:pointer;font-weight:600;">إلغاء</button>
+                    <button onclick="saveEditedReport()" style="padding:10px 16px;background:#4caf50;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;">💾 حفظ التعديلات</button>
+                </div>
+            </div>
+        </div>
+
         <!-- موديل تعديل الكاش المسلم -->
-        <div id="editCashModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:2000;align-items:center;justify-content:center;">
+        <div id="editCashModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:2000;align-items:center;justify-content:center;flex-direction:column;">
             <div style="background:white;border-radius:12px;padding:30px;max-width:450px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto;">
                 <h2 style="margin:0 0 20px;color:#333;font-size:22px;">✏️ تعديل الكاش المسلّم</h2>
                 <div style="margin-bottom:16px;">
@@ -543,7 +610,7 @@
                     <button type="button" class="sidebar-link" data-view="deliveries">تقرير تسليم العهدة</button>
                     <button type="button" class="sidebar-link" id="sidebarWithdrawalsLink" data-view="withdrawals">تقرير السحوبات والعجز</button>
                     <button type="button" class="sidebar-link" id="sidebarCashLink" data-view="cash">تفاصيل الكاش</button>
-                    <button type="button" class="sidebar-link" id="sidebarMissingReportsLink" data-view="missingReports" style="display:none; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); color: white; position: relative;">
+                    <button type="button" class="sidebar-link" id="sidebarMissingReportsLink" data-view="missingReports" style="position: relative;">
                         <span>⚠️ فروع لم ترسل التقرير</span>
                         <span id="missingBranchesCount" style="position: absolute; top: 4px; left: 4px; background: rgba(255,255,255,0.9); color: #ff6b6b; padding: 2px 6px; border-radius: 10px; font-size: 11px; font-weight: 700;">0</span>
                     </button>
@@ -588,22 +655,39 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Initialize Supabase
+        // تأخير صغير للتأكد من تحميل Supabase بنجاح
+        let supabaseAttempts = 0;
+        const maxAttempts = 50; // 5 ثواني كحد أقصى
+        
         function initializeSupabase() {
-            if (!window.supabase || !window.supabase.createClient) {
-                console.log('⏳ جاري تحميل Supabase...');
-                setTimeout(initializeSupabase, 100);
+            supabaseAttempts++;
+            
+            // تحقق من وجود المكتبة
+            if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
+                if (supabaseAttempts < maxAttempts) {
+                    console.log(`⏳ انتظار تحميل Supabase... (محاولة ${supabaseAttempts}/${maxAttempts})`);
+                    setTimeout(initializeSupabase, 100);
+                } else {
+                    console.error('❌ فشل تحميل مكتبة Supabase من CDN');
+                    alert('❌ خطأ في الاتصال: تعذر تحميل مكتبة قاعدة البيانات. يرجى إعادة تحميل الصفحة.');
+                }
                 return;
             }
             
+            // إذا وصلنا هنا، المكتبة تم تحميلها بنجاح
             const supabaseUrl = 'https://rgblfimktfasocahzqtg.supabase.co';
             const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnYmxmaW1rdGZhc29jYWh6cXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NDg5NTQsImV4cCI6MjA4NTUyNDk1NH0.BMKXS1hTX5ntacnOQH5c2I5KDp5jpSWwJeHIDkz2els';
             
-            window.supabaseLib = window.supabase;
-            window.supabase = window.supabaseLib.createClient(supabaseUrl, supabaseAnonKey);
-            console.log('✅ Supabase تم تحميله بنجاح');
+            try {
+                window.supabaseInstance = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+                console.log('✅ Supabase تم تحميله وتهيئته بنجاح');
+            } catch (err) {
+                console.error('❌ خطأ في تهيئة Supabase:', err);
+                alert('❌ خطأ في تهيئة قاعدة البيانات. يرجى إعادة تحميل الصفحة.');
+            }
         }
         
+        // بدء التهيئة فور تحميل الصفحة
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initializeSupabase);
         } else {
@@ -611,19 +695,123 @@
         }
     </script>
     <script>
-        function runAfterSupabase(callback) {
-            if (window.supabase && typeof window.supabase.from === 'function') {
-                callback();
-            } else {
-                setTimeout(() => runAfterSupabase(callback), 100);
+        // انتظر حتى يكون supabase جاهز ثم ابدأ الكود الرئيسي
+        let mainScriptAttempts = 0;
+        const mainMaxAttempts = 100; // 10 ثواني كحد أقصى
+        
+        function startMainScript() {
+            mainScriptAttempts++;
+            
+            if (!window.supabaseInstance) {
+                if (mainScriptAttempts < mainMaxAttempts) {
+                    setTimeout(startMainScript, 100);
+                    return;
+                } else {
+                    console.error('❌ انتهاء المحاولات: Supabase لم يحمل');
+                    return;
+                }
             }
-        }
-
-        runAfterSupabase(() => {
-            const supabase = window.supabase;
+            
+            // الآن يمكننا استخدام supabase بأمان
+            const supabase = window.supabaseInstance;
 
         let allData = [];
         let currentUser = null;
+        
+        // ===== نظام التحقق من الصلاحيات =====
+        
+        // وصف الصلاحيات
+        const PERMISSIONS_DESCRIPTION = {
+            'viewReports': { label: '👁️ عرض التقارير', description: 'عرض قائمة التقارير والبيانات' },
+            'addSales': { label: '➕ إضافة مبيعات', description: 'إضافة عمليات بيع جديدة' },
+            'editSales': { label: '✏️ تعديل مبيعات', description: 'تعديل عمليات البيع الموجودة' },
+            'deleteSales': { label: '🗑️ حذف مبيعات', description: 'حذف عمليات بيع من النظام' },
+            'manageEmployees': { label: '👥 إدارة موظفين', description: 'إدارة بيانات الموظفين والصلاحيات' },
+            'manageBranches': { label: '🏢 إدارة فروع', description: 'إضافة وتعديل الفروع' },
+            'export': { label: '📤 تصدير بيانات', description: 'تصدير البيانات إلى Excel والملفات' },
+            'backup': { label: '💾 نسخ احتياطية', description: 'إنشاء واستعادة النسخ الاحتياطية' },
+            'viewAnalytics': { label: '📊 عرض تحليلات', description: 'عرض الإحصائيات والتحليلات المتقدمة' },
+            'manageCash': { label: '💰 إدارة كاش', description: 'إدارة تسليم الكاش والتسويات' },
+            'viewCash': { label: '👁️ عرض تسويات الكاش', description: 'عرض تسويات الكاش بدون تعديل أو تسليم' },
+            'viewAllBranches': { label: '🌐 عرض جميع الفروع', description: 'عرض بيانات جميع الفروع (وليس فقط الفرع الخاص)' },
+            'viewSensitiveData': { label: '🔒 بيانات حساسة', description: 'عرض المصاريف والسحوبات وبيانات حساسة' },
+            'manageSettings': { label: '⚙️ إعدادات النظام', description: 'تغيير إعدادات النظام العامة' }
+        };
+
+        // دالة للتحقق من وجود صلاحية
+        function hasPermission(permission) {
+            if (!currentUser) return false;
+            if (!Array.isArray(currentUser.permissions)) return false;
+            return currentUser.permissions.includes(permission);
+        }
+
+        // دالة التحقق من صلاحيات متعددة (AND)
+        function hasAllPermissions(...permissions) {
+            return permissions.every(p => hasPermission(p));
+        }
+
+        // دالة التحقق من أي صلاحية من مجموعة (OR)
+        function hasAnyPermission(...permissions) {
+            return permissions.some(p => hasPermission(p));
+        }
+
+        function canManageCash() {
+            return hasPermission('manageCash');
+        }
+
+        function canViewCash() {
+            return canManageCash() || hasPermission('viewCash');
+        }
+
+        function canEditRecords() {
+            return hasPermission('editSales');
+        }
+
+        function canDeleteRecords() {
+            return hasPermission('deleteSales');
+        }
+
+        function canViewSensitiveData() {
+            return hasPermission('viewSensitiveData');
+        }
+
+        // دالة لعرض رسالة عدم الصلاحية
+        function showNoPermissionMessage(action = 'هذا الإجراء') {
+            showCustomError(`ليس لديك صلاحية لـ ${action}. تواصل مع الإدارة لتفعيل هذه الميزة.`, '⛔ صلاحية غير كافية');
+        }
+
+        // دالة لإظهار/إخفاء العناصر حسب الصلاحيات
+        function updateUIByPermissions() {
+            if (!currentUser) return;
+
+            // إظهار/إخفاء أزرار حسب الصلاحيات
+            const btnExport = document.getElementById('btnExport');
+            if (btnExport) btnExport.style.display = hasPermission('export') ? 'inline-block' : 'none';
+
+            const btnDownloadBackup = document.getElementById('btnDownloadBackup');
+            if (btnDownloadBackup) btnDownloadBackup.style.display = hasPermission('backup') ? 'inline-block' : 'none';
+
+            const btnRestoreBackup = document.getElementById('btnRestoreBackup');
+            if (btnRestoreBackup) btnRestoreBackup.style.display = hasPermission('backup') ? 'inline-block' : 'none';
+
+            const btnClearAll = document.getElementById('btnClearAll');
+            if (btnClearAll) btnClearAll.style.display = hasPermission('deleteSales') ? 'inline-block' : 'none';
+
+            // إخفاء/إظهار قوائم الفروع حسب الصلاحيات
+            const filterBranch = document.getElementById('filterBranch');
+            if (filterBranch && !hasPermission('viewAllBranches')) {
+                // إذا لم يكن لديه صلاحية عرض جميع الفروع، اعرض فقط فرعه
+                filterBranch.style.display = 'none';
+            }
+
+            // إظهار/إخفاء بيانات حساسة
+            if (!hasPermission('viewSensitiveData')) {
+                // إخفاء أعمدة البيانات الحساسة
+                document.querySelectorAll('.sensitive-data').forEach(el => {
+                    el.style.display = 'none';
+                });
+            }
+        }
         let currentDisplayData = [];
         let currentPage = 1;
         let rowsPerPage = 7;
@@ -670,7 +858,7 @@
                 }
 
                 try {
-                    if (!window.supabase || typeof window.supabase.from !== 'function') {
+                    if (!window.supabaseInstance) {
                         throw new Error('⚠️ Supabase لم يتم تحميله بعد. الرجاء الانتظار...');
                     }
 
@@ -681,7 +869,7 @@
 
                     console.log('[LOGIN] جاري الاستعلام عن الموظف:', employeeId);
                     
-                    const { data: empData, error } = await window.supabase
+                    const { data: empData, error } = await window.supabaseInstance
                         .from('employees')
                         .select('*')
                         .eq('employee_id', employeeId)
@@ -734,6 +922,15 @@
                         user: currentUser,
                         timestamp: Date.now()
                     }));
+                    
+                    // تحديث معلومات المستخدم في الـ header
+                    const compactNameEl = document.getElementById('compactUserName');
+                    const compactBranchEl = document.getElementById('compactUserBranch');
+                    const userInfoDisplay = document.getElementById('userInfoDisplay');
+                    
+                    if (compactNameEl) compactNameEl.textContent = currentUser.name;
+                    if (compactBranchEl) compactBranchEl.textContent = `${currentUser.employee_id} - ${currentUser.branch_name}`;
+                    if (userInfoDisplay) userInfoDisplay.style.display = 'flex';
 
                     if (loginMessage) {
                         loginMessage.textContent = '✅ تم التحقق - جاري التحميل...';
@@ -754,6 +951,7 @@
                         
                         try {
                             await initializeReports();
+                            updateUIByPermissions(); // تحديث الواجهة حسب الصلاحيات
                             console.log('[LOGIN] ✅ تم تحميل التقارير بنجاح');
                         } catch (initErr) {
                             console.error('[LOGIN] ⚠️ خطأ في تحميل التقارير:', initErr);
@@ -805,10 +1003,21 @@
             setupLoginHandler();
         }
         // تسجيل الخروج
-        document.getElementById('btnLogout').addEventListener('click', function() {
-            if (confirm('هل تريد تسجيل الخروج؟')) {
+        document.getElementById('btnLogout').addEventListener('click', async function() {
+            const confirmed = await confirm('هل تريد تسجيل الخروج؟');
+            if (confirmed) {
                 localStorage.removeItem('reportsSession');
                 currentUser = null;
+                
+                // إخفاء معلومات المستخدم وإعادة ضبط القيم
+                const compactNameEl = document.getElementById('compactUserName');
+                const compactBranchEl = document.getElementById('compactUserBranch');
+                const userInfoDisplay = document.getElementById('userInfoDisplay');
+                
+                if (compactNameEl) compactNameEl.textContent = '-';
+                if (compactBranchEl) compactBranchEl.textContent = '-';
+                if (userInfoDisplay) userInfoDisplay.style.display = 'none';
+                
                 document.getElementById('reportsContent').style.display = 'none';
                 document.getElementById('loginSection').style.display = 'block';
                 const summaryStats = document.getElementById('summaryStats');
@@ -832,6 +1041,16 @@
 
                     if (elapsed < oneHour) {
                         currentUser = user;
+                        
+                        // تحديث معلومات المستخدم في الـ header عند استعادة الجلسة
+                        const compactNameEl = document.getElementById('compactUserName');
+                        const compactBranchEl = document.getElementById('compactUserBranch');
+                        const userInfoDisplay = document.getElementById('userInfoDisplay');
+                        
+                        if (compactNameEl) compactNameEl.textContent = currentUser.name;
+                        if (compactBranchEl) compactBranchEl.textContent = `${currentUser.employee_id} - ${currentUser.branch_name}`;
+                        if (userInfoDisplay) userInfoDisplay.style.display = 'flex';
+                        
                         document.getElementById('loginSection').style.display = 'none';
                         document.getElementById('reportsContent').style.display = 'block';
                         const summaryStats = document.getElementById('summaryStats');
@@ -1044,8 +1263,17 @@
         }
 
         function switchView(view) {
-            const isManager = currentUser && Array.isArray(currentUser.permissions) && currentUser.permissions.includes('manageEmployees');
-            if (!isManager && (view === 'cash' || view === 'withdrawals' || view === 'missingReports')) {
+            const hasCashAccess = currentUser && (hasPermission('manageCash') || hasPermission('viewCash'));
+            const canViewWithdrawals = currentUser && (hasPermission('viewSensitiveData') || hasPermission('deleteSales'));
+            const canViewMissingReports = currentUser && (hasPermission('viewAnalytics') || hasPermission('deleteSales'));
+            
+            if (view === 'withdrawals' && !canViewWithdrawals) {
+                view = 'reports';
+            }
+            if (view === 'missingReports' && !canViewMissingReports) {
+                view = 'reports';
+            }
+            if (view === 'cash' && !hasCashAccess) {
                 view = 'reports';
             }
             currentView = view || 'reports';
@@ -1207,6 +1435,10 @@
             const details = document.getElementById('sidebarRecordDetails');
             if (!details) return;
 
+            const sidebarNotes = currentView === 'finance'
+                ? (record.financingNotes && record.financingNotes !== '-' ? record.financingNotes : (record.notes || '-'))
+                : (record.notes || '-');
+
             details.classList.remove('empty');
             details.innerHTML = `
                 <div class="detail-row"><span>التاريخ</span><strong>${record.saleDate || '-'}</strong></div>
@@ -1217,7 +1449,7 @@
                 <div class="detail-row"><span>مدي</span><strong>${parseFloat(record.totalCard || 0).toFixed(2)} ريال</strong></div>
                 <div class="detail-row"><span>المصروفات</span><strong>${parseFloat(record.expenses || 0).toFixed(2)} ريال</strong></div>
                 <div class="detail-row"><span>السحب</span><strong>${parseFloat(record.withdrawal || 0).toFixed(2)} ريال</strong></div>
-                <div class="detail-row"><span>الملاحظات</span><strong>${record.notes || '-'}</strong></div>
+                <div class="detail-row"><span>الملاحظات</span><strong>${sidebarNotes}</strong></div>
             `;
         }
 
@@ -1295,8 +1527,13 @@
                 // تحديث المعلومات في الهيدر الجديد
                 const compactNameEl = document.getElementById('compactUserName');
                 const compactBranchEl = document.getElementById('compactUserBranch');
-                if (compactNameEl && currentUser) compactNameEl.textContent = currentUser.name || 'موظف';
-                if (compactBranchEl && currentUser) compactBranchEl.textContent = currentUser.branch_name || 'الرئيسية';
+                const userInfoDisplay = document.getElementById('userInfoDisplay');
+                
+                if (currentUser) {
+                    if (compactNameEl) compactNameEl.textContent = currentUser.name || 'موظف';
+                    if (compactBranchEl) compactBranchEl.textContent = `${currentUser.employee_id} - ${currentUser.branch_name || 'الرئيسية'}`;
+                    if (userInfoDisplay) userInfoDisplay.style.display = 'flex';
+                }
 
                 setupTableControls();
                 setupSidebarNavigation();
@@ -1310,63 +1547,73 @@
                 }
 
                 // التحقق من الصلاحيات
-            const hasViewReports = currentUser.permissions.includes('viewReports');
-            const hasManageEmployees = currentUser.permissions.includes('manageEmployees');
+                const hasViewReports = currentUser.permissions.includes('viewReports');
+                const hasManageEmployees = currentUser.permissions.includes('manageEmployees');
+            const hasEditSales = currentUser.permissions.includes('editSales');
+            const hasDeleteSales = currentUser.permissions.includes('deleteSales');
             const hasExport = currentUser.permissions.includes('export');
+            const hasManageCash = currentUser.permissions.includes('manageCash');
+            const hasViewCash = currentUser.permissions.includes('viewCash');
+            const canViewCash = hasManageCash || hasViewCash;
+            const canManageCash = hasManageCash;
 
             let permissionsText = '📋 الصلاحيات: ';
             if (hasViewReports) permissionsText += 'عرض التقارير ';
-            if (hasManageEmployees) permissionsText += '| إدارة كاملة ';
-            if (hasExport) permissionsText += '| تصدير البيانات ';
+            if (hasEditSales) permissionsText += '| تعديل ';
+            if (hasDeleteSales) permissionsText += '| حذف ';
+            if (hasManageEmployees) permissionsText += '| إدارة موظفين ';
             
-            const userPermissionsEl = document.getElementById('userPermissionsInfo');
-            if (userPermissionsEl) userPermissionsEl.textContent = permissionsText;
+                const userPermissionsEl = document.getElementById('userPermissionsInfo');
+                if (userPermissionsEl) userPermissionsEl.textContent = permissionsText;
 
-            // إخفاء/إظهار الأزرار حسب الصلاحيات
-            if (!hasManageEmployees) {
-                // إخفاء زر مسح جميع البيانات للموظفين العاديين
-                const btnClearAllEl = document.getElementById('btnClearAll');
-                if (btnClearAllEl) btnClearAllEl.style.display = 'none';
-                // إخفاء عمود الإجراءات
-                const actionsHeaderEl = document.getElementById('actionsHeader');
-                if (actionsHeaderEl) actionsHeaderEl.style.display = 'none';
-                // إخفاء زر السحوبات والعجز وتفاصيل الكاش للموظفين العاديين
-                const btnWithdrawalsEl = document.getElementById('btnWithdrawalsReport');
-                if (btnWithdrawalsEl) btnWithdrawalsEl.style.display = 'none';
-                const sidebarWithdrawals = document.getElementById('sidebarWithdrawalsLink');
-                if (sidebarWithdrawals) sidebarWithdrawals.style.display = 'none';
+                // إخفاء/إظهار الأزرار حسب الصلاحيات
+            const btnClearAllEl = document.getElementById('btnClearAll');
+            if (btnClearAllEl) btnClearAllEl.style.display = hasDeleteSales ? 'inline-block' : 'none';
+            
+            const btnDownloadBackup = document.getElementById('btnDownloadBackup');
+            if (btnDownloadBackup) btnDownloadBackup.style.display = hasPermission('backup') ? 'inline-block' : 'none';
+            
+            const btnRestoreBackup = document.getElementById('btnRestoreBackup');
+            if (btnRestoreBackup) btnRestoreBackup.style.display = hasPermission('backup') ? 'inline-block' : 'none';
+            
+            // إخفاء عمود الإجراءات إذا لم يكن لديه تعديل أو حذف
+            const actionsHeaderEl = document.getElementById('actionsHeader');
+            if (actionsHeaderEl) actionsHeaderEl.style.display = (hasEditSales || hasDeleteSales) ? 'table-cell' : 'none';
+            
+            // إخفاء زر السحوبات والعجز
+            const btnWithdrawalsEl = document.getElementById('btnWithdrawalsReport');
+            if (btnWithdrawalsEl) btnWithdrawalsEl.style.display = hasPermission('viewSensitiveData') ? 'inline-block' : 'none';
+            
+            const sidebarWithdrawals = document.getElementById('sidebarWithdrawalsLink');
+            if (sidebarWithdrawals) sidebarWithdrawals.style.display = hasPermission('viewSensitiveData') ? 'inline-flex' : 'none';
+            
+            // رابط لوحة الإدارة
+            const sidebarAdmin = document.getElementById('sidebarAdminLink');
+            if (sidebarAdmin) sidebarAdmin.style.display = hasManageEmployees ? 'inline-flex' : 'none';
+                // إدارة ظهور تسويات الكاش حسب الصلاحيات
                 const sidebarCash = document.getElementById('sidebarCashLink');
-                if (sidebarCash) sidebarCash.style.display = 'none';
-                const sidebarAdmin = document.getElementById('sidebarAdminLink');
-                if (sidebarAdmin) sidebarAdmin.style.display = 'none';
+                if (sidebarCash) sidebarCash.style.display = canViewCash ? 'inline-flex' : 'none';
                 const cashSection = document.getElementById('cashSection');
-                if (cashSection) cashSection.style.display = 'none';
-                if (currentView === 'cash' || currentView === 'withdrawals') {
+                if (cashSection) cashSection.style.display = canViewCash ? '' : 'none';
+                if (!canViewCash && currentView === 'cash') {
                     currentView = 'reports';
                     switchView('reports');
                 }
-            } else {
-                const btnClearAllEl = document.getElementById('btnClearAll');
-                if (btnClearAllEl) btnClearAllEl.style.display = 'inline-block';
-                const actionsHeaderEl = document.getElementById('actionsHeader');
-                if (actionsHeaderEl) actionsHeaderEl.style.display = 'table-cell';
-                // إظهار زر السحوبات والعجز وتفاصيل الكاش للمديرين
-                const btnWithdrawalsEl = document.getElementById('btnWithdrawalsReport');
-                if (btnWithdrawalsEl) btnWithdrawalsEl.style.display = 'inline-block';
-                const sidebarWithdrawals = document.getElementById('sidebarWithdrawalsLink');
-                if (sidebarWithdrawals) sidebarWithdrawals.style.display = 'inline-flex';
-                const sidebarCash = document.getElementById('sidebarCashLink');
-                if (sidebarCash) sidebarCash.style.display = 'inline-flex';
-                const sidebarAdmin = document.getElementById('sidebarAdminLink');
-                if (sidebarAdmin) sidebarAdmin.style.display = 'inline-flex';
-                const cashSection = document.getElementById('cashSection');
-                if (cashSection) cashSection.style.display = '';
-            }
 
-            if (!hasExport) {
-                const btnExportEl = document.getElementById('btnExport');
-                if (btnExportEl) btnExportEl.style.display = 'none';
-            }
+                const btnReconRefresh = document.getElementById('btnReconRefresh');
+                const btnReconAddDelivery = document.getElementById('btnReconAddDelivery');
+                const btnReconExport = document.getElementById('btnReconExport');
+                if (btnReconRefresh) btnReconRefresh.style.display = canManageCash ? 'inline-block' : 'none';
+                if (btnReconAddDelivery) btnReconAddDelivery.style.display = canManageCash ? 'inline-block' : 'none';
+                if (btnReconExport) btnReconExport.style.display = canManageCash ? 'inline-block' : 'none';
+
+                const addDeliveryForm = document.getElementById('addDeliveryForm');
+                if (addDeliveryForm && !canManageCash) addDeliveryForm.style.display = 'none';
+
+                if (!hasExport) {
+                    const btnExportEl = document.getElementById('btnExport');
+                    if (btnExportEl) btnExportEl.style.display = 'none';
+                }
 
             await loadData();
             } catch (err) {
@@ -1458,8 +1705,8 @@
                 }
 
                 // تصفية البيانات حسب فرع الموظف
-                if (currentUser && !currentUser.permissions.includes('manageEmployees')) {
-                    // الموظفون العاديون يرون فقط تقارير فرعهم
+                if (currentUser && !currentUser.permissions.includes('viewAllBranches')) {
+                    // الموظفون بدون صلاحية عرض جميع الفروع يرون فقط تقارير فرعهم
                     allData = allData.filter(record => record.branch === currentUser.branch_name);
                 }
 
@@ -1471,7 +1718,7 @@
                 checkMissingBranchReports();
             } catch (err) {
                 console.error(err);
-                alert('تعذر تحميل البيانات من Supabase. تحقق من الاتصال أو الإعدادات.');
+                showCustomError('تعذر تحميل البيانات من Supabase. تحقق من الاتصال أو الإعدادات.', 'خطأ في التحميل');
             }
 
             // تحديث بطاقات الإحصائيات
@@ -1480,9 +1727,6 @@
 
         async function checkMissingBranchReports() {
             try {
-                // فقط للمديرين
-                if (!currentUser || !currentUser.permissions.includes('manageEmployees')) return;
-
                 // جلب جميع الفروع من جدول الموظفين
                 const { data: employees, error } = await supabase
                     .from('employees')
@@ -1496,6 +1740,10 @@
                 // الحصول على تاريخ اليوم
                 const today = new Date().toISOString().split('T')[0];
                 
+                // التحقق من الشرط الزمني: التنبيه فقط بعد الساعة 04:00 صباحاً
+                const currentHour = new Date().getHours();
+                const shouldShowMissingAlert = currentHour >= 4;
+                
                 // الفروع التي أرسلت تقارير اليوم
                 const branchesWithReports = [...new Set(
                     allData
@@ -1506,17 +1754,37 @@
                 // الفروع المفقودة
                 const missingBranches = allBranches.filter(branch => !branchesWithReports.includes(branch));
 
-                // تحديث العداد في الـ sidebar
+                // تحديث العداد والرابط في الـ sidebar
                 const missingCountEl = document.getElementById('missingBranchesCount');
                 const missingLinkEl = document.getElementById('sidebarMissingReportsLink');
                 
-                if (missingCountEl) missingCountEl.textContent = missingBranches.length;
-                if (missingLinkEl) {
-                    missingLinkEl.style.display = missingBranches.length > 0 ? 'block' : 'none';
+                if (missingCountEl) {
+                    if (shouldShowMissingAlert) {
+                        missingCountEl.textContent = missingBranches.length;
+                        missingCountEl.style.background = 'rgba(255,255,255,0.9)';
+                        missingCountEl.style.color = '#ff6b6b';
+                    } else {
+                        missingCountEl.textContent = '-';
+                        missingCountEl.style.background = 'rgba(200,200,200,0.5)';
+                        missingCountEl.style.color = '#999';
+                    }
                 }
 
-                if (missingBranches.length > 0) {
-                    showMissingBranchesAlert(missingBranches);
+                if (missingLinkEl) {
+                    if (shouldShowMissingAlert) {
+                        // استعادة الألوان الأصلية بعد الساعة 04:00
+                        missingLinkEl.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)';
+                        missingLinkEl.style.color = 'white';
+                        if (missingBranches.length > 0) {
+                            showMissingBranchesAlert(missingBranches);
+                        }
+                    } else {
+                        // تغيير الألوان قبل الساعة 04:00
+                        missingLinkEl.style.background = 'linear-gradient(135deg, #d0d0d0 0%, #c0c0c0 100%)';
+                        missingLinkEl.style.color = '#999';
+                    }
+                    // الخيار يظهر دائماً
+                    missingLinkEl.style.display = 'block';
                 }
                 
                 // فحص التقارير المكررة
@@ -1681,7 +1949,7 @@
             
             generateMissingReportsData(days).then(result => {
                 if (result.data.length === 0) {
-                    alert('✅ لا توجد فروع مفقودة للتصدير');
+                    showCustomSuccess('لا توجد فروع مفقودة للتصدير', 'تم');
                     return;
                 }
 
@@ -1698,11 +1966,12 @@
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+                showCustomSuccess('تم تصدير البيانات بنجاح', 'تم التصدير');
             });
         }
 
-        function showDuplicateReportDetails() {
-            alert('سيتم إضافة واجهة تفاعلية لحل مشكلة التقارير المكررة قريباً.\n\nحالياً يمكنك مراجعة التقارير المكررة يدوياً وحذف النسخ الزائدة.');
+        async function showDuplicateReportDetails() {
+            await showCustomAlert('سيتم إضافة واجهة تفاعلية لحل مشكلة التقارير المكررة قريباً.\n\nحالياً يمكنك مراجعة التقارير المكررة يدوياً وحذف النسخ الزائدة.', 'معلومة', 'info');
         }
 
         function showMissingBranchesAlert(branches) {
@@ -1867,7 +2136,8 @@
                 return;
             }
 
-            const hasManagePermission = currentUser && currentUser.permissions.includes('manageEmployees');
+            const hasEditPermission = currentUser && currentUser.permissions.includes('editSales');
+            const hasDeletePermission = currentUser && currentUser.permissions.includes('deleteSales');
             const startIndex = (currentPage - 1) * rowsPerPage;
             const endIndex = startIndex + rowsPerPage;
             const pageData = currentDisplayData.slice(startIndex, endIndex);
@@ -1878,13 +2148,15 @@
                 row.dataset.recordId = record.id;
                 // لا نضع ألوان هنا - سيتم تطبيقها من CSS تلقائياً
                 
-                const financingNotes = record.financingNotes && record.financingNotes !== '-' ? record.financingNotes : 'لا توجد ملاحظات';
+                const financingNotes = record.financingNotes && record.financingNotes !== '-'
+                    ? record.financingNotes
+                    : (record.notes && record.notes !== '-' ? record.notes : 'لا توجد ملاحظات');
                 const tamaraTooltip = (record.tamara && record.tamara > 0) ? `title="ملاحظات: ${financingNotes}" style="cursor:help;"` : '';
                 const tabbyTooltip = (record.tabby && record.tabby > 0) ? `title="ملاحظات: ${financingNotes}" style="cursor:help;"` : '';
                 
-                // إنشائي حقل قابل للتعديل لتاريخ المبيعات للمديرين فقط
+                // إنشائي حقل قابل للتعديل لتاريخ المبيعات إذا كان لديه صلاحية التعديل
                 let saleDateCell = '';
-                if (hasManagePermission) {
+                if (hasEditPermission) {
                     saleDateCell = `<td>
                         <input type="date" class="sale-date-edit" data-id="${record.id}" value="${record.saleDate || ''}" 
                             onchange="updateSaleDate('${record.id}', this.value)" style="border:1px solid #ddd;padding:4px;border-radius:4px;width:100%;">
@@ -1895,19 +2167,13 @@
                 
                 // تحديد محتوى عمود الإجراءات حسب الصلاحية
                 let actionsCell = '';
-                if (hasManagePermission) {
-                    actionsCell = `
-                        <td>
-                            <button class="btn-view" onclick="viewDetails('${record.id}')">👁️</button>
-                            <button class="btn-delete" onclick="deleteRecord('${record.id}')">🗑️</button>
-                        </td>
-                    `;
+                const showActions = hasEditPermission || hasDeletePermission;
+                if (showActions) {
+                    const editBtn = hasEditPermission ? `<button class="btn-view" onclick="editReportRecord('${record.id}')">✏️</button>` : '';
+                    const deleteBtn = hasDeletePermission ? `<button class="btn-delete" onclick="deleteRecord('${record.id}')">🗑️</button>` : '';
+                    actionsCell = `<td>${editBtn}${deleteBtn}</td>`;
                 } else {
-                    actionsCell = `
-                        <td style="display:none;">
-                            <button class="btn-view" onclick="viewDetails('${record.id}')">👁️</button>
-                        </td>
-                    `;
+                    actionsCell = `<td style="display:none;"><button class="btn-view" onclick="viewDetails('${record.id}')">👁️</button></td>`;
                 }
                 
                 row.innerHTML = `
@@ -1935,7 +2201,11 @@
 
                 const notesCell = row.querySelector('.notes-cell');
                 if (notesCell) {
-                    const notesSource = currentView === 'finance' ? record.financingNotes : record.notes;
+                    const notesSource = currentView === 'finance'
+                        ? (record.financingNotes && String(record.financingNotes).trim().length && record.financingNotes !== '-'
+                            ? record.financingNotes
+                            : record.notes)
+                        : record.notes;
                     const noteText = notesSource && String(notesSource).trim().length ? notesSource : '-';
                     notesCell.dataset.notes = noteText;
                     notesCell.dataset.recordId = record.id;
@@ -1999,8 +2269,8 @@
             // إذا كان العنصر غير موجود، لا نفعل شيء
             if (!filterBranch) return;
             
-            // للموظفين العاديين، إخفاء فلتر الفرع لأنهم يرون فرعهم فقط
-            if (currentUser && !currentUser.permissions.includes('manageEmployees')) {
+            // للموظفين بدون صلاحية عرض جميع الفروع، إخفاء فلتر الفرع لأنهم يرون فرعهم فقط
+            if (currentUser && !currentUser.permissions.includes('viewAllBranches')) {
                 const filterGroup = filterBranch.closest('.filter-group');
                 if (filterGroup) filterGroup.style.display = 'none';
                 return;
@@ -2042,6 +2312,11 @@
         function toggleAddDeliveryForm() {
             const form = document.getElementById('addDeliveryForm');
             if (!form) return;
+
+            if (!canManageCash()) {
+                showNoPermissionMessage('إضافة تسليم الكاش');
+                return;
+            }
             
             const isHidden = form.style.display === 'none';
             form.style.display = isHidden ? 'block' : 'none';
@@ -2062,6 +2337,10 @@
         window.toggleAddDeliveryForm = toggleAddDeliveryForm;
 
         async function addDelivery() {
+            if (!canManageCash()) {
+                showNoPermissionMessage('إضافة تسليم الكاش');
+                return;
+            }
             const branch = document.getElementById('deliveryBranch').value;
             const recipient = document.getElementById('deliveryRecipient').value.trim();
             const amount = parseFloat(document.getElementById('deliveryAmount').value);
@@ -2078,11 +2357,11 @@
 
             try {
                 // إرسال إلى Supabase
-                if (window.supabase && typeof window.supabase.from === 'function') {
+                if (window.supabaseInstance && typeof window.supabaseInstance.from === 'function') {
                     console.log('[DELIVERY] جاري حفظ التسليم في Supabase...');
                     
                     // محاولة الإدراج بدون RLS (استخدام admin client)
-                    const { data, error } = await window.supabase
+                    const { data, error } = await window.supabaseInstance
                         .from('cash_deliveries')
                         .insert([{
                             branch: branch,
@@ -2212,19 +2491,19 @@
         async function loadBranchDeliveriesModal(branch) {
             try {
                 console.log(`📦 جاري تحميل التسليمات للفرع: ${branch}`);
-                if (!window.supabase) {
-                    alert('⚠️ Supabase غير متاح');
+                if (!window.supabaseInstance) {
+                    showCustomError('Supabase غير متاح');
                     return;
                 }
 
-                const { data: deliveries, error } = await window.supabase
+                const { data: deliveries, error } = await window.supabaseInstance
                     .from('cash_deliveries')
                     .select('*')
                     .eq('branch', branch)
                     .order('created_at', { ascending: false });
 
                 if (error) {
-                    alert('❌ خطأ في جلب التسليمات: ' + error.message);
+                    showCustomError('خطأ في جلب التسليمات: ' + error.message);
                     return;
                 }
 
@@ -2244,6 +2523,8 @@
                 displayDeliveriesModal(branch, deliveries);
                 return;
             }
+
+            const manageCash = canManageCash();
 
             const title = modal.querySelector('h2');
             if (title) title.textContent = `📦 تسليمات فرع: ${branch}`;
@@ -2267,10 +2548,10 @@
                         <td style="padding:12px;text-align:center;">${dateStr}</td>
                         <td style="padding:12px;text-align:center;color:#666;font-size:13px;">${d.proof ? '✅' : '❌'}</td>
                         <td style="padding:12px;text-align:center;">
-                            <button onclick="editDeliveryModal('${d.id}')" style="padding:6px 10px;background:#3498db;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;">✏️ تعديل</button>
+                            ${manageCash ? `<button onclick="editDeliveryModal('${d.id}')" style="padding:6px 10px;background:#3498db;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;">✏️ تعديل</button>` : '<span style="color:#999;">-</span>'}
                         </td>
                         <td style="padding:12px;text-align:center;">
-                            <button onclick="deleteDeliveryConfirm('${d.id}')" style="padding:6px 10px;background:#f44336;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;">🗑️ حذف</button>
+                            ${manageCash ? `<button onclick="deleteDeliveryConfirm('${d.id}')" style="padding:6px 10px;background:#f44336;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;">🗑️ حذف</button>` : '<span style="color:#999;">-</span>'}
                         </td>
                     `;
                     tbody.appendChild(row);
@@ -2320,6 +2601,10 @@
 
         // تعديل التسليم
         function editDeliveryModal(deliveryId) {
+            if (!canManageCash()) {
+                showNoPermissionMessage('تعديل تسليم الكاش');
+                return;
+            }
             console.log(`✏️ فتح تعديل التسليم: ${deliveryId}`);
             // أولاً، جلب بيانات التسليم
             fetchAndEditDelivery(deliveryId);
@@ -2327,19 +2612,19 @@
 
         async function fetchAndEditDelivery(deliveryId) {
             try {
-                const { data, error } = await window.supabase
+                const { data, error } = await window.supabaseInstance
                     .from('cash_deliveries')
                     .select('*')
                     .eq('id', deliveryId)
                     .single();
 
                 if (error) {
-                    alert('❌ خطأ في جلب التسليم: ' + error.message);
+                    showCustomError('خطأ في جلب التسليم: ' + error.message);
                     return;
                 }
 
                 if (!data) {
-                    alert('❌ التسليم غير موجود');
+                    showCustomError('التسليم غير موجود');
                     return;
                 }
 
@@ -2413,6 +2698,10 @@
         }
 
         async function saveEditedDelivery(deliveryId) {
+            if (!canManageCash()) {
+                showNoPermissionMessage('تعديل تسليم الكاش');
+                return;
+            }
             const recipient = document.getElementById('editDeliveryRecipient').value.trim();
             const amount = parseFloat(document.getElementById('editDeliveryAmount').value);
             const date = document.getElementById('editDeliveryDate').value;
@@ -2428,7 +2717,7 @@
             }
 
             try {
-                const { error } = await window.supabase
+                const { error } = await window.supabaseInstance
                     .from('cash_deliveries')
                     .update({
                         recipient: recipient,
@@ -2466,14 +2755,19 @@
         }
 
         // حذف التسليم
-        function deleteDeliveryConfirm(deliveryId) {
-            if (!confirm('هل أنت متأكد من حذف هذا التسليم؟')) return;
+        async function deleteDeliveryConfirm(deliveryId) {
+            if (!canManageCash()) {
+                showNoPermissionMessage('حذف تسليم الكاش');
+                return;
+            }
+            const confirmed = await confirm('هل أنت متأكد من حذف هذا التسليم؟');
+            if (!confirmed) return;
             deleteDeliveryFromDB(deliveryId);
         }
 
         async function deleteDeliveryFromDB(deliveryId) {
             try {
-                const { error } = await window.supabase
+                const { error } = await window.supabaseInstance
                     .from('cash_deliveries')
                     .delete()
                     .eq('id', deliveryId);
@@ -2497,6 +2791,10 @@
 
         // فتح موديل تعديل الكاش المسلم
         function openCashEditModal(branch) {
+            if (!canManageCash()) {
+                showNoPermissionMessage('تعديل تسويات الكاش');
+                return;
+            }
             const expectedAmount = allData
                 .filter(r => r.branch === branch)
                 .reduce((sum, r) => sum + parseFloat(r.totalCash || 0), 0);
@@ -2532,6 +2830,11 @@
         // حفظ التغييرات في الكاش المسلم
         function saveCashChanges() {
             if (!currentEditingDelivery) return;
+
+            if (!canManageCash()) {
+                showNoPermissionMessage('تعديل تسويات الكاش');
+                return;
+            }
 
             const newAmount = parseFloat(document.getElementById('editDeliveredAmount').value);
             const notes = document.getElementById('editCashNotes').value.trim();
@@ -2687,6 +2990,10 @@
         });
 
         function exportReconciliationsCSV() {
+            if (!canManageCash()) {
+                showNoPermissionMessage('تصدير تسويات الكاش');
+                return;
+            }
             const reconData = [];
             const reconBody = document.getElementById('reconciliationBody');
             for (const row of reconBody.querySelectorAll('tr')) {
@@ -2694,7 +3001,10 @@
                 if (cols.length < 4) continue;
                 reconData.push({branch: cols[0].textContent.trim(), expected: cols[1].textContent.trim(), delivered: cols[2].textContent.trim(), remaining: cols[3].textContent.trim(), lastUpdate: cols[4].textContent.trim()});
             }
-            if (reconData.length === 0) { alert('لا توجد بيانات للتصدير'); return; }
+            if (reconData.length === 0) {
+                showCustomWarning('لا توجد بيانات للتصدير');
+                return;
+            }
             let csv = '\uFEFF';
             csv += 'الفرع,المتوقع,المسلّم,المتبقّي,آخر تحديث\n';
             reconData.forEach(r => { csv += `${r.branch},${r.expected},${r.delivered},${r.remaining},${r.lastUpdate}\n`; });
@@ -2733,7 +3043,11 @@
             const baseData = getViewBaseData(allData);
 
             let filteredData = baseData.filter(record => {
-                const notesField = currentView === 'finance' ? record.financingNotes : record.notes;
+                const notesField = currentView === 'finance'
+                    ? (record.financingNotes && String(record.financingNotes).trim().length && record.financingNotes !== '-'
+                        ? record.financingNotes
+                        : record.notes)
+                    : record.notes;
                 const matchesSearch = searchTerm === '' || 
                     record.employeeId.toLowerCase().includes(searchTerm) ||
                     record.branch.toLowerCase().includes(searchTerm) ||
@@ -2820,7 +3134,7 @@
             });
             
             if (filteredData.length === 0) {
-                alert('⚠️ لا توجد عمليات تحتوي على مصروفات');
+                showCustomWarning('لا توجد عمليات تحتوي على مصروفات', 'لا يوجد');
                 return;
             }
             
@@ -2843,7 +3157,7 @@
             });
             
             if (filteredData.length === 0) {
-                alert('⚠️ لا توجد عمليات تحتوي على مدفوعات شبكة');
+                showCustomWarning('لا توجد عمليات تحتوي على مدفوعات شبكة', 'لا يوجد');
                 return;
             }
             
@@ -2910,15 +3224,172 @@
 
         window.viewDetails = viewDetails;
 
+        // دالة لفتح نموذج التعديل
+        function editReportRecord(id) {
+            // تحويل id إلى string للمقارنة الصحيحة
+            const recordId = String(id);
+            const record = allData.find(r => String(r.id) === recordId);
+            if (!record) {
+                console.error('Record not found. ID:', id, 'Available IDs:', allData.map(r => r.id));
+                showCustomError('لم يتم العثور على السجل. تحقق من البيانات المحملة', 'خطأ البحث');
+                return;
+            }
+
+            // ملء الحقول بالبيانات الحالية
+            document.getElementById('editReportDate').value = record.saleDate || '';
+            document.getElementById('editReportTotalSales').value = parseFloat(record.totalSales || 0).toFixed(2);
+            document.getElementById('editReportCard').value = parseFloat(record.totalCard || 0).toFixed(2);
+            document.getElementById('editReportExpenses').value = parseFloat(record.expenses || 0).toFixed(2);
+            document.getElementById('editReportReturns').value = parseFloat(record.returns || 0).toFixed(2);
+            document.getElementById('editReportWithdrawal').value = parseFloat(record.withdrawal || 0).toFixed(2);
+            document.getElementById('editReportTamara').value = parseFloat(record.tamara || 0).toFixed(2);
+            document.getElementById('editReportTabby').value = parseFloat(record.tabby || 0).toFixed(2);
+            document.getElementById('editReportNotes').value = record.notes || '';
+            
+            // حساب الكاش بناءً على القيم الحالية
+            calculateEditCash();
+
+            // حفظ معرّف السجل الحالي
+            window.currentEditingRecordId = id;
+
+            // فتح النموذج
+            const modal = document.getElementById('editReportModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                // إضافة event listeners للحسابات التلقائية
+                setTimeout(setupEditModalListeners, 100);
+            }
+        }
+
+        function closeEditReportModal() {
+            const modal = document.getElementById('editReportModal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+            window.currentEditingRecordId = null;
+            // إزالة event listeners عند الإغلاق
+            removeEditModalListeners();
+        }
+
+        // دالة لإعادة حساب الكاش تلقائياً
+        function calculateEditCash() {
+            const totalSales = parseFloat(document.getElementById('editReportTotalSales').value) || 0;
+            const totalCard = parseFloat(document.getElementById('editReportCard').value) || 0;
+            const expenses = parseFloat(document.getElementById('editReportExpenses').value) || 0;
+            const returns = parseFloat(document.getElementById('editReportReturns').value) || 0;
+            const withdrawal = parseFloat(document.getElementById('editReportWithdrawal').value) || 0;
+            const tamara = parseFloat(document.getElementById('editReportTamara').value) || 0;
+            const tabby = parseFloat(document.getElementById('editReportTabby').value) || 0;
+            
+            // الصيغة الرياضية: الكاش = المبيعات - مدي - تمارا - تابي - المصروفات - السحب - المردود
+            const cash = totalSales - totalCard - tamara - tabby - expenses - withdrawal - returns;
+            document.getElementById('editReportCash').value = Math.max(0, cash).toFixed(2);
+        }
+
+        // دالة لإضافة event listeners لحقول النموذج
+        function setupEditModalListeners() {
+            const fieldsToWatch = ['editReportTotalSales', 'editReportCard', 'editReportExpenses', 'editReportReturns', 'editReportWithdrawal', 'editReportTamara', 'editReportTabby'];
+            fieldsToWatch.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('input', calculateEditCash);
+                }
+            });
+        }
+
+        // دالة لإزالة event listeners
+        function removeEditModalListeners() {
+            const fieldsToWatch = ['editReportTotalSales', 'editReportCard', 'editReportExpenses', 'editReportReturns', 'editReportWithdrawal', 'editReportTamara', 'editReportTabby'];
+            fieldsToWatch.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.removeEventListener('input', calculateEditCash);
+                }
+            });
+        }
+
+        async function saveEditedReport() {
+            // التحقق من الصلاحية: تعديل مبيعات
+            if (!hasPermission('editSales')) {
+                showNoPermissionMessage('تعديل السجلات');
+                return;
+            }
+
+            const recordId = window.currentEditingRecordId;
+            if (!recordId) {
+                showCustomError('لم يتم تحديد السجل');
+                return;
+            }
+
+            const updateData = {
+                total_sales: parseFloat(document.getElementById('editReportTotalSales').value) || 0,
+                total_cash: parseFloat(document.getElementById('editReportCash').value) || 0,
+                total_card: parseFloat(document.getElementById('editReportCard').value) || 0,
+                expenses: parseFloat(document.getElementById('editReportExpenses').value) || 0,
+                returns: parseFloat(document.getElementById('editReportReturns').value) || 0,
+                withdrawal: parseFloat(document.getElementById('editReportWithdrawal').value) || 0,
+                tamara: parseFloat(document.getElementById('editReportTamara').value) || 0,
+                tabby: parseFloat(document.getElementById('editReportTabby').value) || 0,
+                notes: document.getElementById('editReportNotes').value
+            };
+
+            try {
+                const { error } = await supabase
+                    .from('sales')
+                    .update(updateData)
+                    .eq('id', recordId);
+
+                if (error) throw error;
+
+                // تحديث البيانات المحلية بالأسماء الصحيحة
+                const recordIndex = allData.findIndex(r => String(r.id) === String(recordId));
+                if (recordIndex !== -1) {
+                    allData[recordIndex] = {
+                        ...allData[recordIndex],
+                        totalSales: updateData.total_sales,
+                        totalCash: updateData.total_cash,
+                        totalCard: updateData.total_card,
+                        expenses: updateData.expenses,
+                        returns: updateData.returns,
+                        withdrawal: updateData.withdrawal,
+                        tamara: updateData.tamara,
+                        tabby: updateData.tabby,
+                        notes: updateData.notes
+                    };
+                }
+
+                // إغلاق النموذج وتحديث العرض
+                closeEditReportModal();
+                displayData(allData);
+                updateStats(allData);
+                populateBranchFilter();
+                applyFilters();
+
+                showCustomSuccess('تم تحديث بيانات السجل بنجاح', 'تم التعديل');
+            } catch (err) {
+                console.error(err);
+                showCustomError('تعذر تحديث السجل: ' + (err.message || 'حاول مرة أخرى'), 'خطأ التحديث');
+            }
+        }
+
+        window.editReportRecord = editReportRecord;
+        window.closeEditReportModal = closeEditReportModal;
+        window.saveEditedReport = saveEditedReport;
+        window.calculateEditCash = calculateEditCash;
+        window.setupEditModalListeners = setupEditModalListeners;
+        window.removeEditModalListeners = removeEditModalListeners;
+
         async function updateSaleDate(id, newDate) {
             // التحقق من الصلاحية
-            if (!currentUser || !currentUser.permissions.includes('manageEmployees')) {
-                alert('⛔ ليس لديك صلاحية تعديل البيانات');
+            if (!currentUser || !currentUser.permissions.includes('editSales')) {
+                showCustomError('ليس لديك صلاحية تعديل البيانات', 'صلاحية غير كافية');
                 return;
             }
 
             if (!newDate) {
-                alert('⚠️ الرجاء اختيار تاريخ صحيح');
+                showCustomWarning('الرجاء اختيار تاريخ صحيح', 'تاريخ غير صحيح');
                 return;
             }
 
@@ -2936,24 +3407,27 @@
                     allData[recordIndex].saleDate = newDate;
                 }
                 
-                alert('✅ تم تحديث التاريخ بنجاح');
+                showCustomSuccess('تم تحديث التاريخ بنجاح', 'تم');
                 displayData(allData);
+                updateStats(allData);
             } catch (err) {
                 console.error(err);
-                alert('❌ تعذر تحديث التاريخ. حاول مرة أخرى');
+                showCustomError('تعذر تحديث التاريخ. حاول مرة أخرى', 'خطأ التحديث');
             }
         }
 
         window.updateSaleDate = updateSaleDate;
 
         async function deleteRecord(id) {
-            // التحقق من الصلاحية
-            if (!currentUser || !currentUser.permissions.includes('manageEmployees')) {
-                alert('⛔ ليس لديك صلاحية حذف السجلات');
+            // التحقق من الصلاحية: حذف مبيعات
+            if (!hasPermission('deleteSales')) {
+                showCustomError('ليس لديك صلاحية حذف السجلات.', 'صلاحية غير كافية');
                 return;
             }
 
-            if (!confirm('هل أنت متأكد من حذف هذا السجل؟')) return;
+            const confirmed = await confirm('هل أنت متأكد من حذف هذا السجل؟');
+            if (!confirmed) return;
+
             try {
                 const { error } = await supabase
                     .from('sales')
@@ -2962,13 +3436,23 @@
                 
                 if (error) throw error;
                 
-                allData = allData.filter(r => r.id !== id);
+                // تحديث البيانات المحلية
+                const recordIdStr = String(id);
+                allData = allData.filter(r => String(r.id) !== recordIdStr);
+                
+                // تحديث العرض والإحصائيات
                 displayData(allData);
                 updateStats(allData);
                 populateBranchFilter();
+                applyFilters();
+                
+                // تأخير صغير للتأكد من التحديث الكامل
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                showCustomSuccess('تم حذف السجل بنجاح وتحديث البيانات', 'تم الحذف');
             } catch (err) {
                 console.error(err);
-                alert('تعذر حذف السجل من Supabase.');
+                showCustomError('تعذر حذف السجل من Supabase. حاول مرة أخرى.', 'خطأ الحذف');
             }
         }
 
@@ -2976,13 +3460,28 @@
 
         async function clearAllData() {
             // التحقق من الصلاحية
-            if (!currentUser || !currentUser.permissions.includes('manageEmployees')) {
-                alert('⛔ ليس لديك صلاحية حذف جميع البيانات');
+            if (!currentUser || !currentUser.permissions.includes('deleteSales')) {
+                showCustomError('ليس لديك صلاحية حذف جميع البيانات', 'صلاحية غير كافية');
                 return;
             }
 
-            if (!confirm('هل أنت متأكد من حذف جميع البيانات؟ هذا الإجراء لا يمكن التراجع عنه!')) return;
-            if (!confirm('تأكيد نهائي: سيتم حذف جميع السجلات!')) return;
+            // طلب الرقم السري
+            const secretPin = await showPinPrompt();
+            if (secretPin === null) {
+                return; // المستخدم ألغى الحوار
+            }
+
+            if (secretPin !== '1992') {
+                showCustomError('الرقم السري غير صحيح!', 'خطأ الأمان');
+                return;
+            }
+
+            const confirmed1 = await confirm('هل أنت متأكد من حذف جميع البيانات؟ هذا الإجراء لا يمكن التراجع عنه!');
+            if (!confirmed1) return;
+            
+            const confirmed2 = await confirm('تأكيد نهائي: سيتم حذف جميع السجلات!');
+            if (!confirmed2) return;
+
             try {
                 const ids = allData.map(r => r.id);
                 await Promise.all(ids.map(id => 
@@ -2992,19 +3491,400 @@
                         .eq('id', id)
                 ));
                 
+                // تحديث البيانات المحلية والعرض
                 allData = [];
                 displayData(allData);
                 updateStats(allData);
                 populateBranchFilter();
+                applyFilters();
+                
+                showCustomSuccess('تم حذف جميع السجلات بنجاح', 'تم الحذف');
             } catch (err) {
                 console.error(err);
-                alert('تعذر حذف جميع السجلات من Supabase.');
+                showCustomError('تعذر حذف جميع السجلات من Supabase. حاول مرة أخرى.', 'خطأ الحذف');
             }
         }
 
+        // دالة إظهار نموذج طلب الرقم السري
+        function showPinPrompt() {
+            return new Promise((resolve) => {
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0,0,0,0.6);
+                    z-index: 3000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-direction: column;
+                `;
+
+                modal.innerHTML = `
+                    <div style="
+                        background: white;
+                        border-radius: 16px;
+                        padding: 32px;
+                        max-width: 400px;
+                        width: 90%;
+                        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                        text-align: center;
+                    ">
+                        <div style="
+                            background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+                            color: white;
+                            padding: 24px;
+                            margin: -32px -32px 24px -32px;
+                            border-radius: 16px 16px 0 0;
+                        ">
+                            <h2 style="margin: 0; font-size: 22px;">🔐 تحقق من الهوية</h2>
+                            <p style="margin: 8px 0 0 0; opacity: 0.9;">أدخل الرقم السري للمتابعة</p>
+                        </div>
+
+                        <div style="margin-bottom: 24px;">
+                            <label style="
+                                display: block;
+                                margin-bottom: 12px;
+                                font-weight: 600;
+                                color: #555;
+                            ">الرقم السري:</label>
+                            <input type="password" id="pinInput" placeholder="أدخل الرقم السري" style="
+                                width: 100%;
+                                padding: 14px;
+                                border: 2px solid #e0e0e0;
+                                border-radius: 8px;
+                                font-size: 16px;
+                                box-sizing: border-box;
+                                text-align: center;
+                                letter-spacing: 4px;
+                            " maxlength="4" inputmode="numeric">
+                        </div>
+
+                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                            <button id="pinCancel" style="
+                                padding: 10px 16px;
+                                background: #e0e0e0;
+                                color: #333;
+                                border: none;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                font-weight: 600;
+                            ">إلغاء</button>
+                            <button id="pinSubmit" style="
+                                padding: 10px 16px;
+                                background: #d32f2f;
+                                color: white;
+                                border: none;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                font-weight: 600;
+                            ">تحقق</button>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(modal);
+                const pinInput = document.getElementById('pinInput');
+                const btnSubmit = document.getElementById('pinSubmit');
+                const btnCancel = document.getElementById('pinCancel');
+
+                pinInput.focus();
+
+                const cleanup = () => {
+                    modal.remove();
+                };
+
+                btnSubmit.addEventListener('click', () => {
+                    cleanup();
+                    resolve(pinInput.value);
+                });
+
+                btnCancel.addEventListener('click', () => {
+                    cleanup();
+                    resolve(null);
+                });
+
+                pinInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        cleanup();
+                        resolve(pinInput.value);
+                    }
+                });
+            });
+        }
+
         window.clearAllData = clearAllData;
+        window.showPinPrompt = showPinPrompt;
+
+        // ============ دوال النسخ الاحتياطية ============
+
+        // دالة لإظهار/إخفاء مؤشر التحميل
+        function showLoadingSpinner(show = true) {
+            let spinner = document.getElementById('loadingSpinner');
+            
+            if (show) {
+                if (!spinner) {
+                    // إنشاء عنصر مؤشر التحميل إذا لم يكن موجوداً
+                    spinner = document.createElement('div');
+                    spinner.id = 'loadingSpinner';
+                    spinner.style.cssText = `
+                        position: fixed;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        z-index: 9999;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 20px;
+                    `;
+                    
+                    spinner.innerHTML = `
+                        <div style="
+                            width: 60px;
+                            height: 60px;
+                            border: 5px solid #f0f0f0;
+                            border-top: 5px solid #007bff;
+                            border-radius: 50%;
+                            animation: spin 1s linear infinite;
+                        "></div>
+                        <div style="
+                            color: #333;
+                            font-size: 18px;
+                            font-weight: 600;
+                            text-align: center;
+                        ">جاري تحميل النسخة الاحتياطية...</div>
+                        <div style="
+                            color: #666;
+                            font-size: 14px;
+                            text-align: center;
+                        ">يرجى الانتظار</div>
+                    `;
+                    
+                    document.body.appendChild(spinner);
+                    
+                    // إضافة CSS animation إذا لم تكن موجودة
+                    if (!document.getElementById('loadingSpinnerStyle')) {
+                        const style = document.createElement('style');
+                        style.id = 'loadingSpinnerStyle';
+                        style.textContent = `
+                            @keyframes spin {
+                                0% { transform: rotate(0deg); }
+                                100% { transform: rotate(360deg); }
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+                    
+                    // إضافة خلفية شفافة
+                    const backdrop = document.createElement('div');
+                    backdrop.id = 'spinnerBackdrop';
+                    backdrop.style.cssText = `
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: rgba(0, 0, 0, 0.5);
+                        z-index: 9998;
+                    `;
+                    document.body.appendChild(backdrop);
+                }
+            } else {
+                // إخفاء مؤشر التحميل والخلفية
+                if (spinner) spinner.remove();
+                const backdrop = document.getElementById('spinnerBackdrop');
+                if (backdrop) backdrop.remove();
+            }
+        }
+
+        window.showLoadingSpinner = showLoadingSpinner;
+        function downloadBackup() {
+            // التحقق من الصلاحية: نسخ احتياطية
+            if (!hasPermission('backup')) {
+                showNoPermissionMessage('إنشاء نسخ احتياطية');
+                return;
+            }
+
+            try {
+                const backupData = {
+                    timestamp: new Date().toISOString(),
+                    salesData: allData,
+                    cashDeliveries: cashDeliveries,
+                    cashEditHistory: cashEditHistory,
+                    version: '1.0',
+                    backupAuthor: currentUser.name,
+                    backupAuthorId: currentUser.employee_id
+                };
+
+                const json = JSON.stringify(backupData, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `backup_${new Date().toISOString().split('T')[0]}_${Date.now()}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                showCustomSuccess('تم تحميل النسخة الاحتياطية بنجاح', 'تم الحفظ');
+            } catch (err) {
+                console.error(err);
+                showCustomError('خطأ في تحميل النسخة الاحتياطية: ' + err.message, 'خطأ');
+            }
+        }
+
+        // رفع واستيراد النسخة الاحتياطية
+        function restoreBackup(file) {
+            // التحقق من الصلاحية: نسخ احتياطية
+            if (!hasPermission('backup')) {
+                showNoPermissionMessage('استعادة النسخ الاحتياطية');
+                return Promise.resolve(false);
+            }
+
+            return new Promise((resolve) => {
+                // إظهار مؤشر التحميل
+                showLoadingSpinner(true);
+                
+                const reader = new FileReader();
+                
+                reader.onload = async (e) => {
+                    try {
+                        const backupData = JSON.parse(e.target.result);
+                        
+                        // التحقق من صيغة الملف
+                        if (!backupData.salesData || !Array.isArray(backupData.salesData)) {
+                            showCustomError('صيغة ملف النسخة الاحتياطية غير صحيحة', 'خطأ الملف');
+                            showLoadingSpinner(false);
+                            resolve(false);
+                            return;
+                        }
+
+                        // عرض تأكيد قبل الاستيراد
+                        const confirmed = await confirm(`سيتم استيراد ${backupData.salesData.length} سجل من النسخة الاحتياطية. هل تريد المتابعة؟\n\nملاحظة: سيتم استبدال جميع البيانات الحالية.`);
+                        if (!confirmed) {
+                            showLoadingSpinner(false);
+                            resolve(false);
+                            return;
+                        }
+
+                        // استيراد البيانات
+                        allData = backupData.salesData || [];
+                        cashDeliveries = backupData.cashDeliveries || [];
+                        cashEditHistory = backupData.cashEditHistory || [];
+
+                        // حفظ البيانات في localStorage للتخزين الدائم
+                        try {
+                            localStorage.setItem('allData', JSON.stringify(allData));
+                            localStorage.setItem('cashDeliveries', JSON.stringify(cashDeliveries));
+                            localStorage.setItem('cashEditHistory', JSON.stringify(cashEditHistory));
+                            localStorage.setItem('lastBackupRestoreDate', new Date().toISOString());
+                        } catch (storageErr) {
+                            console.error('خطأ في حفظ البيانات في localStorage:', storageErr);
+                        }
+
+                        // محاولة حفظ البيانات في Supabase إذا كان الاتصال متاحاً
+                        if (window.supabaseInstance) {
+                            try {
+                                // حفظ سجلات المبيعات في Supabase
+                                // ملاحظة: لا نرسل id لأنها معرّفة كـ GENERATED ALWAYS في Supabase
+                                for (const record of allData) {
+                                    const { error } = await window.supabaseInstance
+                                        .from('sales')
+                                        .insert({
+                                            employee_id: record.employeeId,
+                                            branch: record.branch,
+                                            total_sales: parseFloat(record.totalSales || 0),
+                                            total_cash: parseFloat(record.totalCash || 0),
+                                            total_card: parseFloat(record.totalCard || 0),
+                                            tamara: parseFloat(record.tamara || 0),
+                                            tabby: parseFloat(record.tabby || 0),
+                                            expenses: parseFloat(record.expenses || 0),
+                                            returns: parseFloat(record.returns || 0),
+                                            withdrawal: parseFloat(record.withdrawal || 0),
+                                            notes: record.notes || '',
+                                            extra_cash: parseFloat(record.extraCash || 0),
+                                            sale_date: record.saleDate || new Date().toISOString().split('T')[0],
+                                            attachment: record.attachment || null,
+                                            created_at: record.createdAt || new Date().toISOString()
+                                        });
+                                    
+                                    if (error) console.error('خطأ في حفظ السجل في Supabase:', error);
+                                }
+                                console.log('✅ تم حفظ جميع السجلات في Supabase بنجاح');
+                            } catch (supabaseErr) {
+                                console.error('خطأ في الاتصال بـ Supabase:', supabaseErr);
+                            }
+                        }
+
+                        // تحديث العرض والإحصائيات
+                        displayData(allData);
+                        updateStats(allData);
+                        populateBranchFilter();
+                        applyFilters();
+
+                        showCustomSuccess(`تم استيراد النسخة الاحتياطية بنجاح!\n${backupData.salesData.length} سجل، التاريخ: ${new Date(backupData.timestamp).toLocaleString('ar-EG')}\n✅ تم حفظ البيانات بشكل دائم\nاستعادة بواسطة: ${currentUser.name}`, 'تم الاستيراد');
+                        showLoadingSpinner(false);
+                        resolve(true);
+                    } catch (err) {
+                        console.error(err);
+                        showCustomError('خطأ في قراءة ملف النسخة الاحتياطية: ' + err.message, 'خطأ الملف');
+                        showLoadingSpinner(false);
+                        resolve(false);
+                    }
+                };
+
+                reader.onerror = () => {
+                    showCustomError('خطأ في قراءة الملف', 'خطأ');
+                    showLoadingSpinner(false);
+                    resolve(false);
+                };
+
+                reader.readAsText(file);
+            });
+        }
+
+        window.downloadBackup = downloadBackup;
+        window.restoreBackup = restoreBackup;
+
+        // إضافة معالج للملف المرفوع
+        function setupBackupFileHandler() {
+            const backupFileInput = document.getElementById('backupFileInput');
+            if (backupFileInput) {
+                backupFileInput.addEventListener('change', async (e) => {
+                    if (e.target.files && e.target.files[0]) {
+                        // انتظر اكتمال عملية الاستيراد
+                        const success = await restoreBackup(e.target.files[0]);
+                        // إعادة تعيين القيمة فقط بعد الانتهاء
+                        if (success) {
+                            e.target.value = '';
+                        }
+                    }
+                });
+            }
+        }
+
+        window.setupBackupFileHandler = setupBackupFileHandler;
+
+        // اتصل بالدالة عند تحميل الصفحة
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupBackupFileHandler);
+        } else {
+            setupBackupFileHandler();
+        }
 
         function exportToExcel() {
+            // التحقق من الصلاحية: تصدير بيانات
+            if (!hasPermission('export')) {
+                showNoPermissionMessage('تصدير البيانات');
+                return;
+            }
+
             if (allData.length === 0) {
                 alert('لا توجد بيانات للتصدير');
                 return;
@@ -3043,6 +3923,8 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            
+            showCustomSuccess(`تم تصدير ${allData.length} سجل بنجاح`, 'تم التصدير');
         }
 
         window.exportToExcel = exportToExcel;
@@ -3324,8 +4206,8 @@
 
         // تقرير السحوبات والعجز
         function showWithdrawalsReport() {
-            // التحقق من أن المستخدم لديه صلاحيات المدير
-            if (!currentUser || !Array.isArray(currentUser.permissions) || !currentUser.permissions.includes('manageEmployees')) {
+            // التحقق من أن المستخدم لديه صلاحيات عرض البيانات الحساسة
+            if (!currentUser || !Array.isArray(currentUser.permissions) || !currentUser.permissions.includes('viewSensitiveData')) {
                 alert('❌ عذراً، لا توجد صلاحيات كافية لعرض هذا التقرير');
                 return;
             }
@@ -3593,7 +4475,7 @@
         // تصدير تقرير السحوبات والعجز إلى Excel
         function exportWithdrawalsToExcel() {
             // التحقق من الصلاحيات
-            if (!currentUser || !Array.isArray(currentUser.permissions) || !currentUser.permissions.includes('manageEmployees')) {
+            if (!currentUser || !Array.isArray(currentUser.permissions) || !currentUser.permissions.includes('viewSensitiveData')) {
                 alert('❌ عذراً، لا توجد صلاحيات كافية لتصدير هذا التقرير');
                 return;
             }
@@ -3900,7 +4782,7 @@
             console.log('[CASH] جاري تحميل بيانات الكاش...');
             try {
                 // تحقق من وجود Supabase
-                if (!window.supabase || typeof window.supabase.from !== 'function') {
+                if (!window.supabaseInstance || typeof window.supabaseInstance.from !== 'function') {
                     console.warn('[CASH] ⚠️ Supabase غير متاح، سيتم عرض البيانات المحلية');
                     displayCashReconciliation(null);
                     return;
@@ -3908,7 +4790,7 @@
 
                 // جلب بيانات التسليمات
                 console.log('📦 جاري جلب بيانات التسليمات...');
-                const { data: deliveries, error: delError } = await window.supabase
+                const { data: deliveries, error: delError } = await window.supabaseInstance
                     .from('cash_deliveries')
                     .select('*')
                     .order('created_at', { ascending: false });
@@ -3933,6 +4815,10 @@
         function displayCashReconciliation(deliveriesFromSupabase) {
             const tbody = document.getElementById('reconciliationBody');
             if (!tbody) return;
+
+            const manageCash = canManageCash();
+            const actionHeader = document.getElementById('reconActionHeader');
+            if (actionHeader) actionHeader.style.display = manageCash ? 'table-cell' : 'none';
 
             tbody.innerHTML = '';
 
@@ -4002,6 +4888,15 @@
 
                 const row = document.createElement('tr');
                 row.style.borderBottom = '1px solid #e0e0e0;';
+                const actionButtons = manageCash
+                    ? `
+                        <button onclick="openCashEditModal('${branch}')" style="padding:6px 10px;background:#ff9800;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:12px;margin-left:4px;">✏️ تعديل</button>
+                        <button onclick="showBranchDeliveries('${branch}')" style="padding:6px 10px;background:#2196f3;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:12px;">📋 التسليمات</button>
+                    `
+                    : `
+                        <button onclick="showBranchDeliveries('${branch}')" style="padding:6px 10px;background:#2196f3;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:12px;">📋 التسليمات</button>
+                    `;
+
                 row.innerHTML = `
                     <td style="padding:8px;text-align:right;font-weight:600;">${branch}</td>
                     <td style="padding:8px;text-align:center;">
@@ -4015,8 +4910,7 @@
                     </td>
                     <td style="padding:8px;text-align:center;font-size:13px;">${lastUpdate}</td>
                     <td style="padding:8px;text-align:center;">
-                        <button onclick="openCashEditModal('${branch}')" style="padding:6px 10px;background:#ff9800;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:12px;margin-left:4px;">✏️ تعديل</button>
-                        <button onclick="showBranchDeliveries('${branch}')" style="padding:6px 10px;background:#2196f3;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:12px;">📋 التسليمات</button>
+                        ${actionButtons}
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -4031,12 +4925,16 @@
 
         // حذف تسليم كاش
         async function deleteDelivery(id) {
+            if (!canManageCash()) {
+                showNoPermissionMessage('حذف تسليم الكاش');
+                return;
+            }
             if (!confirm('هل أنت متأكد من حذف هذا التسليم؟')) return;
 
             try {
-                if (!window.supabase) throw new Error('قاعدة البيانات غير جاهزة');
+                if (!window.supabaseInstance) throw new Error('قاعدة البيانات غير جاهزة');
 
-                const { error } = await window.supabase
+                const { error } = await window.supabaseInstance
                     .from('cash_deliveries')
                     .delete()
                     .eq('id', id);
@@ -4058,7 +4956,10 @@
         // إنشاء موديل التسليمات عند التحميل
         createDeliveriesModal();
 
-        }); // نهاية runAfterSupabase callback
+        } // نهاية دالة startMainScript
+        
+        // بدء تنفيذ الكود الرئيسي
+        startMainScript();
     </script>
 
     <footer style="position:fixed;bottom:0;left:0;right:0;text-align:center;padding:15px;background:#f8f9fa;border-top:2px solid #e0e0e0;color:#666;font-size:14px;">
