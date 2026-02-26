@@ -616,6 +616,7 @@
                     </button>
                     <a href="index.html">الصفحة الرئيسية</a>
                     <a href="admin.html" id="sidebarAdminLink">لوحة الإدارة</a>
+                    <a href="hr-management.html" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);">🏢 الموارد البشرية</a>
                 </nav>
             </div>
             <div class="sidebar-card">
@@ -810,6 +811,12 @@
                 document.querySelectorAll('.sensitive-data').forEach(el => {
                     el.style.display = 'none';
                 });
+            }
+            
+            // إخفاء/إظهار قسم الفروع المفقودة - للمدراء فقط
+            const sidebarMissingReports = document.getElementById('sidebarMissingReportsLink');
+            if (sidebarMissingReports) {
+                sidebarMissingReports.style.display = hasPermission('manageEmployees') ? 'inline-flex' : 'none';
             }
         }
         let currentDisplayData = [];
@@ -1265,12 +1272,13 @@
         function switchView(view) {
             const hasCashAccess = currentUser && (hasPermission('manageCash') || hasPermission('viewCash'));
             const canViewWithdrawals = currentUser && (hasPermission('viewSensitiveData') || hasPermission('deleteSales'));
-            const canViewMissingReports = currentUser && (hasPermission('viewAnalytics') || hasPermission('deleteSales'));
+            const canViewMissingReports = currentUser && hasPermission('manageEmployees'); // فقط المدراء
             
             if (view === 'withdrawals' && !canViewWithdrawals) {
                 view = 'reports';
             }
             if (view === 'missingReports' && !canViewMissingReports) {
+                showNoPermissionMessage('عرض الفروع المفقودة (صلاحية المدير فقط)');
                 view = 'reports';
             }
             if (view === 'cash' && !hasCashAccess) {
@@ -1590,6 +1598,10 @@
             // رابط لوحة الإدارة
             const sidebarAdmin = document.getElementById('sidebarAdminLink');
             if (sidebarAdmin) sidebarAdmin.style.display = hasManageEmployees ? 'inline-flex' : 'none';
+            
+            // رابط الفروع المفقودة - للمدراء فقط
+            const sidebarMissingReports = document.getElementById('sidebarMissingReportsLink');
+            if (sidebarMissingReports) sidebarMissingReports.style.display = hasManageEmployees ? 'inline-flex' : 'none';
                 // إدارة ظهور تسويات الكاش حسب الصلاحيات
                 const sidebarCash = document.getElementById('sidebarCashLink');
                 if (sidebarCash) sidebarCash.style.display = canViewCash ? 'inline-flex' : 'none';
@@ -1754,37 +1766,48 @@
                 // الفروع المفقودة
                 const missingBranches = allBranches.filter(branch => !branchesWithReports.includes(branch));
 
-                // تحديث العداد والرابط في الـ sidebar
+                // التحقق من صلاحية المدير
+                const isManager = currentUser && hasPermission('manageEmployees');
+                
+                // تحديث العداد والرابط في الـ sidebar - للمدراء فقط
                 const missingCountEl = document.getElementById('missingBranchesCount');
                 const missingLinkEl = document.getElementById('sidebarMissingReportsLink');
                 
                 if (missingCountEl) {
-                    if (shouldShowMissingAlert) {
+                    if (isManager && shouldShowMissingAlert) {
                         missingCountEl.textContent = missingBranches.length;
                         missingCountEl.style.background = 'rgba(255,255,255,0.9)';
                         missingCountEl.style.color = '#ff6b6b';
-                    } else {
+                        missingCountEl.style.display = 'inline-block';
+                    } else if (isManager && !shouldShowMissingAlert) {
                         missingCountEl.textContent = '-';
                         missingCountEl.style.background = 'rgba(200,200,200,0.5)';
                         missingCountEl.style.color = '#999';
+                        missingCountEl.style.display = 'inline-block';
+                    } else {
+                        // إخفاء العداد لغير المدراء
+                        missingCountEl.style.display = 'none';
                     }
                 }
 
                 if (missingLinkEl) {
-                    if (shouldShowMissingAlert) {
+                    // التحقق من صلاحية المدير
+                    const isManager = currentUser && hasPermission('manageEmployees');
+                    
+                    if (isManager && shouldShowMissingAlert) {
                         // استعادة الألوان الأصلية بعد الساعة 04:00
                         missingLinkEl.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)';
                         missingLinkEl.style.color = 'white';
                         if (missingBranches.length > 0) {
                             showMissingBranchesAlert(missingBranches);
                         }
-                    } else {
+                    } else if (isManager && !shouldShowMissingAlert) {
                         // تغيير الألوان قبل الساعة 04:00
                         missingLinkEl.style.background = 'linear-gradient(135deg, #d0d0d0 0%, #c0c0c0 100%)';
                         missingLinkEl.style.color = '#999';
                     }
-                    // الخيار يظهر دائماً
-                    missingLinkEl.style.display = 'block';
+                    // الخيار يظهر فقط للمدراء
+                    missingLinkEl.style.display = isManager ? 'block' : 'none';
                 }
                 
                 // فحص التقارير المكررة
@@ -2078,7 +2101,7 @@
 
             if (!allData || allData.length === 0) {
                 if (dashboardStats) dashboardStats.style.display = 'none';
-                if (dateEl) dateEl.textContent = new Date().toLocaleDateString('ar-SA');
+                if (dateEl) dateEl.textContent = new Date().toLocaleDateString('ar-EG');
                 if (branchesEl) branchesEl.textContent = '0';
                 return;
             }
@@ -2098,16 +2121,16 @@
                 const statTotalCard = document.getElementById('statTotalCard');
                 const statTotalReturns = document.getElementById('statTotalReturns');
 
-                if (statTotalSales) statTotalSales.textContent = totalSales.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 });
-                if (statTotalCash) statTotalCash.textContent = totalCash.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 });
-                if (statTotalCard) statTotalCard.textContent = totalCard.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 });
-                if (statTotalReturns) statTotalReturns.textContent = totalReturns.toLocaleString('ar-SA', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 });
+                if (statTotalSales) statTotalSales.textContent = totalSales.toLocaleString('ar-EG', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 });
+                if (statTotalCash) statTotalCash.textContent = totalCash.toLocaleString('ar-EG', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 });
+                if (statTotalCard) statTotalCard.textContent = totalCard.toLocaleString('ar-EG', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 });
+                if (statTotalReturns) statTotalReturns.textContent = totalReturns.toLocaleString('ar-EG', { style: 'currency', currency: 'SAR', minimumFractionDigits: 0 });
 
                 dashboardStats.style.display = 'grid';
             }
 
             // تحديث معلومات رأس لوحة التحكم
-            if (dateEl) dateEl.textContent = new Date().toLocaleDateString('ar-SA');
+            if (dateEl) dateEl.textContent = new Date().toLocaleDateString('ar-EG');
             if (branchesEl) branchesEl.textContent = uniqueBranches;
         }
 
@@ -2537,7 +2560,7 @@
                 tbody.innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:#999;">لا توجد تسليمات</td></tr>';
             } else {
                 deliveries.forEach(d => {
-                    const dateStr = new Date(d.created_at || d.delivered_at).toLocaleDateString('ar-SA');
+                    const dateStr = new Date(d.created_at || d.delivered_at).toLocaleDateString('ar-EG');
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td style="padding:12px;text-align:right;">${d.branch}</td>
@@ -2887,7 +2910,7 @@
                 notes: notes || '-',
                 timestamp: new Date().toISOString(),
                 date: new Date().toISOString().split('T')[0],
-                time: new Date().toLocaleTimeString('ar-SA', { hour12: false })
+                time: new Date().toLocaleTimeString('ar-EG', { hour12: false })
             };
             cashEditHistory.push(editRecord);
             localStorage.setItem('cashEditHistory', JSON.stringify(cashEditHistory));
@@ -4880,7 +4903,7 @@
                 const expected = data.expected;
                 const delivered = data.delivered;
                 const remaining = expected - delivered;
-                const lastUpdate = data.lastUpdate ? new Date(data.lastUpdate).toLocaleDateString('ar-SA') : '-';
+                const lastUpdate = data.lastUpdate ? new Date(data.lastUpdate).toLocaleDateString('ar-EG') : '-';
                 
                 totalExpected += expected;
                 totalDelivered += delivered;

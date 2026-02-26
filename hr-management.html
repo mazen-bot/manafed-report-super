@@ -1,0 +1,2374 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة الموارد البشرية - الإجازات والإنذارات</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-details {
+            text-align: right;
+        }
+
+        .user-name {
+            font-weight: 700;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .user-role {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #ed8936;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #718096;
+            color: white;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #4a5568;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab:hover {
+            transform: translateY(-2px);
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .requests-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .requests-table th {
+            background: #f7fafc;
+            padding: 15px;
+            text-align: right;
+            font-weight: 600;
+            color: #4a5568;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .requests-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .requests-table tr:hover {
+            background: #f7fafc;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-pending {
+            background: #fef5e7;
+            color: #f39c12;
+        }
+
+        .status-approved {
+            background: #d4edda;
+            color: #28a745;
+        }
+
+        .status-rejected {
+            background: #f8d7da;
+            color: #dc3545;
+        }
+
+        .warning-card {
+            background: #fff5f5;
+            border-right: 4px solid #f56565;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .warning-card.acknowledged {
+            background: #f0fdf4;
+            border-right-color: #22c55e;
+            opacity: 0.8;
+        }
+
+        .warning-card.pending {
+            background: #fff5f5;
+            border-right-color: #f56565;
+            box-shadow: 0 0 15px rgba(245, 101, 101, 0.2);
+        }
+
+        .warning-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .warning-level {
+            font-weight: 700;
+            color: #c53030;
+        }
+
+        .warning-date {
+            color: #718096;
+            font-size: 13px;
+        }
+
+        .warning-reason {
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .warning-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .warning-status.pending {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .warning-status.acknowledged {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .warning-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .btn-acknowledge {
+            padding: 8px 16px;
+            background: #22c55e;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-acknowledge:hover {
+            background: #16a34a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+
+        .acknowledgement-info {
+            font-size: 12px;
+            color: #16a34a;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #718096;
+        }
+
+        .login-section {
+            max-width: 450px;
+            margin: 100px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-title {
+            font-size: 28px;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .requests-table {
+                font-size: 12px;
+            }
+
+            .requests-table th,
+            .requests-table td {
+                padding: 10px 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- قسم تسجيل الدخول -->
+    <div id="loginSection" class="login-section">
+        <div class="login-header">
+            <h1 class="login-title">🏢 نظام الموارد البشرية</h1>
+            <p style="color: #718096;">إدارة الإجازات والإنذارات</p>
+        </div>
+        <div class="form-group">
+            <label>الرقم الوظيفي</label>
+            <input type="text" id="loginEmployeeId" placeholder="أدخل الرقم الوظيفي">
+        </div>
+        <div class="form-group">
+            <label>كلمة المرور</label>
+            <input type="password" id="loginPassword" placeholder="أدخل كلمة المرور">
+        </div>
+        <button id="btnLogin" class="btn btn-primary" style="width: 100%; justify-content: center;">تسجيل الدخول</button>
+        <div id="loginMessage" style="margin-top: 15px; text-align: center; color: #e53e3e;"></div>
+    </div>
+
+    <!-- المحتوى الرئيسي -->
+    <div id="mainContent" style="display: none;">
+        <div class="container">
+            <!-- الهيدر -->
+            <div class="header">
+                <h1>🏢 نظام الموارد البشرية</h1>
+                <div class="user-info">
+                    <div class="user-details">
+                        <div class="user-name" id="userName">-</div>
+                        <div class="user-role" id="userRole">-</div>
+                    </div>
+                    <button id="btnLogout" class="btn btn-danger">تسجيل الخروج</button>
+                    <a href="reports.html" class="btn btn-secondary">📊 التقارير</a>
+                    <a href="index.html" class="btn btn-secondary">📝 المبيعات</a>
+                </div>
+            </div>
+
+            <!-- الإحصائيات -->
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card" id="leaveBalanceCard">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #e6f7ff;">🏖️</div>
+                        <div>
+                            <div class="stat-value" id="leaveBalance">-</div>
+                            <div class="stat-label">رصيد الإجازات المتبقي</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #fff3e0;">⏳</div>
+                        <div>
+                            <div class="stat-value" id="pendingRequests">-</div>
+                            <div class="stat-label">الطلبات المعلقة</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #ffebee;">⚠️</div>
+                        <div>
+                            <div class="stat-value" id="warningsCount">-</div>
+                            <div class="stat-label">عدد الإنذارات</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: #e8f5e9;">✅</div>
+                        <div>
+                            <div class="stat-value" id="approvedRequests">-</div>
+                            <div class="stat-label">الطلبات المقبولة</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- التبويبات -->
+            <div class="tabs">
+                <button class="tab active" data-tab="myRequests">📋 طلباتي</button>
+                <button class="tab" data-tab="newRequest">➕ طلب جديد</button>
+                <button class="tab" data-tab="myWarnings">⚠️ إنذاراتي</button>
+                <button class="tab" data-tab="medicalCertificates" id="tabMedicalCerts">📄 الملفات الطبية</button>
+                <button class="tab" data-tab="reports" id="tabReports">📊 التقارير</button>
+                <button class="tab" data-tab="allRequests" id="tabAllRequests" style="display: none;">👥 جميع الطلبات</button>
+                <button class="tab" data-tab="addWarning" id="tabAddWarning" style="display: none;">🚨 إضافة إنذار</button>
+            </div>
+
+            <!-- قسم طلباتي -->
+            <div class="content-section active" id="myRequests">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">طلباتي السابقة</h2>
+                    </div>
+                    <table class="requests-table">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>النوع</th>
+                                <th>من</th>
+                                <th>إلى</th>
+                                <th>الأيام</th>
+                                <th>السبب</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="myRequestsBody">
+                            <tr>
+                                <td colspan="7" class="empty-state">
+                                    <div class="empty-state-icon">📭</div>
+                                    <p>لا توجد طلبات بعد</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- قسم طلب جديد -->
+            <div class="content-section" id="newRequest">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">تقديم طلب جديد</h2>
+                    </div>
+                    <form id="leaveRequestForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>نوع الطلب <span style="color: red;">*</span></label>
+                                <select id="requestType" required>
+                                    <option value="">اختر النوع</option>
+                                    <option value="vacation">إجازة عادية</option>
+                                    <option value="sick">إجازة مرضية</option>
+                                    <option value="permission">استئذان</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>من تاريخ <span style="color: red;">*</span></label>
+                                <input type="date" id="requestFrom" required>
+                            </div>
+                            <div class="form-group">
+                                <label>إلى تاريخ <span style="color: red;">*</span></label>
+                                <input type="date" id="requestTo" required>
+                            </div>
+                            <div class="form-group">
+                                <label>عدد الأيام</label>
+                                <input type="number" id="requestDays" readonly style="background: #f7fafc;">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>السبب / الملاحظات <span style="color: red;">*</span></label>
+                            <textarea id="requestReason" required placeholder="اكتب سبب الطلب..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">📤 إرسال الطلب</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- قسم إنذاراتي -->
+            <div class="content-section" id="myWarnings">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">سجل الإنذارات الخاص بي</h2>
+                    </div>
+                    <div id="myWarningsContainer">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">✅</div>
+                            <p>لا توجد إنذارات</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم الملفات الطبية -->
+            <div class="content-section" id="medicalCertificates">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">الملفات الطبية للإجازات المرضية</h2>
+                        <p style="margin: 0; font-size: 13px; color: #666;">يجب رفع الشهادة الطبية خلال 3 أيام من تاريخ الطلب</p>
+                    </div>
+                    <div id="medicalCertsContainer" style="max-height: 600px; overflow-y: auto;">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📄</div>
+                            <p>لا توجد طلبات إجازة مرضية معلقة</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم التقارير والاستعلام -->
+            <div class="content-section" id="reports">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">التقارير والاستعلام</h2>
+                    </div>
+                    <form id="reportForm">
+                        <div class="form-grid">
+                            <div class="form-group" id="reportEmployeeGroup">
+                                <label>الموظف</label>
+                                <select id="reportEmployee">
+                                    <option value="">الكل</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>من تاريخ</label>
+                                <input type="date" id="reportFrom">
+                            </div>
+                            <div class="form-group">
+                                <label>إلى تاريخ</label>
+                                <input type="date" id="reportTo">
+                            </div>
+                            <div class="form-group">
+                                <label>نوع الطلب</label>
+                                <select id="reportRequestType">
+                                    <option value="">الكل</option>
+                                    <option value="vacation">إجازة عادية</option>
+                                    <option value="sick">إجازة مرضية</option>
+                                    <option value="permission">استئذان</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>حالة الطلب</label>
+                                <select id="reportRequestStatus">
+                                    <option value="">الكل</option>
+                                    <option value="pending">معلق</option>
+                                    <option value="approved">مقبول</option>
+                                    <option value="rejected">مرفوض</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>مستوى الإنذار</label>
+                                <select id="reportWarningLevel">
+                                    <option value="">الكل</option>
+                                    <option value="تنبيه">تنبيه</option>
+                                    <option value="إنذار أول">إنذار أول</option>
+                                    <option value="إنذار ثاني">إنذار ثاني</option>
+                                    <option value="إنذار نهائي">إنذار نهائي</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>حالة الإنذار</label>
+                                <select id="reportWarningStatus">
+                                    <option value="">الكل</option>
+                                    <option value="pending">بانتظار التأكيد</option>
+                                    <option value="acknowledged">مؤكد</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">🔍 عرض التقرير</button>
+                    </form>
+                </div>
+
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <h2 class="card-title">تقارير الإجازات</h2>
+                        <div class="stat-label">عدد النتائج: <span id="reportRequestsCount">0</span></div>
+                    </div>
+                    <table class="requests-table">
+                        <thead>
+                            <tr>
+                                <th>الموظف</th>
+                                <th>الفرع</th>
+                                <th>النوع</th>
+                                <th>من</th>
+                                <th>إلى</th>
+                                <th>الأيام</th>
+                                <th>الملف المرفوع</th>
+                                <th>حالة الرفع</th>
+                                <th>مدة التأخير</th>
+                                <th>الحالة</th>
+                                <th>تاريخ الطلب</th>
+                                <th class="manager-only">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportRequestsBody">
+                            <tr>
+                                <td colspan="12" class="empty-state">
+                                    <div class="empty-state-icon">📊</div>
+                                    <p>قم بتحديد الفلاتر ثم اضغط "عرض التقرير"</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <h2 class="card-title">تقارير الإنذارات</h2>
+                        <div class="stat-label">عدد النتائج: <span id="reportWarningsCount">0</span></div>
+                    </div>
+                    <table class="requests-table">
+                        <thead>
+                            <tr>
+                                <th>الموظف</th>
+                                <th>المستوى</th>
+                                <th>الحالة</th>
+                                <th>سبب الإنذار</th>
+                                <th>تاريخ الإنذار</th>
+                                <th>تاريخ التأكيد</th>
+                                <th class="manager-only">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportWarningsBody">
+                            <tr>
+                                <td colspan="7" class="empty-state">
+                                    <div class="empty-state-icon">📊</div>
+                                    <p>قم بتحديد الفلاتر ثم اضغط "عرض التقرير"</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- قسم جميع الطلبات (للمدير) -->
+            <div class="content-section" id="allRequests">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">إدارة جميع الطلبات</h2>
+                    </div>
+                    <table class="requests-table">
+                        <thead>
+                            <tr>
+                                <th>الموظف</th>
+                                <th>الفرع</th>
+                                <th>النوع</th>
+                                <th>من</th>
+                                <th>إلى</th>
+                                <th>الأيام</th>
+                                <th>السبب</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allRequestsBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- قسم إضافة إنذار (للمدير) -->
+            <div class="content-section" id="addWarning">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">إضافة إنذار لموظف</h2>
+                    </div>
+                    <form id="warningForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>الموظف <span style="color: red;">*</span></label>
+                                <select id="warningEmployee" required>
+                                    <option value="">اختر الموظف</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>مستوى الإنذار <span style="color: red;">*</span></label>
+                                <select id="warningLevel" required>
+                                    <option value="">اختر المستوى</option>
+                                    <option value="تنبيه">تنبيه</option>
+                                    <option value="إنذار أول">إنذار أول</option>
+                                    <option value="إنذار ثاني">إنذار ثاني</option>
+                                    <option value="إنذار نهائي">إنذار نهائي</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>سبب الإنذار <span style="color: red;">*</span></label>
+                            <textarea id="warningReason" required placeholder="اكتب سبب الإنذار بالتفصيل..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-warning">⚠️ إضافة الإنذار</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="custom-alerts.js"></script>
+    <script src="override-alerts.js"></script>
+    <script>
+        let supabaseAttempts = 0;
+        const maxAttempts = 50;
+        
+        function initializeSupabase() {
+            supabaseAttempts++;
+            
+            if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
+                if (supabaseAttempts < maxAttempts) {
+                    console.log(`⏳ انتظار تحميل Supabase... (محاولة ${supabaseAttempts}/${maxAttempts})`);
+                    setTimeout(initializeSupabase, 100);
+                } else {
+                    console.error('❌ فشل تحميل مكتبة Supabase من CDN');
+                    alert('❌ خطأ في الاتصال: تعذر تحميل مكتبة قاعدة البيانات. يرجى إعادة تحميل الصفحة.');
+                }
+                return;
+            }
+            
+            const supabaseUrl = 'https://rgblfimktfasocahzqtg.supabase.co';
+            const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnYmxmaW1rdGZhc29jYWh6cXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NDg5NTQsImV4cCI6MjA4NTUyNDk1NH0.BMKXS1hTX5ntacnOQH5c2I5KDp5jpSWwJeHIDkz2els';
+            
+            try {
+                window.supabaseInstance = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+                console.log('✅ Supabase تم تحميله وتهيئته بنجاح');
+                initializeApp();
+            } catch (err) {
+                console.error('❌ خطأ في تهيئة Supabase:', err);
+                alert('❌ خطأ في تهيئة قاعدة البيانات. يرجى إعادة تحميل الصفحة.');
+            }
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeSupabase);
+        } else {
+            initializeSupabase();
+        }
+
+        let currentUser = null;
+        let allRequests = [];
+        let allWarnings = [];
+        let reportRequestsCache = [];
+        let reportWarningsCache = [];
+        let hrSettings = {
+            leave_balance_visible: true,
+            min_service_months: 12,
+            medical_upload_deadline_days: 3
+        };
+        let leaveEntitlementRules = [];
+
+        function initializeApp() {
+            const supabase = window.supabaseInstance;
+
+            // التحقق من الجلسة المحفوظة
+            const sessionData = localStorage.getItem('hrSession');
+            if (sessionData) {
+                try {
+                    const { user, timestamp } = JSON.parse(sessionData);
+                    const elapsed = Date.now() - timestamp;
+                    const oneHour = 60 * 60 * 1000;
+
+                    if (elapsed < oneHour) {
+                        currentUser = user;
+                        loadInitialUserData();
+                    }
+                } catch (err) {
+                    console.error(err);
+                    localStorage.removeItem('hrSession');
+                }
+            }
+
+            // تسجيل الدخول
+            document.getElementById('btnLogin').addEventListener('click', async function() {
+                const employeeId = document.getElementById('loginEmployeeId').value.trim();
+                const password = document.getElementById('loginPassword').value.trim();
+                const loginMessage = document.getElementById('loginMessage');
+
+                if (!employeeId || !password) {
+                    loginMessage.textContent = 'الرجاء إدخال الرقم الوظيفي وكلمة المرور';
+                    return;
+                }
+
+                try {
+                    loginMessage.textContent = '⏳ جاري التحقق...';
+                    loginMessage.style.color = '#3182ce';
+
+                    const { data: empData, error } = await supabase
+                        .from('employees')
+                        .select('*')
+                        .eq('employee_id', employeeId)
+                        .eq('password', password)
+                        .single();
+
+                    if (error || !empData) {
+                        loginMessage.textContent = '❌ بيانات الدخول غير صحيحة';
+                        loginMessage.style.color = '#e53e3e';
+                        return;
+                    }
+
+                    currentUser = {
+                        id: empData.id,
+                        employee_id: empData.employee_id,
+                        name: empData.name || 'موظف',
+                        branch_name: empData.branch_name || 'الرئيسية',
+                        permissions: Array.isArray(empData.permissions) ? empData.permissions : [],
+                        employment_type: empData.employment_type || '',
+                        job_grade: empData.job_grade || '',
+                        hire_date: empData.hire_date || null,
+                        leave_eligible_override: empData.leave_eligible_override ?? null,
+                        annual_leave_days_override: empData.annual_leave_days_override ?? null,
+                        leave_balance_visible_override: empData.leave_balance_visible_override ?? null
+                    };
+
+                    localStorage.setItem('hrSession', JSON.stringify({
+                        user: currentUser,
+                        timestamp: Date.now()
+                    }));
+
+                    await loadInitialUserData();
+                } catch (err) {
+                    console.error(err);
+                    loginMessage.textContent = '❌ خطأ في الاتصال';
+                    loginMessage.style.color = '#e53e3e';
+                }
+            });
+
+            // تسجيل الخروج
+            document.getElementById('btnLogout').addEventListener('click', async function() {
+                if (await confirmAction('هل تريد تسجيل الخروج؟')) {
+                    localStorage.removeItem('hrSession');
+                    currentUser = null;
+                    document.getElementById('loginSection').style.display = 'block';
+                    document.getElementById('mainContent').style.display = 'none';
+                    document.getElementById('loginEmployeeId').value = '';
+                    document.getElementById('loginPassword').value = '';
+                    document.getElementById('loginMessage').textContent = '';
+                }
+            });
+
+            // التبويبات
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabName = this.dataset.tab;
+                    
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+                    
+                    this.classList.add('active');
+                    document.getElementById(tabName).classList.add('active');
+                });
+            });
+
+            // حساب عدد الأيام
+            document.getElementById('requestFrom').addEventListener('change', calculateDays);
+            document.getElementById('requestTo').addEventListener('change', calculateDays);
+
+            // إرسال طلب إجازة
+            document.getElementById('leaveRequestForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await submitLeaveRequest();
+            });
+
+            // إرسال إنذار
+            document.getElementById('warningForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await submitWarning();
+            });
+
+            // تشغيل الاستعلام
+            document.getElementById('reportForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await loadReports();
+            });
+        }
+
+        function showMainContent() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            
+            document.getElementById('userName').textContent = currentUser.name;
+            document.getElementById('userRole').textContent = `${currentUser.employee_id} - ${currentUser.branch_name}`;
+
+            // إظهار تبويبات المدير
+            const isManager = currentUser.permissions.includes('manageEmployees');
+            document.getElementById('tabAllRequests').style.display = isManager ? 'block' : 'none';
+            document.getElementById('tabAddWarning').style.display = isManager ? 'block' : 'none';
+
+            const reportEmployeeGroup = document.getElementById('reportEmployeeGroup');
+            const reportEmployeeSelect = document.getElementById('reportEmployee');
+
+            if (!isManager) {
+                reportEmployeeGroup.style.display = 'none';
+                reportEmployeeSelect.value = currentUser.employee_id;
+            } else {
+                reportEmployeeGroup.style.display = 'block';
+            }
+
+            document.querySelectorAll('.manager-only').forEach(element => {
+                element.style.display = isManager ? '' : 'none';
+            });
+        }
+
+        async function loadInitialUserData() {
+            await loadHrSettings();
+            await loadEntitlementRules();
+            showMainContent();
+            await loadUserData();
+        }
+
+        function calculateDays() {
+            const from = document.getElementById('requestFrom').value;
+            const to = document.getElementById('requestTo').value;
+
+            if (from && to) {
+                const fromDate = new Date(from);
+                const toDate = new Date(to);
+                const days = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
+                document.getElementById('requestDays').value = days > 0 ? days : 0;
+            }
+        }
+
+        async function confirmAction(message) {
+            const result = window.confirm(message);
+            return result instanceof Promise ? await result : result;
+        }
+
+        async function promptAction(message, defaultValue = '') {
+            const result = window.prompt(message, defaultValue);
+            return result instanceof Promise ? await result : result;
+        }
+
+        async function loadHrSettings() {
+            const supabase = window.supabaseInstance;
+            try {
+                const { data, error } = await supabase
+                    .from('hr_settings')
+                    .select('*')
+                    .order('id', { ascending: true })
+                    .limit(1);
+
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    hrSettings = {
+                        leave_balance_visible: data[0].leave_balance_visible ?? true,
+                        min_service_months: data[0].min_service_months ?? 12,
+                        medical_upload_deadline_days: data[0].medical_upload_deadline_days ?? 3
+                    };
+                }
+            } catch (err) {
+                console.error('خطأ في تحميل إعدادات الإجازات:', err);
+            }
+        }
+
+        async function loadEntitlementRules() {
+            const supabase = window.supabaseInstance;
+            try {
+                const { data, error } = await supabase
+                    .from('leave_entitlement_rules')
+                    .select('*')
+                    .order('employment_type', { ascending: true })
+                    .order('job_grade', { ascending: true });
+
+                if (error) throw error;
+                leaveEntitlementRules = data || [];
+            } catch (err) {
+                console.error('خطأ في تحميل قواعد الاستحقاق:', err);
+            }
+        }
+
+        function getLeaveEligibility() {
+            if (!currentUser) return true;
+
+            if (currentUser.leave_eligible_override === true) return true;
+            if (currentUser.leave_eligible_override === false) return false;
+
+            if (!currentUser.hire_date) return true;
+
+            const hireDate = new Date(currentUser.hire_date);
+            const now = new Date();
+            const monthsOfService = (now.getFullYear() - hireDate.getFullYear()) * 12 + (now.getMonth() - hireDate.getMonth());
+            return monthsOfService >= (hrSettings.min_service_months || 0);
+        }
+
+        function getAnnualEntitlementDays() {
+            if (currentUser?.annual_leave_days_override !== null && currentUser?.annual_leave_days_override !== undefined) {
+                return currentUser.annual_leave_days_override;
+            }
+
+            const rule = leaveEntitlementRules.find(r =>
+                (r.employment_type || '') === (currentUser?.employment_type || '')
+                && (r.job_grade || '') === (currentUser?.job_grade || '')
+            );
+
+            return rule?.annual_days ?? 30;
+        }
+
+        async function loadUserData() {
+            const supabase = window.supabaseInstance;
+
+            try {
+                // جلب طلبات الموظف
+                const { data: requests, error: reqError } = await supabase
+                    .from('leave_requests')
+                    .select('*')
+                    .eq('employee_id', currentUser.employee_id)
+                    .order('created_at', { ascending: false });
+
+                if (!reqError) {
+                    allRequests = requests || [];
+                    displayMyRequests();
+                    updateStats();
+                }
+
+                // جلب إنذارات الموظف
+                const { data: warnings, error: warnError } = await supabase
+                    .from('employee_warnings')
+                    .select('*')
+                    .eq('employee_id', currentUser.employee_id)
+                    .order('created_at', { ascending: false });
+
+                if (!warnError) {
+                    displayMyWarnings(warnings || []);
+                    // تحديث عداد الإنذارات في الإحصائيات
+                    document.getElementById('warningsCount').textContent = (warnings || []).length;
+                }
+
+                // تحميل الإجازات المرضية للملفات الطبية
+                await loadMedicalCertificatesRequests();
+
+                // للمدير: جلب جميع الطلبات
+                if (currentUser.permissions.includes('manageEmployees')) {
+                    await loadAllRequests();
+                    await loadEmployeesForSelect();
+                }
+            } catch (err) {
+                console.error('خطأ في تحميل البيانات:', err);
+            }
+        }
+
+        function displayMyRequests() {
+            const tbody = document.getElementById('myRequestsBody');
+            
+            if (allRequests.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <p>لا توجد طلبات بعد</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = allRequests.map(req => `
+                <tr>
+                    <td>${new Date(req.created_at).toLocaleDateString('ar-EG')}</td>
+                    <td>${getRequestTypeLabel(req.request_type)}</td>
+                    <td>${req.from_date}</td>
+                    <td>${req.to_date}</td>
+                    <td>${req.days_count} يوم</td>
+                    <td>${req.reason}</td>
+                    <td><span class="status-badge status-${req.status}">${getStatusLabel(req.status)}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function displayMyWarnings(warnings) {
+            console.log('[WARNINGS] عرض الإنذارات:', warnings);
+            
+            const container = document.getElementById('myWarningsContainer');
+            
+            if (warnings.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">✅</div>
+                        <p>لا توجد إنذارات</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = warnings.map(warning => {
+                const isAcknowledged = warning.acknowledged;
+                const statusClass = isAcknowledged ? 'acknowledged' : 'pending';
+                const statusText = isAcknowledged ? '✓ تم التأكيد' : '⚠ بانتظار التأكيد';
+                const acknowledgedDate = warning.acknowledged_at ? new Date(warning.acknowledged_at).toLocaleDateString('ar-EG') : '';
+                
+                console.log('[WARNING]', warning.id, '- حالة التأكيد:', isAcknowledged, '- تاريخ:', acknowledgedDate);
+                
+                return `
+                    <div class="warning-card ${statusClass}">
+                        <div class="warning-header">
+                            <span class="warning-level">${warning.warning_level}</span>
+                            <span class="warning-status ${statusClass}">${statusText}</span>
+                            <span class="warning-date">${new Date(warning.created_at).toLocaleDateString('ar-EG')}</span>
+                        </div>
+                        <div class="warning-reason">${warning.reason}</div>
+                        ${!isAcknowledged ? `
+                            <div class="warning-actions">
+                                <button class="btn-acknowledge" onclick="acknowledgeWarning(${warning.id})">
+                                    ✓ تأكيد استلام الإنذار
+                                </button>
+                            </div>
+                        ` : `
+                            <div class="acknowledgement-info">
+                                ✓ تم التأكيد بتاريخ ${acknowledgedDate}
+                            </div>
+                        `}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateStats() {
+            const pending = allRequests.filter(r => r.status === 'pending').length;
+            const approved = allRequests.filter(r => r.status === 'approved').length;
+
+            const balanceCard = document.getElementById('leaveBalanceCard');
+            const visibilityOverride = currentUser?.leave_balance_visible_override;
+            const showBalance = visibilityOverride === true
+                ? true
+                : visibilityOverride === false
+                    ? false
+                    : hrSettings.leave_balance_visible;
+
+            if (!showBalance) {
+                balanceCard.style.display = 'none';
+            } else {
+                balanceCard.style.display = '';
+                const usedDays = allRequests
+                    .filter(r => r.status === 'approved' && r.request_type === 'vacation')
+                    .reduce((sum, r) => sum + (r.days_count || 0), 0);
+                const annualEntitlement = getAnnualEntitlementDays();
+                const remainingDays = annualEntitlement - usedDays;
+                document.getElementById('leaveBalance').textContent = `${remainingDays} يوم`;
+            }
+
+            document.getElementById('pendingRequests').textContent = pending;
+            document.getElementById('approvedRequests').textContent = approved;
+        }
+
+        async function submitLeaveRequest() {
+            const supabase = window.supabaseInstance;
+
+            const requestType = document.getElementById('requestType').value;
+            const fromDate = document.getElementById('requestFrom').value;
+            const toDate = document.getElementById('requestTo').value;
+            const daysCount = parseInt(document.getElementById('requestDays').value);
+            const reason = document.getElementById('requestReason').value;
+
+            if (requestType === 'vacation' && !getLeaveEligibility()) {
+                showCustomError('❌ أنت غير مستحق للإجازات حالياً حسب الشروط المعتمدة', 'خطأ');
+                return;
+            }
+
+            const medicalDeadlineDays = hrSettings.medical_upload_deadline_days || 3;
+            // حساب الموعد النهائي لرفع الملف (حسب الإعدادات) للإجازات المرضية فقط
+            const attachmentDeadline = requestType === 'sick' 
+                ? new Date(Date.now() + medicalDeadlineDays * 24 * 60 * 60 * 1000).toISOString()
+                : null;
+
+            const requestData = {
+                employee_id: currentUser.employee_id,
+                employee_name: currentUser.name,
+                branch: currentUser.branch_name,
+                request_type: requestType,
+                from_date: fromDate,
+                to_date: toDate,
+                days_count: daysCount,
+                reason: reason,
+                status: 'pending',
+                attachment_uploaded: false,
+                attachment_deadline: attachmentDeadline,
+                created_at: new Date().toISOString()
+            };
+
+            try {
+                const { data, error } = await supabase
+                    .from('leave_requests')
+                    .insert([requestData]);
+
+                if (error) throw error;
+
+                const successMsg = requestType === 'sick'
+                    ? `تم إرسال الطلب بنجاح! يرجى رفع الشهادة الطبية خلال ${medicalDeadlineDays} أيام.`
+                    : 'تم إرسال الطلب بنجاح! سيتم مراجعته من قبل الإدارة.';
+
+                showCustomSuccess(successMsg, 'نجح الإرسال');
+                document.getElementById('leaveRequestForm').reset();
+                await loadUserData();
+            } catch (err) {
+                console.error('خطأ في إرسال الطلب:', err);
+                showCustomError('فشل إرسال الطلب. حاول مرة أخرى.', 'خطأ');
+            }
+        }
+
+        async function loadAllRequests() {
+            const supabase = window.supabaseInstance;
+
+            try {
+                const { data: requests, error } = await supabase
+                    .from('leave_requests')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (!error) {
+                    displayAllRequests(requests || []);
+                }
+            } catch (err) {
+                console.error('خطأ في تحميل الطلبات:', err);
+            }
+        }
+
+        function displayAllRequests(requests) {
+            const tbody = document.getElementById('allRequestsBody');
+            
+            if (requests.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <p>لا توجد طلبات</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = requests.map(req => `
+                <tr>
+                    <td>${req.employee_name}</td>
+                    <td>${req.branch}</td>
+                    <td>${getRequestTypeLabel(req.request_type)}</td>
+                    <td>${req.from_date}</td>
+                    <td>${req.to_date}</td>
+                    <td>${req.days_count} يوم</td>
+                    <td>${req.reason}</td>
+                    <td><span class="status-badge status-${req.status}">${getStatusLabel(req.status)}</span></td>
+                    <td>
+                        ${req.status === 'pending' ? `
+                            <button class="btn btn-success" style="padding: 6px 12px; font-size: 12px;" onclick="updateRequestStatus(${req.id}, 'approved')">✓ قبول</button>
+                            <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="updateRequestStatus(${req.id}, 'rejected')">✗ رفض</button>
+                        ` : '-'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadReports() {
+            const supabase = window.supabaseInstance;
+            const isManager = currentUser.permissions.includes('manageEmployees');
+
+            const employeeId = isManager
+                ? document.getElementById('reportEmployee').value
+                : currentUser.employee_id;
+
+            const fromDate = document.getElementById('reportFrom').value;
+            const toDate = document.getElementById('reportTo').value;
+            const requestType = document.getElementById('reportRequestType').value;
+            const requestStatus = document.getElementById('reportRequestStatus').value;
+            const warningLevel = document.getElementById('reportWarningLevel').value;
+            const warningStatus = document.getElementById('reportWarningStatus').value;
+
+            try {
+                let requestsQuery = supabase
+                    .from('leave_requests')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (employeeId) requestsQuery = requestsQuery.eq('employee_id', employeeId);
+                if (requestType) requestsQuery = requestsQuery.eq('request_type', requestType);
+                if (requestStatus) requestsQuery = requestsQuery.eq('status', requestStatus);
+                if (fromDate) requestsQuery = requestsQuery.gte('from_date', fromDate);
+                if (toDate) requestsQuery = requestsQuery.lte('to_date', toDate);
+
+                let warningsQuery = supabase
+                    .from('employee_warnings')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (employeeId) warningsQuery = warningsQuery.eq('employee_id', employeeId);
+                if (warningLevel) warningsQuery = warningsQuery.eq('warning_level', warningLevel);
+                if (warningStatus === 'acknowledged') warningsQuery = warningsQuery.eq('acknowledged', true);
+                if (warningStatus === 'pending') warningsQuery = warningsQuery.eq('acknowledged', false);
+                if (fromDate) warningsQuery = warningsQuery.gte('created_at', new Date(fromDate).toISOString());
+                if (toDate) {
+                    const endOfDay = new Date(toDate);
+                    endOfDay.setHours(23, 59, 59, 999);
+                    warningsQuery = warningsQuery.lte('created_at', endOfDay.toISOString());
+                }
+
+                const [requestsResult, warningsResult] = await Promise.all([
+                    requestsQuery,
+                    warningsQuery
+                ]);
+
+                if (requestsResult.error) throw requestsResult.error;
+                if (warningsResult.error) throw warningsResult.error;
+
+                const requests = requestsResult.data || [];
+                const warnings = warningsResult.data || [];
+
+                reportRequestsCache = requests;
+                reportWarningsCache = warnings;
+
+                document.getElementById('reportRequestsCount').textContent = requests.length;
+                document.getElementById('reportWarningsCount').textContent = warnings.length;
+
+                displayReportRequests(requests);
+                displayReportWarnings(warnings);
+            } catch (err) {
+                console.error('خطأ في تحميل التقارير:', err);
+                showCustomError('فشل تحميل التقارير. حاول مرة أخرى.', 'خطأ');
+            }
+        }
+
+        function getAttachmentDelayInfo(request) {
+            if (request.request_type !== 'sick') {
+                return { statusText: 'غير مطلوب', delayText: '-', fileUrl: null };
+            }
+
+            const deadline = request.attachment_deadline ? new Date(request.attachment_deadline) : null;
+            const uploadedAt = request.attachment_uploaded_at ? new Date(request.attachment_uploaded_at) : null;
+
+            if (request.attachment_uploaded && uploadedAt && deadline) {
+                const delayDays = Math.max(0, Math.ceil((uploadedAt - deadline) / (24 * 60 * 60 * 1000)));
+                const statusText = delayDays > 0 ? 'مرفق متأخر' : 'مرفق في الوقت';
+                const delayText = delayDays > 0 ? `متأخر ${delayDays} يوم` : 'بدون تأخير';
+                return { statusText, delayText, fileUrl: request.medical_certificate_url || null };
+            }
+
+            if (!request.attachment_uploaded && deadline) {
+                const now = new Date();
+                const diffDays = Math.ceil((deadline - now) / (24 * 60 * 60 * 1000));
+                const overdueDays = Math.max(0, -diffDays);
+                if (overdueDays > 0) {
+                    return {
+                        statusText: 'بانتظار الرفع (متأخر)',
+                        delayText: `متأخر ${overdueDays} يوم`,
+                        fileUrl: null
+                    };
+                }
+                return {
+                    statusText: 'بانتظار الرفع',
+                    delayText: `متبقي ${diffDays} يوم`,
+                    fileUrl: null
+                };
+            }
+
+            return {
+                statusText: request.attachment_uploaded ? 'مرفق' : 'بانتظار الرفع',
+                delayText: '-',
+                fileUrl: request.medical_certificate_url || null
+            };
+        }
+
+        function displayReportRequests(requests) {
+            const tbody = document.getElementById('reportRequestsBody');
+            const isManager = currentUser.permissions.includes('manageEmployees');
+            const emptyColspan = isManager ? 12 : 11;
+
+            if (requests.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="${emptyColspan}" class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <p>لا توجد نتائج مطابقة</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = requests.map(req => {
+                const attachmentInfo = getAttachmentDelayInfo(req);
+                const fileLink = attachmentInfo.fileUrl
+                    ? `<a class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;" href="${attachmentInfo.fileUrl}" target="_blank" rel="noopener">عرض</a>`
+                    : '-';
+
+                return `
+                    <tr>
+                        <td>${req.employee_name || '-'}</td>
+                        <td>${req.branch || '-'}</td>
+                        <td>${getRequestTypeLabel(req.request_type)}</td>
+                        <td>${req.from_date}</td>
+                        <td>${req.to_date}</td>
+                        <td>${req.days_count} يوم</td>
+                        <td>${fileLink}</td>
+                        <td><span class="status-badge">${attachmentInfo.statusText}</span></td>
+                        <td>${attachmentInfo.delayText}</td>
+                        <td><span class="status-badge status-${req.status}">${getStatusLabel(req.status)}</span></td>
+                        <td>${new Date(req.created_at).toLocaleDateString('ar-EG')}</td>
+                        ${isManager ? `
+                            <td class="manager-only">
+                                <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 12px;" onclick="editReportRequest(${req.id})">✏️ تعديل</button>
+                                <button class="btn btn-danger" style="padding: 6px 10px; font-size: 12px;" onclick="deleteReportRequest(${req.id})">🗑️ حذف</button>
+                            </td>
+                        ` : ''}
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function displayReportWarnings(warnings) {
+            const tbody = document.getElementById('reportWarningsBody');
+            const isManager = currentUser.permissions.includes('manageEmployees');
+            const emptyColspan = isManager ? 7 : 6;
+
+            if (warnings.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="${emptyColspan}" class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <p>لا توجد نتائج مطابقة</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = warnings.map(warning => {
+                const statusText = warning.acknowledged ? 'مؤكد' : 'بانتظار التأكيد';
+                const statusClass = warning.acknowledged ? 'status-approved' : 'status-pending';
+                const acknowledgedDate = warning.acknowledged_at
+                    ? new Date(warning.acknowledged_at).toLocaleDateString('ar-EG')
+                    : '-';
+
+                return `
+                    <tr>
+                        <td>${warning.employee_id}</td>
+                        <td>${warning.warning_level}</td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td>${warning.reason}</td>
+                        <td>${new Date(warning.created_at).toLocaleDateString('ar-EG')}</td>
+                        <td>${acknowledgedDate}</td>
+                        ${isManager ? `
+                            <td class="manager-only">
+                                <button class="btn btn-secondary" style="padding: 6px 10px; font-size: 12px;" onclick="editReportWarning(${warning.id})">✏️ تعديل</button>
+                                <button class="btn btn-danger" style="padding: 6px 10px; font-size: 12px;" onclick="deleteReportWarning(${warning.id})">🗑️ حذف</button>
+                            </td>
+                        ` : ''}
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function getReportRequestById(requestId) {
+            return reportRequestsCache.find(req => req.id === requestId) || null;
+        }
+
+        function getReportWarningById(warningId) {
+            return reportWarningsCache.find(warning => warning.id === warningId) || null;
+        }
+
+        async function editReportRequest(requestId) {
+            if (!currentUser.permissions.includes('manageEmployees')) {
+                showCustomError('ليس لديك صلاحية التعديل', 'رفض');
+                return;
+            }
+
+            const request = getReportRequestById(requestId);
+            if (!request) {
+                showCustomError('تعذر العثور على الطلب', 'خطأ');
+                return;
+            }
+
+            const requestType = await promptAction('نوع الطلب (vacation/sick/permission):', request.request_type);
+            if (requestType === null) return;
+            if (!['vacation', 'sick', 'permission'].includes(requestType)) {
+                showCustomError('نوع الطلب غير صحيح', 'خطأ');
+                return;
+            }
+
+            const fromDate = await promptAction('من تاريخ (YYYY-MM-DD):', request.from_date);
+            if (fromDate === null) return;
+
+            const toDate = await promptAction('إلى تاريخ (YYYY-MM-DD):', request.to_date);
+            if (toDate === null) return;
+
+            const daysCountInput = await promptAction('عدد الأيام:', request.days_count);
+            if (daysCountInput === null) return;
+            const daysCount = parseInt(daysCountInput, 10);
+            if (Number.isNaN(daysCount) || daysCount < 0) {
+                showCustomError('عدد الأيام غير صحيح', 'خطأ');
+                return;
+            }
+
+            const status = await promptAction('حالة الطلب (pending/approved/rejected):', request.status);
+            if (status === null) return;
+            if (!['pending', 'approved', 'rejected'].includes(status)) {
+                showCustomError('حالة الطلب غير صحيحة', 'خطأ');
+                return;
+            }
+
+            const reason = await promptAction('سبب الطلب:', request.reason || '');
+            if (reason === null) return;
+
+            const supabase = window.supabaseInstance;
+
+            try {
+                const { error } = await supabase
+                    .from('leave_requests')
+                    .update({
+                        request_type: requestType,
+                        from_date: fromDate,
+                        to_date: toDate,
+                        days_count: daysCount,
+                        status: status,
+                        reason: reason,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', requestId);
+
+                if (error) throw error;
+
+                showCustomSuccess('تم تعديل الطلب بنجاح', 'تم التحديث');
+                await loadReports();
+            } catch (err) {
+                console.error('خطأ في تعديل الطلب:', err);
+                showCustomError('فشل تعديل الطلب', 'خطأ');
+            }
+        }
+
+        async function deleteReportRequest(requestId) {
+            if (!currentUser.permissions.includes('manageEmployees')) {
+                showCustomError('ليس لديك صلاحية الحذف', 'رفض');
+                return;
+            }
+
+            if (!await confirmAction('هل تريد حذف هذا الطلب نهائيا؟')) {
+                return;
+            }
+
+            const supabase = window.supabaseInstance;
+
+            try {
+                const { error } = await supabase
+                    .from('leave_requests')
+                    .delete()
+                    .eq('id', requestId);
+
+                if (error) throw error;
+
+                showCustomSuccess('تم حذف الطلب بنجاح', 'تم الحذف');
+                await loadReports();
+            } catch (err) {
+                console.error('خطأ في حذف الطلب:', err);
+                showCustomError('فشل حذف الطلب', 'خطأ');
+            }
+        }
+
+        async function editReportWarning(warningId) {
+            if (!currentUser.permissions.includes('manageEmployees')) {
+                showCustomError('ليس لديك صلاحية التعديل', 'رفض');
+                return;
+            }
+
+            const warning = getReportWarningById(warningId);
+            if (!warning) {
+                showCustomError('تعذر العثور على الإنذار', 'خطأ');
+                return;
+            }
+
+            const warningLevel = await promptAction('مستوى الإنذار (تنبيه/إنذار أول/إنذار ثاني/إنذار نهائي):', warning.warning_level);
+            if (warningLevel === null) return;
+            if (!['تنبيه', 'إنذار أول', 'إنذار ثاني', 'إنذار نهائي'].includes(warningLevel)) {
+                showCustomError('مستوى الإنذار غير صحيح', 'خطأ');
+                return;
+            }
+
+            const reason = await promptAction('سبب الإنذار:', warning.reason || '');
+            if (reason === null) return;
+
+            const ackInput = await promptAction('حالة الإنذار (مؤكد/بانتظار التأكيد):', warning.acknowledged ? 'مؤكد' : 'بانتظار التأكيد');
+            if (ackInput === null) return;
+
+            let acknowledged = warning.acknowledged;
+            if (ackInput === 'مؤكد') {
+                acknowledged = true;
+            } else if (ackInput === 'بانتظار التأكيد') {
+                acknowledged = false;
+            } else {
+                showCustomError('حالة الإنذار غير صحيحة', 'خطأ');
+                return;
+            }
+
+            const acknowledgedAt = acknowledged
+                ? (warning.acknowledged_at || new Date().toISOString())
+                : null;
+
+            const supabase = window.supabaseInstance;
+
+            try {
+                const { error } = await supabase
+                    .from('employee_warnings')
+                    .update({
+                        warning_level: warningLevel,
+                        reason: reason,
+                        acknowledged: acknowledged,
+                        acknowledged_at: acknowledgedAt,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', warningId);
+
+                if (error) throw error;
+
+                showCustomSuccess('تم تعديل الإنذار بنجاح', 'تم التحديث');
+                await loadReports();
+            } catch (err) {
+                console.error('خطأ في تعديل الإنذار:', err);
+                showCustomError('فشل تعديل الإنذار', 'خطأ');
+            }
+        }
+
+        async function deleteReportWarning(warningId) {
+            if (!currentUser.permissions.includes('manageEmployees')) {
+                showCustomError('ليس لديك صلاحية الحذف', 'رفض');
+                return;
+            }
+
+            if (!await confirmAction('هل تريد حذف هذا الإنذار نهائيا؟')) {
+                return;
+            }
+
+            const supabase = window.supabaseInstance;
+
+            try {
+                const { error } = await supabase
+                    .from('employee_warnings')
+                    .delete()
+                    .eq('id', warningId);
+
+                if (error) throw error;
+
+                showCustomSuccess('تم حذف الإنذار بنجاح', 'تم الحذف');
+                await loadReports();
+            } catch (err) {
+                console.error('خطأ في حذف الإنذار:', err);
+                showCustomError('فشل حذف الإنذار', 'خطأ');
+            }
+        }
+
+        async function updateRequestStatus(requestId, status) {
+            const supabase = window.supabaseInstance;
+
+            try {
+                const { error } = await supabase
+                    .from('leave_requests')
+                    .update({ status: status })
+                    .eq('id', requestId);
+
+                if (error) throw error;
+
+                showCustomSuccess(`تم ${status === 'approved' ? 'قبول' : 'رفض'} الطلب بنجاح`, 'تم التحديث');
+                await loadAllRequests();
+            } catch (err) {
+                console.error('خطأ في تحديث الطلب:', err);
+                showCustomError('فشل تحديث الطلب', 'خطأ');
+            }
+        }
+
+        async function loadEmployeesForSelect() {
+            const supabase = window.supabaseInstance;
+
+            try {
+                const { data: employees, error } = await supabase
+                    .from('employees')
+                    .select('employee_id, name, branch_name')
+                    .order('name');
+
+                if (!error && employees) {
+                    const warningSelect = document.getElementById('warningEmployee');
+                    warningSelect.innerHTML = '<option value="">اختر الموظف</option>' + 
+                        employees.map(emp => `
+                            <option value="${emp.employee_id}">${emp.name} - ${emp.branch_name}</option>
+                        `).join('');
+
+                    const reportSelect = document.getElementById('reportEmployee');
+                    if (reportSelect) {
+                        reportSelect.innerHTML = '<option value="">الكل</option>' +
+                            employees.map(emp => `
+                                <option value="${emp.employee_id}">${emp.name} - ${emp.branch_name}</option>
+                            `).join('');
+                    }
+                }
+            } catch (err) {
+                console.error('خطأ في تحميل الموظفين:', err);
+            }
+        }
+
+        async function submitWarning() {
+            const supabase = window.supabaseInstance;
+
+            const warningData = {
+                employee_id: document.getElementById('warningEmployee').value,
+                warning_level: document.getElementById('warningLevel').value,
+                reason: document.getElementById('warningReason').value,
+                issued_by: currentUser.employee_id,
+                issued_by_name: currentUser.name,
+                created_at: new Date().toISOString()
+            };
+
+            try {
+                const { error } = await supabase
+                    .from('employee_warnings')
+                    .insert([warningData]);
+
+                if (error) throw error;
+
+                showCustomSuccess('تم إضافة الإنذار بنجاح', 'تم الحفظ');
+                document.getElementById('warningForm').reset();
+            } catch (err) {
+                console.error('خطأ في إضافة الإنذار:', err);
+                showCustomError('فشل إضافة الإنذار', 'خطأ');
+            }
+        }
+
+        function getRequestTypeLabel(type) {
+            const labels = {
+                'vacation': '🏖️ إجازة عادية',
+                'sick': '🏥 إجازة مرضية',
+                'permission': '⏰ استئذان'
+            };
+            return labels[type] || type;
+        }
+
+        function getStatusLabel(status) {
+            const labels = {
+                'pending': 'معلق',
+                'approved': 'مقبول',
+                'rejected': 'مرفوض'
+            };
+            return labels[status] || status;
+        }
+
+        // تحميل عدد الإنذارات في الإحصائيات
+        async function loadWarningsCount() {
+            const supabase = window.supabaseInstance;
+
+            try {
+                const { data, error } = await supabase
+                    .from('employee_warnings')
+                    .select('id')
+                    .eq('employee_id', currentUser.employee_id);
+
+                if (!error) {
+                    document.getElementById('warningsCount').textContent = data.length;
+                }
+            } catch (err) {
+                console.error('خطأ في تحميل عدد الإنذارات:', err);
+            }
+        }
+
+        // تأكيد استلام الإنذار
+        async function acknowledgeWarning(warningId) {
+            if (!await confirmAction('هل تؤكد استلامك لهذا الإنذار؟\nسيتم تسجيل تاريخ التأكيد.')) {
+                return;
+            }
+
+            const supabase = window.supabaseInstance;
+
+            try {
+                console.log('[ACKNOWLEDGE] بدء تأكيد الإنذار:', {
+                    warningId: warningId,
+                    employeeId: currentUser.employee_id
+                });
+
+                // التحديث
+                const { data, error } = await supabase
+                    .from('employee_warnings')
+                    .update({
+                        acknowledged: true,
+                        acknowledged_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', warningId)
+                    .eq('employee_id', currentUser.employee_id)
+                    .select(); // للحصول على النتيجة بعد التحديث
+
+                console.log('[ACKNOWLEDGE] نتيجة التحديث:', { data, error });
+
+                if (error) {
+                    console.error('[ACKNOWLEDGE] خطأ من Supabase:', error);
+                    throw error;
+                }
+
+                if (!data || data.length === 0) {
+                    console.warn('[ACKNOWLEDGE] لم يتم العثور على إنذار بهذا الرقم لهذا الموظف');
+                    throw new Error('لم يتم العثور على الإنذار أو لا يمكنك تأكيده');
+                }
+
+                console.log('[ACKNOWLEDGE] تم التحديث بنجاح:', data);
+                showCustomSuccess('تم تأكيد استلام الإنذار بنجاح', '✓ تم التأكيد');
+                
+                // إعادة تحميل البيانات
+                await loadUserData();
+            } catch (err) {
+                console.error('[ACKNOWLEDGE] خطأ في تأكيد الإنذار:', err);
+                showCustomError('حدث خطأ في تأكيد الإنذار: ' + (err.message || 'خطأ غير معروف'));
+            }
+        }
+
+        // تحميل الإجازات المرضية المعلقة
+        async function loadMedicalCertificatesRequests() {
+            const supabase = window.supabaseInstance;
+
+            try {
+                const { data: sickLeaves, error } = await supabase
+                    .from('leave_requests')
+                    .select('*')
+                    .eq('employee_id', currentUser.employee_id)
+                    .eq('request_type', 'sick')
+                    .order('created_at', { ascending: false });
+
+                if (!error) {
+                    displayMedicalCertificatesRequests(sickLeaves || []);
+                }
+            } catch (err) {
+                console.error('خطأ في تحميل الإجازات المرضية:', err);
+            }
+        }
+
+        function displayMedicalCertificatesRequests(sickLeaves) {
+            const container = document.getElementById('medicalCertsContainer');
+
+            const pendingSickLeaves = sickLeaves.filter(leave => leave.request_type === 'sick');
+
+            if (pendingSickLeaves.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📄</div>
+                        <p>لا توجد طلبات إجازة مرضية معلقة</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = pendingSickLeaves.map(leave => {
+                const createdDate = new Date(leave.created_at);
+                const deadlineDate = new Date(createdDate.getTime() + 3 * 24 * 60 * 60 * 1000);
+                const nowDate = new Date();
+                const daysLeft = Math.ceil((deadlineDate - nowDate) / (1000 * 60 * 60 * 24));
+                const isExpired = daysLeft < 0;
+                const isUploaded = leave.attachment_uploaded;
+                
+                let statusColor = '#48bb78'; // أخضر
+                let statusText = '✅ تم الرفع';
+                let alertClass = '';
+                let alertText = '';
+
+                if (!isUploaded) {
+                    if (isExpired) {
+                        statusColor = '#f56565'; // أحمر
+                        statusText = '❌ انتهت المدة';
+                        alertClass = 'alert alert-danger';
+                        alertText = '⚠️ لم يتم رفع الملف في الموعد المحدد - سيتم تطبيق خصم';
+                    } else if (daysLeft <= 1) {
+                        statusColor = '#ed8936'; // برتقالي
+                        statusText = '⏰ يوم واحد متبقي';
+                        alertClass = 'alert alert-warning';
+                        alertText = '⚠️ تنبيه: يتبقى يوم واحد فقط لرفع الملف';
+                    } else {
+                        statusColor = '#4299e1'; // أزرق
+                        statusText = `📅 ${daysLeft} أيام متبقية`;
+                    }
+                }
+
+                const uploadFileName = leave.medical_certificate_url ? 'الملف المرفوع: ' + leave.medical_certificate_url.split('/').pop() : '';
+
+                return `
+                    <div class="medical-cert-card">
+                        ${alertText ? `<div class="${alertClass}">${alertText}</div>` : ''}
+                        <div class="cert-header">
+                            <h3>📋 إجازة مرضية</h3>
+                            <span class="cert-status" style="color: ${statusColor}; font-weight: bold;">${statusText}</span>
+                        </div>
+                        <div class="cert-details">
+                            <div class="detail-row">
+                                <span class="detail-label">الفترة:</span>
+                                <span>${leave.from_date} إلى ${leave.to_date}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">عدد الأيام:</span>
+                                <span>${leave.days_count} يوم</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">السبب:</span>
+                                <span>${leave.reason}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">الموعد النهائي:</span>
+                                <span>${deadlineDate.toLocaleDateString('ar-EG')}</span>
+                            </div>
+                            ${isUploaded ? `
+                                <div class="detail-row">
+                                    <span class="detail-label">الملف:</span>
+                                    <span>${uploadFileName}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="cert-actions">
+                            ${!isUploaded ? `
+                                <input type="file" id="fileInput_${leave.id}" accept="image/*,application/pdf" style="display: none;" data-request-id="${leave.id}">
+                                <button class="btn btn-primary" onclick="document.getElementById('fileInput_${leave.id}').click()" style="padding: 8px 16px; font-size: 13px;">📤 رفع الشهادة الطبية</button>
+                            ` : `
+                                <button class="btn btn-secondary" onclick="downloadMedicalFile(${leave.id})" style="padding: 8px 16px; font-size: 13px;">💾 تحميل الملف</button>
+                                <button class="btn btn-danger" onclick="deleteMedicalFile(${leave.id})" style="padding: 8px 16px; font-size: 13px;">🗑️ حذف الملف</button>
+                            `}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // إضافة event listeners للملفات المرفوعة
+            pendingSickLeaves.forEach(leave => {
+                if (!leave.attachment_uploaded) {
+                    const fileInput = document.getElementById(`fileInput_${leave.id}`);
+                    if (fileInput) {
+                        fileInput.addEventListener('change', async (e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                                await uploadMedicalCertificate(leave.id, file);
+                            }
+                        });
+                    }
+                }
+            });
+        }
+
+        async function uploadMedicalCertificate(leaveRequestId, file) {
+            if (!file) return;
+
+            const supabase = window.supabaseInstance;
+
+            // تحقق من حجم الملف (5MB كحد أقصى)
+            if (file.size > 5 * 1024 * 1024) {
+                showCustomError('حجم الملف يجب أن يكون أقل من 5MB', 'خطأ');
+                return;
+            }
+
+            // تحقق من نوع الملف
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+            if (!allowedTypes.includes(file.type)) {
+                showCustomError('الملف يجب أن يكون صورة أو PDF فقط', 'خطأ');
+                return;
+            }
+
+            // تصحيح: تحقق من صحة البيانات
+            if (!currentUser || !currentUser.employee_id) {
+                showCustomError('لم يتم تسجيل الدخول - يرجى إعادة تحميل الصفحة', 'خطأ');
+                return;
+            }
+
+            try {
+                console.log('[UPLOAD] Starting upload process');
+                console.log('[USER] Employee ID:', currentUser.employee_id);
+                console.log('[LEAVE] Leave Request ID:', leaveRequestId);
+
+                // رفع الملف إلى Supabase Storage
+                const timestamp = Date.now();
+                const fileName = `${currentUser.employee_id}_${leaveRequestId}_${timestamp}`;
+                
+                console.log('[STORAGE] Uploading file:', fileName);
+
+                const { data, error: uploadError } = await supabase
+                    .storage
+                    .from('medical-certificates')
+                    .upload(`${currentUser.employee_id}/${fileName}`, file);
+
+                if (uploadError) {
+                    console.error('[STORAGE ERROR]', uploadError);
+                    throw uploadError;
+                }
+
+                console.log('[STORAGE] File uploaded successfully');
+
+                // الحصول على رابط الملف العام
+                const { data: publicUrl } = supabase
+                    .storage
+                    .from('medical-certificates')
+                    .getPublicUrl(`${currentUser.employee_id}/${fileName}`);
+
+                console.log('[URL] Public URL:', publicUrl.publicUrl);
+
+                // إدراج سجل في جدول leave_attachments
+                const attachmentData = {
+                    leave_request_id: leaveRequestId,
+                    employee_id: currentUser.employee_id,
+                    file_name: fileName,
+                    file_url: publicUrl.publicUrl,
+                    file_size: file.size,
+                    file_type: file.type
+                };
+
+                console.log('[DB] Inserting attachment record');
+
+                const { data: insertedData, error: insertError } = await supabase
+                    .from('leave_attachments')
+                    .insert([attachmentData])
+                    .select();
+
+                if (insertError) {
+                    console.error('[INSERT ERROR]', insertError);
+                    throw insertError;
+                }
+
+                console.log('[DB] Attachment record inserted:', insertedData);
+
+                // تحديث سجل الطلب بمعلومات الملف
+                console.log('[DB] Updating leave_requests record');
+
+                const { error: updateError } = await supabase
+                    .from('leave_requests')
+                    .update({
+                        medical_certificate_url: publicUrl.publicUrl,
+                        attachment_uploaded: true,
+                        attachment_uploaded_at: new Date().toISOString()
+                    })
+                    .eq('id', leaveRequestId)
+                    .eq('employee_id', currentUser.employee_id);
+
+                if (updateError) {
+                    console.error('[UPDATE ERROR]', updateError);
+                    throw updateError;
+                }
+
+                console.log('[SUCCESS] Upload completed successfully');
+                showCustomSuccess('تم رفع الشهادة الطبية بنجاح ✅', 'تم الرفع');
+                await loadMedicalCertificatesRequests();
+            } catch (err) {
+                console.error('[FATAL ERROR]', err);
+                console.error('[ERROR MESSAGE]', err.message);
+                console.error('[ERROR STATUS]', err.status);
+                showCustomError('فشل رفع الملف: ' + err.message, 'خطأ');
+            }
+        }
+
+        async function deleteMedicalFile(leaveRequestId) {
+            if (!await confirmAction('هل تريد حذف الملف المرفوع؟')) {
+                return;
+            }
+
+            const supabase = window.supabaseInstance;
+
+            try {
+                // حذف السجل من leave_attachments
+                const { error: deleteAttachmentError } = await supabase
+                    .from('leave_attachments')
+                    .delete()
+                    .eq('leave_request_id', leaveRequestId)
+                    .eq('employee_id', currentUser.employee_id);
+
+                if (deleteAttachmentError) throw deleteAttachmentError;
+
+                // تحديث سجل الطلب
+                const { error: updateError } = await supabase
+                    .from('leave_requests')
+                    .update({
+                        medical_certificate_url: null,
+                        attachment_uploaded: false,
+                        attachment_uploaded_at: null
+                    })
+                    .eq('id', leaveRequestId)
+                    .eq('employee_id', currentUser.employee_id);
+
+                if (updateError) throw updateError;
+
+                showCustomSuccess('تم حذف الملف بنجاح', 'تم الحذف');
+                await loadMedicalCertificatesRequests();
+            } catch (err) {
+                console.error('خطأ في حذف الملف:', err);
+                showCustomError('فشل حذف الملف: ' + err.message, 'خطأ');
+            }
+        }
+
+        async function downloadMedicalFile(leaveRequestId) {
+            const supabase = window.supabaseInstance;
+
+            try {
+                const { data, error } = await supabase
+                    .from('leave_requests')
+                    .select('medical_certificate_url')
+                    .eq('id', leaveRequestId)
+                    .single();
+
+                if (error) throw error;
+
+                if (data.medical_certificate_url) {
+                    window.open(data.medical_certificate_url, '_blank');
+                } else {
+                    showCustomError('لا يوجد ملف للتحميل', 'خطأ');
+                }
+            } catch (err) {
+                console.error('خطأ في تحميل الملف:', err);
+                showCustomError('فشل تحميل الملف', 'خطأ');
+            }
+        }
+
+        // إضافة CSS للملفات الطبية
+        function addMedicalCertificatesStyles() {
+            const style = document.createElement('style');
+            style.textContent = `
+                .medical-cert-card {
+                    background: white;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 12px;
+                    padding: 20px;
+                    margin-bottom: 15px;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                    transition: all 0.3s;
+                }
+
+                .medical-cert-card:hover {
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                }
+
+                .cert-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 15px;
+                    padding-bottom: 12px;
+                    border-bottom: 2px solid #f0f0f0;
+                }
+
+                .cert-header h3 {
+                    margin: 0;
+                    color: #2d3748;
+                    font-size: 16px;
+                }
+
+                .cert-status {
+                    font-size: 14px;
+                    padding: 4px 12px;
+                    border-radius: 20px;
+                    background: #f0f0f0;
+                }
+
+                .cert-details {
+                    margin-bottom: 15px;
+                }
+
+                .detail-row {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 8px 0;
+                    font-size: 14px;
+                }
+
+                .detail-label {
+                    font-weight: 600;
+                    color: #4a5568;
+                    min-width: 100px;
+                }
+
+                .cert-actions {
+                    display: flex;
+                    gap: 10px;
+                    margin-top: 15px;
+                }
+
+                .alert {
+                    padding: 12px 15px;
+                    border-radius: 8px;
+                    margin-bottom: 15px;
+                    font-size: 13px;
+                }
+
+                .alert-danger {
+                    background: #fee;
+                    border: 1px solid #fcc;
+                    color: #c33;
+                }
+
+                .alert-warning {
+                    background: #fef5e7;
+                    border: 1px solid #f0d895;
+                    color: #856404;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // تفعيل HTML والأنماط
+        addMedicalCertificatesStyles();
+    
+    </script>
+</body>
+</html>

@@ -9,6 +9,12 @@
 -- الخطوة 2: تفعيل سياسات RLS للسماح برفع وقراءة الصور
 -- نفّذ هذه الأوامر في SQL Editor:
 
+-- حذف السياسات القديمة إن وُجدت لتفادي خطأ exists
+DROP POLICY IF EXISTS "Allow public uploads to sales-attachments" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public reads from sales-attachments" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public updates to sales-attachments" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public deletes from sales-attachments" ON storage.objects;
+
 -- السماح للجميع برفع الصور
 CREATE POLICY "Allow public uploads to sales-attachments"
 ON storage.objects
@@ -36,6 +42,44 @@ ON storage.objects
 FOR DELETE
 TO public
 USING (bucket_id = 'sales-attachments');
+
+-- ========================================
+-- سياسات رفع الشهادات الطبية
+-- ========================================
+
+-- حذف السياسات القديمة إن وُجدت لتفادي خطأ exists
+DROP POLICY IF EXISTS "Allow public uploads to medical-certificates" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public reads from medical-certificates" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public updates to medical-certificates" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public deletes from medical-certificates" ON storage.objects;
+
+-- السماح للجميع برفع ملفات الشهادات الطبية
+CREATE POLICY "Allow public uploads to medical-certificates"
+ON storage.objects
+FOR INSERT
+TO public
+WITH CHECK (bucket_id = 'medical-certificates');
+
+-- السماح للجميع بقراءة ملفات الشهادات الطبية
+CREATE POLICY "Allow public reads from medical-certificates"
+ON storage.objects
+FOR SELECT
+TO public
+USING (bucket_id = 'medical-certificates');
+
+-- السماح للجميع بتحديث ملفات الشهادات الطبية (اختياري)
+CREATE POLICY "Allow public updates to medical-certificates"
+ON storage.objects
+FOR UPDATE
+TO public
+USING (bucket_id = 'medical-certificates');
+
+-- السماح للجميع بحذف ملفات الشهادات الطبية (اختياري - للإدارة فقط)
+CREATE POLICY "Allow public deletes from medical-certificates"
+ON storage.objects
+FOR DELETE
+TO public
+USING (bucket_id = 'medical-certificates');
 
 -- ========================================
 -- التحقق من السياسات

@@ -622,6 +622,7 @@
         <div class="header-buttons">
             <a href="index.html" class="btn-header">🏠 الصفحة الرئيسية</a>
             <a href="reports.html" class="btn-header">📊 التقارير</a>
+            <a href="hr-management.html" class="btn-header" style="background: #17a2b8;">🏢 الموارد البشرية</a>
         </div>
         <div class="header-buttons hidden-before-login" id="menuToggleContainer">
             <button class="menu-toggle" id="menuToggle" aria-label="القائمة">☰</button>
@@ -662,6 +663,10 @@
             <a class="sidebar-item" data-section="permissions">
                 <span class="sidebar-item-icon">🔒</span>
                 إدارة الصلاحيات
+            </a>
+            <a class="sidebar-item" data-section="leaveSettings">
+                <span class="sidebar-item-icon">🏖️</span>
+                إعدادات الإجازات
             </a>
             <a class="sidebar-item" data-section="credentials">
                 <span class="sidebar-item-icon">🔑</span>
@@ -714,6 +719,43 @@
                         <input id="empPassword" type="password" placeholder="أدخل كلمة المرور">
                     </div>
                     <div class="field">
+                        <label for="empEmploymentType">نوع التوظيف</label>
+                        <select id="empEmploymentType">
+                            <option value="">-- اختر النوع --</option>
+                            <option value="full_time">دوام كامل</option>
+                            <option value="part_time">دوام جزئي</option>
+                            <option value="contract">عقد</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="empJobGrade">المسمى/الدرجة</label>
+                        <input id="empJobGrade" type="text" placeholder="مثال: كاشير / درجة 2">
+                    </div>
+                    <div class="field">
+                        <label for="empHireDate">تاريخ المباشرة</label>
+                        <input id="empHireDate" type="date">
+                    </div>
+                    <div class="field">
+                        <label for="empLeaveEligibilityOverride">استحقاق الإجازات</label>
+                        <select id="empLeaveEligibilityOverride">
+                            <option value="">حسب الشروط العامة</option>
+                            <option value="eligible">مستحق</option>
+                            <option value="not_eligible">غير مستحق</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="empAnnualLeaveOverride">رصيد سنوي مخصص (يوم)</label>
+                        <input id="empAnnualLeaveOverride" type="number" min="0" placeholder="اتركه فارغاً للاعتماد على القواعد">
+                    </div>
+                    <div class="field">
+                        <label for="empLeaveBalanceVisibility">إظهار رصيد الإجازات</label>
+                        <select id="empLeaveBalanceVisibility">
+                            <option value="">حسب الإعداد العام</option>
+                            <option value="show">إظهار</option>
+                            <option value="hide">إخفاء</option>
+                        </select>
+                    </div>
+                    <div class="field">
                         <label>📋 الصلاحيات (اختر ما يناسبك)</label>
                         <div class="permissions" id="permissionsContainer">
                             <label class="perm-item"><input type="checkbox" value="viewReports" checked> 👁️ عرض التقارير</label>
@@ -747,6 +789,52 @@
                     <h2>🔒 إدارة صلاحيات الموظفين</h2>
                     <input type="text" id="searchEmployee" class="search-box" placeholder="🔍 ابحث عن موظف...">
                     <div class="list" id="permissionsManagementList"></div>
+                </div>
+            </div>
+
+            <!-- قسم إعدادات الإجازات -->
+            <div class="section" id="leaveSettings">
+                <div class="card">
+                    <h2>🏖️ إعدادات الإجازات</h2>
+                    <div class="field">
+                        <label for="leaveBalanceVisible">إظهار رصيد الإجازات للموظفين</label>
+                        <select id="leaveBalanceVisible">
+                            <option value="true">إظهار</option>
+                            <option value="false">إخفاء</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="minServiceMonths">حد الاستحقاق بالأشهر (حسب تاريخ المباشرة)</label>
+                        <input id="minServiceMonths" type="number" min="0" placeholder="مثال: 12">
+                    </div>
+                    <div class="field">
+                        <label for="medicalDeadlineDays">مدة رفع الشهادة الطبية (أيام)</label>
+                        <input id="medicalDeadlineDays" type="number" min="1" placeholder="مثال: 3">
+                    </div>
+                    <button id="saveLeaveSettings">💾 حفظ الإعدادات</button>
+                </div>
+
+                <div class="card">
+                    <h2>📌 قواعد الاستحقاق حسب النوع/الدرجة</h2>
+                    <div class="field">
+                        <label for="ruleEmploymentType">نوع التوظيف</label>
+                        <select id="ruleEmploymentType">
+                            <option value="">-- اختر النوع --</option>
+                            <option value="full_time">دوام كامل</option>
+                            <option value="part_time">دوام جزئي</option>
+                            <option value="contract">عقد</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="ruleJobGrade">المسمى/الدرجة</label>
+                        <input id="ruleJobGrade" type="text" placeholder="مثال: كاشير / درجة 2">
+                    </div>
+                    <div class="field">
+                        <label for="ruleAnnualDays">الرصيد السنوي (أيام)</label>
+                        <input id="ruleAnnualDays" type="number" min="0" placeholder="مثال: 30">
+                    </div>
+                    <button id="addEntitlementRule">➕ إضافة القاعدة</button>
+                    <div class="list" id="entitlementRulesList"></div>
                 </div>
             </div>
 
@@ -884,6 +972,12 @@
             const empId = document.getElementById('empId');
             const empBranch = document.getElementById('empBranch');
             const empPassword = document.getElementById('empPassword');
+            const empEmploymentType = document.getElementById('empEmploymentType');
+            const empJobGrade = document.getElementById('empJobGrade');
+            const empHireDate = document.getElementById('empHireDate');
+            const empLeaveEligibilityOverride = document.getElementById('empLeaveEligibilityOverride');
+            const empAnnualLeaveOverride = document.getElementById('empAnnualLeaveOverride');
+            const empLeaveBalanceVisibility = document.getElementById('empLeaveBalanceVisibility');
             const saveEmployeeBtn = document.getElementById('saveEmployee');
             const employeesList = document.getElementById('employeesList');
             const loginEmpId = document.getElementById('loginEmpId');
@@ -892,11 +986,22 @@
             const loginStatus = document.getElementById('loginStatus');
             const searchEmployee = document.getElementById('searchEmployee');
             const permissionsManagementList = document.getElementById('permissionsManagementList');
+            const leaveBalanceVisible = document.getElementById('leaveBalanceVisible');
+            const minServiceMonths = document.getElementById('minServiceMonths');
+            const medicalDeadlineDays = document.getElementById('medicalDeadlineDays');
+            const saveLeaveSettings = document.getElementById('saveLeaveSettings');
+            const ruleEmploymentType = document.getElementById('ruleEmploymentType');
+            const ruleJobGrade = document.getElementById('ruleJobGrade');
+            const ruleAnnualDays = document.getElementById('ruleAnnualDays');
+            const addEntitlementRule = document.getElementById('addEntitlementRule');
+            const entitlementRulesList = document.getElementById('entitlementRulesList');
 
             let currentUser = null;
             let editingEmployeeId = null;
             let employeesCache = [];
             let branchesCache = [];
+            let hrSettingsCache = null;
+            let entitlementRulesCache = [];
 
             // ====== الصلاحيات ======
             const PERMISSIONS_DESCRIPTION = {
@@ -997,6 +1102,9 @@
                     
                     showCustomSuccess(`✅ مرحباً ${currentUser.name}`);
                     updateUIByPermissions();
+
+                    await loadHrSettings();
+                    await loadEntitlementRules();
                     
                     // تحديث معلومات المستخدم في الـ header
                     document.getElementById('userDisplayName').textContent = currentUser.name;
@@ -1138,6 +1246,109 @@
                 }
             }
 
+            async function loadHrSettings() {
+                try {
+                    const { data, error } = await supabase
+                        .from('hr_settings')
+                        .select('*')
+                        .order('id', { ascending: true })
+                        .limit(1);
+
+                    if (error) throw error;
+
+                    if (!data || data.length === 0) {
+                        const { data: inserted, error: insertError } = await supabase
+                            .from('hr_settings')
+                            .insert([{
+                                leave_balance_visible: true,
+                                min_service_months: 12,
+                                medical_upload_deadline_days: 3
+                            }])
+                            .select()
+                            .single();
+
+                        if (insertError) throw insertError;
+                        hrSettingsCache = inserted;
+                    } else {
+                        hrSettingsCache = data[0];
+                    }
+
+                    leaveBalanceVisible.value = hrSettingsCache.leave_balance_visible ? 'true' : 'false';
+                    minServiceMonths.value = hrSettingsCache.min_service_months ?? 12;
+                    medicalDeadlineDays.value = hrSettingsCache.medical_upload_deadline_days ?? 3;
+                } catch (err) {
+                    console.error('خطأ في تحميل إعدادات الإجازات:', err);
+                    showCustomError('❌ خطأ في تحميل إعدادات الإجازات');
+                }
+            }
+
+            async function loadEntitlementRules() {
+                try {
+                    const { data, error } = await supabase
+                        .from('leave_entitlement_rules')
+                        .select('*')
+                        .order('employment_type', { ascending: true })
+                        .order('job_grade', { ascending: true });
+
+                    if (error) throw error;
+                    entitlementRulesCache = data || [];
+                    renderEntitlementRules();
+                } catch (err) {
+                    console.error('خطأ في تحميل قواعد الاستحقاق:', err);
+                    showCustomError('❌ خطأ في تحميل قواعد الاستحقاق');
+                }
+            }
+
+            function renderEntitlementRules() {
+                if (entitlementRulesCache.length === 0) {
+                    entitlementRulesList.innerHTML = '<p style="padding:20px;text-align:center;color:#999;">لا توجد قواعد بعد</p>';
+                    return;
+                }
+
+                entitlementRulesList.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>نوع التوظيف</th>
+                                <th>المسمى/الدرجة</th>
+                                <th>الرصيد السنوي</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${entitlementRulesCache.map(rule => `
+                                <tr>
+                                    <td>${rule.employment_type || '-'}</td>
+                                    <td>${rule.job_grade || '-'}</td>
+                                    <td>${rule.annual_days}</td>
+                                    <td>
+                                        <button data-id="${rule.id}" class="btn-delete-rule btn-small btn-delete">🗑️ حذف</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+
+                document.querySelectorAll('.btn-delete-rule').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        if (!hasPermission('manageEmployees')) {
+                            showNoPermissionMessage();
+                            return;
+                        }
+                        const ruleId = btn.dataset.id;
+                        try {
+                            await supabase.from('leave_entitlement_rules').delete().eq('id', ruleId);
+                            showCustomSuccess('✅ تم حذف القاعدة بنجاح');
+                            await loadEntitlementRules();
+                        } catch (err) {
+                            console.error('خطأ في حذف القاعدة:', err);
+                            showCustomError('❌ خطأ في حذف القاعدة');
+                        }
+                    });
+                });
+            }
+
             // ====== عرض الموظفين ======
             function displayEmployees() {
                 if (employeesCache.length === 0) {
@@ -1152,6 +1363,9 @@
                                 <th>الاسم</th>
                                 <th>الرقم</th>
                                 <th>الفرع</th>
+                                <th>النوع/الدرجة</th>
+                                <th>الاستحقاق</th>
+                                <th>الرصيد السنوي</th>
                                 <th>الإجراءات</th>
                             </tr>
                         </thead>
@@ -1161,6 +1375,9 @@
                                     <td>${e.name}</td>
                                     <td>${e.employee_id}</td>
                                     <td>${e.branch_name}</td>
+                                    <td>${[e.employment_type, e.job_grade].filter(Boolean).join(' / ') || '-'}</td>
+                                    <td>${e.leave_eligible_override === true ? 'مستحق' : e.leave_eligible_override === false ? 'غير مستحق' : 'حسب الشروط'}</td>
+                                    <td>${e.annual_leave_days_override ?? '-'}</td>
                                     <td>
                                         <button data-id="${e.id}" class="btn-edit btn-small btn-edit">✏️ تعديل</button>
                                         <button data-id="${e.id}" class="btn-delete-emp btn-small btn-delete">🗑️ حذف</button>
@@ -1196,6 +1413,20 @@
                             empId.value = emp.employee_id;
                             empBranch.value = emp.branch_id;
                             empPassword.value = emp.password;
+                            empEmploymentType.value = emp.employment_type || '';
+                            empJobGrade.value = emp.job_grade || '';
+                            empHireDate.value = emp.hire_date || '';
+                            empLeaveEligibilityOverride.value = emp.leave_eligible_override === true
+                                ? 'eligible'
+                                : emp.leave_eligible_override === false
+                                    ? 'not_eligible'
+                                    : '';
+                            empAnnualLeaveOverride.value = emp.annual_leave_days_override ?? '';
+                            empLeaveBalanceVisibility.value = emp.leave_balance_visible_override === true
+                                ? 'show'
+                                : emp.leave_balance_visible_override === false
+                                    ? 'hide'
+                                    : '';
                             editingEmployeeId = emp.id;
                             updatePermCheckboxes(emp.permissions || []);
                         }
@@ -1225,6 +1456,70 @@
 
             document.getElementById('permissionsContainer').addEventListener('change', updateSelectedPermsDisplay);
 
+            if (saveLeaveSettings) {
+                saveLeaveSettings.addEventListener('click', async () => {
+                    if (!hasAnyPermission('manageEmployees', 'manageSettings')) {
+                        showNoPermissionMessage();
+                        return;
+                    }
+
+                    const settingsPayload = {
+                        id: hrSettingsCache?.id || 1,
+                        leave_balance_visible: leaveBalanceVisible.value === 'true',
+                        min_service_months: parseInt(minServiceMonths.value || '0', 10),
+                        medical_upload_deadline_days: parseInt(medicalDeadlineDays.value || '3', 10),
+                        updated_at: new Date().toISOString()
+                    };
+
+                    try {
+                        const { error } = await supabase
+                            .from('hr_settings')
+                            .upsert([settingsPayload]);
+
+                        if (error) throw error;
+                        showCustomSuccess('✅ تم حفظ إعدادات الإجازات');
+                        await loadHrSettings();
+                    } catch (err) {
+                        console.error('خطأ في حفظ إعدادات الإجازات:', err);
+                        showCustomError('❌ خطأ في حفظ إعدادات الإجازات');
+                    }
+                });
+            }
+
+            if (addEntitlementRule) {
+                addEntitlementRule.addEventListener('click', async () => {
+                    if (!hasPermission('manageEmployees')) {
+                        showNoPermissionMessage();
+                        return;
+                    }
+
+                    const employment_type = ruleEmploymentType.value || null;
+                    const job_grade = ruleJobGrade.value.trim();
+                    const annual_days = parseInt(ruleAnnualDays.value || '0', 10);
+
+                    if (!employment_type || !job_grade || !annual_days) {
+                        showCustomError('⚠️ الرجاء تعبئة نوع التوظيف والمسمى وعدد الأيام');
+                        return;
+                    }
+
+                    try {
+                        const { error } = await supabase
+                            .from('leave_entitlement_rules')
+                            .insert([{ employment_type, job_grade, annual_days }]);
+
+                        if (error) throw error;
+                        ruleEmploymentType.value = '';
+                        ruleJobGrade.value = '';
+                        ruleAnnualDays.value = '';
+                        showCustomSuccess('✅ تم إضافة القاعدة بنجاح');
+                        await loadEntitlementRules();
+                    } catch (err) {
+                        console.error('خطأ في إضافة القاعدة:', err);
+                        showCustomError('❌ خطأ في إضافة القاعدة');
+                    }
+                });
+            }
+
             // ====== حفظ الموظف ======
             saveEmployeeBtn.addEventListener('click', async () => {
                 if (!currentUser) {
@@ -1242,6 +1537,24 @@
                 const branch_id = empBranch.value;
                 const password = empPassword.value;
                 const permissions = Array.from(document.querySelectorAll('#permissionsContainer input:checked')).map(cb => cb.value);
+                const employment_type = empEmploymentType.value || null;
+                const job_grade = empJobGrade.value.trim() || null;
+                const hire_date = empHireDate.value || null;
+                const leaveEligibilityValue = empLeaveEligibilityOverride.value;
+                const leave_eligible_override = leaveEligibilityValue === 'eligible'
+                    ? true
+                    : leaveEligibilityValue === 'not_eligible'
+                        ? false
+                        : null;
+                const annual_leave_days_override = empAnnualLeaveOverride.value
+                    ? parseInt(empAnnualLeaveOverride.value, 10)
+                    : null;
+                const visibilityValue = empLeaveBalanceVisibility.value;
+                const leave_balance_visible_override = visibilityValue === 'show'
+                    ? true
+                    : visibilityValue === 'hide'
+                        ? false
+                        : null;
 
                 if (!name || !employee_id || !branch_id || !password) {
                     showCustomError('⚠️ الرجاء ملء جميع الحقول المطلوبة');
@@ -1252,7 +1565,19 @@
                     if (editingEmployeeId) {
                         const { error } = await supabase
                             .from('employees')
-                            .update({ name, employee_id, branch_id, password, permissions })
+                            .update({
+                                name,
+                                employee_id,
+                                branch_id,
+                                password,
+                                permissions,
+                                employment_type,
+                                job_grade,
+                                hire_date,
+                                leave_eligible_override,
+                                annual_leave_days_override,
+                                leave_balance_visible_override
+                            })
                             .eq('id', editingEmployeeId);
                         
                         if (error) throw error;
@@ -1261,7 +1586,19 @@
                     } else {
                         const { error } = await supabase
                             .from('employees')
-                            .insert([{ name, employee_id, branch_id, password, permissions }]);
+                            .insert([{
+                                name,
+                                employee_id,
+                                branch_id,
+                                password,
+                                permissions,
+                                employment_type,
+                                job_grade,
+                                hire_date,
+                                leave_eligible_override,
+                                annual_leave_days_override,
+                                leave_balance_visible_override
+                            }]);
                         
                         if (error) throw error;
                         showCustomSuccess('✅ تم إضافة الموظف بنجاح');
@@ -1271,6 +1608,12 @@
                     empId.value = '';
                     empBranch.value = '';
                     empPassword.value = '';
+                    empEmploymentType.value = '';
+                    empJobGrade.value = '';
+                    empHireDate.value = '';
+                    empLeaveEligibilityOverride.value = '';
+                    empAnnualLeaveOverride.value = '';
+                    empLeaveBalanceVisibility.value = '';
                     document.querySelectorAll('#permissionsContainer input').forEach(cb => cb.checked = ['viewReports', 'addSales'].includes(cb.value));
                     updateSelectedPermsDisplay();
                     loadEmployees();
@@ -1519,11 +1862,13 @@
                     loginStatus.style.background = '#d4edda';
                     loginStatus.style.color = '#155724';
                     updateUIByPermissions();
-                    
+                    loadHrSettings();
+                    loadEntitlementRules();
+
                     // تحديث معلومات المستخدم في الـ header
                     document.getElementById('userDisplayName').textContent = currentUser.name;
                     document.getElementById('userDisplayDetails').textContent = `${currentUser.employee_id} - ${currentUser.branch_name}`;
-                    
+
                     // إخفاء نموذج تسجيل وإظهار المحتوى
                     document.getElementById('loginContainer').style.display = 'none';
                     document.getElementById('sidebar').classList.add('visible');

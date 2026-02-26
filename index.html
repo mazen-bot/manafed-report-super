@@ -24,19 +24,97 @@
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(107, 45, 135, 0.2);
         }
+        
+        /* Loading Overlay Animation */
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+        }
+        
+        #loadingOverlay.show {
+            display: flex;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 40px 50px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #6b2d87;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #6b2d87;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .loading-subtext {
+            color: #666;
+            font-size: 14px;
+        }
     </style>
     <!-- Custom Alerts System / نظام التنبيهات المخصصة -->
     <script src="custom-alerts.js"></script>
     <script src="override-alerts.js"></script>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-text">⏳ جاري الحفظ...</div>
+            <div class="loading-subtext">يرجى الانتظار، لا تغلق الصفحة</div>
+        </div>
+    </div>
+    
         <div class="container">
         <div style="text-align:center;margin-bottom:20px;">
             <img src="logo.png" alt="Logo" style="height:65px;width:auto;">
         </div>
         <div class="header-with-button">
             <h1>إدارة المبيعات اليومية</h1>
-            <a href="reports.html" class="btn-reports">📊 عرض التقارير</a>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <a href="reports.html" class="btn-reports">📊 عرض التقارير</a>
+                <a href="hr-management.html" class="btn-reports" style="background: #17a2b8;">🏢 الموارد البشرية</a>
+            </div>
         </div>
 
         <div class="card" id="loginCard" style="margin-bottom:20px;padding:16px;border:1px solid #e0e0e0;border-radius:12px;background:#f8f9fa;">
@@ -693,6 +771,12 @@
             }
 
             console.log('User confirmed, proceeding to save...');
+            
+            // إظهار شاشة الانتظار الآن بعد التأكيد والتحققات
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (loadingOverlay) {
+                loadingOverlay.classList.add('show');
+            }
 
             document.getElementById('displayEmployeeId').textContent = employeeId;
             document.getElementById('displayBranch').textContent = branch;
@@ -723,6 +807,10 @@
                     document.getElementById('displayAttachment').textContent = `✅ ${uploadResult.fileName}`;
                 } catch (error) {
                     console.error('Failed to upload image:', error);
+                    // إخفاء شاشة الانتظار في حالة فشل رفع الصورة
+                    if (loadingOverlay) {
+                        loadingOverlay.classList.remove('show');
+                    }
                     alert('❌ فشل رفع الصورة: ' + (error.message || 'خطأ غير معروف'));
                     return;
                 }
@@ -753,6 +841,12 @@
                 console.log('Attempting to save to Supabase...', recordData);
                 await saveToSupabase(recordData);
                 console.log('Save successful!');
+                
+                // إخفاء شاشة الانتظار
+                if (loadingOverlay) {
+                    loadingOverlay.classList.remove('show');
+                }
+                
                 alert('تم حفظ البيانات في Supabase بنجاح!');
                 result.classList.add('show');
                 form.reset();
@@ -788,6 +882,11 @@
                 document.getElementById('saleDate').value = new Date().toISOString().split('T')[0];
                 result.classList.remove('show');
             } catch (err) {
+                // إخفاء شاشة الانتظار في حالة الخطأ
+                if (loadingOverlay) {
+                    loadingOverlay.classList.remove('show');
+                }
+                
                 console.error('Error saving data:', err);
                 console.error('Error details:', {
                     message: err.message,
