@@ -1,0 +1,96 @@
+⚡ حل سريع لمشكلة: "EmailJS library did not load"
+
+## المشكلة:
+```
+⚠️ EmailJS library did not load. Email notifications will be disabled.
+```
+
+## الحل الأسرع (في 2 دقيقة):
+---
+
+### ✅ الخيار 1: استخدام ملف محلي (موصى به)
+
+1. افتح باستخدام متصفح:
+   📄 setup-emailjs-offline.html
+
+2. انقر على الزر:
+   📥 "تحميل EmailJS"
+
+3. احفظ الملف المحمل بـ اسم:
+   email.min.js
+
+4. ضعه في:
+   d:\wep\manafed-report-super-main\
+
+5. أعد تحميل الصفحة (Ctrl+F5)
+
+---
+
+### ✅ الخيار 2: تجربة CDN بديل
+
+في hr-management.html، غير هذا السطر:
+
+من:
+```html
+<script src="email.min.js" onerror="loadEmailJSFromCDN()"></script>
+```
+
+إلى واحد من البدائل التالية:
+
+**بديل 1:**
+```html
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.3.0/dist/build/email.min.js"></script>
+```
+
+**بديل 2:**
+```html
+<script src="https://cdnjs.cloudflare.com/ajax/libs/emailjs-com/3.2.0/email.min.js"></script>
+```
+
+---
+
+### ✅ الخيار 3: تعطيل الإشعارات مؤقتاً
+
+إذا كنت تريد استخدام النظام بدون الإشعارات:
+- لا تحتاج لفعل أي شيء
+- النظام سيعمل بدون EmailJS
+- الإشعارات ستكون معطلة فقط
+
+---
+
+## التحقق من أن كل شيء يعمل:
+
+افتح متصفحك واضغط F12 (Developer Tools)
+
+في Console يجب أن ترى إحدى هاتين الرسائل:
+
+✅ **الرسالة الناجحة:**
+```
+✅ EmailJS loaded from local file
+✅ EmailJS initialized successfully
+```
+
+❌ **إذا رأيت:**
+```
+⚠️ EmailJS library did not load
+```
+
+اتبع الخيار 1 أعلاه.
+
+---
+
+## IDE (Visual Studio Code) التشخيص:
+
+اكتب في Console:
+```javascript
+typeof emailjs    // يجب أن يظهر: "object" ✅
+window.emailjsReady // يجب أن يظهر: true ✅
+```
+
+---
+
+## ملاحظات مهمة:
+
+- النظام سيعمل حتى بدون EmailJS
+- الإشعارات اختيارية
+- لا تؤثر على وظائف أخرى

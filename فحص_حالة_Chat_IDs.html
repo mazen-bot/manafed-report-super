@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>فحص حالة Chat IDs</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .status-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .status-card h2 {
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        
+        .status-card .number {
+            font-size: 32px;
+            font-weight: bold;
+        }
+        
+        .status-card .percentage {
+            font-size: 18px;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+        
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-right: 4px solid #667eea;
+        }
+        
+        .section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .emoji { font-size: 20px; }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: right;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #e9ecef;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        tr:hover {
+            background: #f0f0f0;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin: 10px 5px;
+        }
+        
+        .btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .status-good { color: #28a745; font-weight: bold; }
+        .status-bad { color: #dc3545; font-weight: bold; }
+        .status-warn { color: #ffc107; font-weight: bold; }
+        
+        .info-box {
+            background: #e7f3ff;
+            border-right: 4px solid #2196F3;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        
+        .info-box strong {
+            color: #1976D2;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><span class="emoji">📱</span> فحص حالة Chat IDs</h1>
+        <p class="subtitle">تحليل سريع لحالة بيانات التليجرام في النظام</p>
+        
+        <div id="loading" class="loading">
+            <div class="loader"></div>
+            <p>جاري التحليل...</p>
+        </div>
+        
+        <div id="content" style="display: none;">
+            <!-- الإحصائيات -->
+            <div class="status-card" id="statsCard"></div>
+            
+            <!-- ملخص الحالة -->
+            <div class="section">
+                <h3><span class="emoji">📊</span> ملخص الحالة</h3>
+                <div id="summary"></div>
+                <div class="info-box">
+                    <strong>💡 ملاحظة:</strong> الرقم الأخضر يعني أن كل شيء تمام ✅
+                </div>
+            </div>
+            
+            <!-- الموظفون بدون Chat ID -->
+            <div class="section">
+                <h3><span class="emoji">👥</span> الموظفون بدون Chat ID</h3>
+                <div id="employeesWithoutChatId"></div>
+            </div>
+            
+            <!-- المديرون بدون Chat ID -->
+            <div class="section">
+                <h3><span class="emoji">👔</span> المديرون بدون Chat ID</h3>
+                <div id="managersWithoutChatId"></div>
+            </div>
+            
+            <!-- الموظفون بدون مدير -->
+            <div class="section">
+                <h3><span class="emoji">⚠️</span> الموظفون بدون مدير مخصص</h3>
+                <div id="employeesWithoutManager"></div>
+            </div>
+            
+            <!-- الإجراءات السريعة -->
+            <div class="section">
+                <h3><span class="emoji">⚡</span> إجراءات سريعة</h3>
+                <div class="info-box">
+                    <p><strong>1. إضافة Chat ID للمدير:</strong></p>
+                    <p>افتح admin.html → اضغط على اسم المدير → اضغط Chat ID → أدخل الرقم من @userinfobot</p>
+                </div>
+                <div class="info-box">
+                    <p><strong>2. تعيين مدير افتراضي:</strong></p>
+                    <p>افتح Supabase وشغّل:</p>
+                    <code>UPDATE employees SET manager_id = '1003' WHERE manager_id IS NULL;</code>
+                </div>
+            </div>
+            
+            <!-- الإحصائيات المفصلة -->
+            <div class="section">
+                <h3><span class="emoji">📈</span> رسم بياني للإكمال</h3>
+                <div id="progressBars"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        let supabaseInstance = null;
+        
+        function initializeSupabase() {
+            if (!window.supabase) {
+                setTimeout(initializeSupabase, 100);
+                return;
+            }
+            
+            const supabaseUrl = 'https://rgblfimktfasocahzqtg.supabase.co';
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnYmxmaW1rdGZhc29jYWh6cXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NDg5NTQsImV4cCI6MjA4NTUyNDk1NH0.BMKXS1hTX5ntacnOQH5c2I5KDp5jpSWwJeHIDkz2els';
+            supabaseInstance = window.supabase.createClient(supabaseUrl, supabaseKey);
+        }
+        
+        async function analyzeData() {
+            try {
+                if (!supabaseInstance) {
+                    showError('خطأ: قاعدة البيانات لم تُحمل بعد');
+                    return;
+                }
+                
+                // جلب بيانات الموظفين
+                const { data: employees } = await supabaseInstance
+                    .from('employees')
+                    .select('*')
+                    .order('employee_id');
+                
+                if (!employees) {
+                    showError('خطأ في جلب البيانات');
+                    return;
+                }
+                
+                // حساب الإحصائيات
+                const stats = {
+                    total: employees.length,
+                    withChatId: employees.filter(e => e.telegram_chat_id).length,
+                    withoutChatId: employees.filter(e => !e.telegram_chat_id).length,
+                    withManager: employees.filter(e => e.manager_id).length,
+                    withoutManager: employees.filter(e => !e.manager_id).length
+                };
+                
+                stats.completionPercent = Math.round((stats.withChatId / stats.total) * 100);
+                
+                // إيجاد المديرين بدون Chat ID
+                const managers = new Map();
+                employees.forEach(emp => {
+                    if (emp.manager_id) {
+                        if (!managers.has(emp.manager_id)) {
+                            managers.set(emp.manager_id, {
+                                id: emp.manager_id,
+                                employees: []
+                            });
+                        }
+                        managers.get(emp.manager_id).employees.push(emp.name);
+                    }
+                });
+                
+                const managersWithoutChatId = Array.from(managers.values()).filter(m => {
+                    const manager = employees.find(e => e.employee_id === m.id);
+                    return manager && !manager.telegram_chat_id;
+                });
+                
+                // عرض النتائج
+                displayStats(stats);
+                displaySummary(stats);
+                displayEmployeesWithoutChatId(employees.filter(e => !e.telegram_chat_id));
+                displayManagersWithoutChatId(managersWithoutChatId, employees);
+                displayEmployeesWithoutManager(employees.filter(e => !e.manager_id));
+                displayProgressBars(stats);
+                
+                // إخفاء التحميل وإظهار المحتوى
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showError('خطأ: ' + error.message);
+            }
+        }
+        
+        function displayStats(stats) {
+            const html = `
+                <div>
+                    <h2>📊 الإحصائيات العامة</h2>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                        <div>
+                            <strong>إجمالي الموظفين:</strong>
+                            <div class="number" style="color: #fff;">${stats.total}</div>
+                        </div>
+                        <div>
+                            <strong>الموظفون مع Chat ID:</strong>
+                            <div class="number" style="color: #90EE90;">${stats.withChatId}</div>
+                            <div class="percentage">${stats.completionPercent}% مكتمل</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('statsCard').innerHTML = html;
+        }
+        
+        function displaySummary(stats) {
+            let html = '<table><tr><th>المقياس</th><th>القيمة</th><th>الحالة</th></tr>';
+            
+            const items = [
+                {
+                    label: 'إجمالي الموظفين',
+                    value: stats.total,
+                    status: '✅'
+                },
+                {
+                    label: 'موظفون مع Chat ID',
+                    value: `${stats.withChatId} من ${stats.total}`,
+                    status: stats.withChatId === stats.total ? '✅' : `⚠️ (${stats.withoutChatId} ناقص)`
+                },
+                {
+                    label: 'موظفون مع مدير',
+                    value: `${stats.withManager} من ${stats.total}`,
+                    status: stats.withManager === stats.total ? '✅' : `⚠️ (${stats.withoutManager} بدون مدير)`
+                },
+                {
+                    label: 'نسبة الإكمال',
+                    value: stats.completionPercent + '%',
+                    status: stats.completionPercent === 100 ? '✅ كامل' : `⚠️ ناقص`
+                }
+            ];
+            
+            items.forEach(item => {
+                html += `
+                    <tr>
+                        <td>${item.label}</td>
+                        <td><strong>${item.value}</strong></td>
+                        <td>${item.status}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</table>';
+            document.getElementById('summary').innerHTML = html;
+        }
+        
+        function displayEmployeesWithoutChatId(employees) {
+            if (employees.length === 0) {
+                document.getElementById('employeesWithoutChatId').innerHTML = 
+                    '<p style="color: #28a745;"><strong>✅ جميع الموظفين لديهم Chat ID!</strong></p>';
+                return;
+            }
+            
+            let html = `<p style="color: #dc3545;"><strong>⚠️ ${employees.length} موظف بدون Chat ID:</strong></p>
+                        <table>
+                        <tr><th>الرقم</th><th>الاسم</th><th>الفرع</th><th>الإجراء</th></tr>`;
+            
+            employees.forEach(emp => {
+                html += `
+                    <tr>
+                        <td>${emp.employee_id}</td>
+                        <td>${emp.name}</td>
+                        <td>${emp.branch_name || '-'}</td>
+                        <td>
+                            <button class="btn" onclick="openAdminForEmployee('${emp.employee_id}')">
+                                أضف Chat ID
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</table>';
+            document.getElementById('employeesWithoutChatId').innerHTML = html;
+        }
+        
+        function displayManagersWithoutChatId(managers, allEmployees) {
+            if (managers.length === 0) {
+                document.getElementById('managersWithoutChatId').innerHTML = 
+                    '<p style="color: #28a745;"><strong>✅ جميع المديرين لديهم Chat ID!</strong></p>';
+                return;
+            }
+            
+            let html = `<p style="color: #dc3545;"><strong>🔴 ${managers.length} مدير بدون Chat ID:</strong></p>
+                        <table>
+                        <tr><th>رقم المدير</th><th>الاسم</th><th>عدد الموظفين</th><th>الإجراء</th></tr>`;
+            
+            managers.forEach(mgr => {
+                const managerEmp = allEmployees.find(e => e.employee_id === mgr.id);
+                html += `
+                    <tr>
+                        <td>${mgr.id}</td>
+                        <td>${managerEmp?.name || 'غير معروف'}</td>
+                        <td>${mgr.employees.length}</td>
+                        <td>
+                            <button class="btn btn-danger" onclick="openAdminForEmployee('${mgr.id}')">
+                                أضف Chat ID للمدير
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</table>';
+            document.getElementById('managersWithoutChatId').innerHTML = html;
+        }
+        
+        function displayEmployeesWithoutManager(employees) {
+            if (employees.length === 0) {
+                document.getElementById('employeesWithoutManager').innerHTML = 
+                    '<p style="color: #28a745;"><strong>✅ جميع الموظفين لديهم مدير!</strong></p>';
+                return;
+            }
+            
+            let html = `<p style="color: #ffc107;"><strong>⚠️ ${employees.length} موظف بدون مدير مخصص:</strong></p>
+                        <table>
+                        <tr><th>الرقم</th><th>الاسم</th><th>الفرع</th><th>الإجراء</th></tr>`;
+            
+            employees.forEach(emp => {
+                html += `
+                    <tr>
+                        <td>${emp.employee_id}</td>
+                        <td>${emp.name}</td>
+                        <td>${emp.branch_name || '-'}</td>
+                        <td>
+                            <button class="btn" onclick="openAdminForEmployee('${emp.employee_id}')">
+                                عيّن مدير
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</table>';
+            document.getElementById('employeesWithoutManager').innerHTML = html;
+        }
+        
+        function displayProgressBars(stats) {
+            const chatIdPercent = (stats.withChatId / stats.total) * 100;
+            const managerPercent = (stats.withManager / stats.total) * 100;
+            
+            const html = `
+                <div style="margin: 20px 0;">
+                    <p><strong>📱 موظفون مع Chat ID: ${stats.withChatId}/${stats.total}</strong></p>
+                    <div style="
+                        background: #e9ecef;
+                        border-radius: 10px;
+                        overflow: hidden;
+                        height: 30px;
+                        margin-bottom: 20px;
+                    ">
+                        <div style="
+                            background: ${chatIdPercent === 100 ? '#28a745' : '#ffc107'};
+                            width: ${chatIdPercent}%;
+                            height: 100%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            color: white;
+                            font-weight: bold;
+                            transition: width 0.3s;
+                        ">
+                            ${Math.round(chatIdPercent)}%
+                        </div>
+                    </div>
+                    
+                    <p><strong>👔 موظفون مع مدير: ${stats.withManager}/${stats.total}</strong></p>
+                    <div style="
+                        background: #e9ecef;
+                        border-radius: 10px;
+                        overflow: hidden;
+                        height: 30px;
+                    ">
+                        <div style="
+                            background: ${managerPercent === 100 ? '#28a745' : '#ffc107'};
+                            width: ${managerPercent}%;
+                            height: 100%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            color: white;
+                            font-weight: bold;
+                            transition: width 0.3s;
+                        ">
+                            ${Math.round(managerPercent)}%
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('progressBars').innerHTML = html;
+        }
+        
+        function openAdminForEmployee(employeeId) {
+            alert('افتح admin.html وابحث عن: ' + employeeId);
+            // يمكن تغييرها إلى إعادة توجيه مباشرة إذا كانت في نفس المجلد
+            // window.location.href = 'admin.html';
+        }
+        
+        function showError(message) {
+            document.getElementById('loading').innerHTML = `<p style="color: #dc3545;">${message}</p>`;
+        }
+        
+        // بدء التحليل عند تحميل الصفحة
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeSupabase();
+            // انتظر قليلاً حتى يتم إنشاء supabaseInstance
+            setTimeout(() => {
+                analyzeData();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

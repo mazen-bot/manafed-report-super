@@ -668,6 +668,10 @@
                 <span class="sidebar-item-icon">🏖️</span>
                 إعدادات الإجازات
             </a>
+            <a class="sidebar-item" data-section="emails">
+                <span class="sidebar-item-icon">📧</span>
+                إدارة الإيميلات
+            </a>
             <a class="sidebar-item" data-section="credentials">
                 <span class="sidebar-item-icon">🔑</span>
                 الأرقام والأسرار
@@ -838,6 +842,23 @@
                 </div>
             </div>
 
+            <!-- قسم إدارة الإيميلات -->
+            <div class="section" id="emails">
+                <div class="card">
+                    <h2>📧 إدارة البريد الإلكتروني والتسلسل الإداري</h2>
+                    <p style="margin-bottom:16px;color:#666;font-size:14px;">✉️ قم بإضافة البريد الإلكتروني وتحديد المدير المباشر لكل موظف لإرسال الإشعارات عبر EmailJS</p>
+                    
+                    <div class="field">
+                        <label for="searchEmailEmployee">🔍 البحث عن موظف</label>
+                        <input id="searchEmailEmployee" type="text" placeholder="ابحث باسم الموظف أو الرقم الوظيفي...">
+                    </div>
+                    
+                    <div class="list" id="emailsList">
+                        <p style="padding:20px;text-align:center;color:#999;">⏳ جاري تحميل البيانات...</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- قسم الأرقام والأسرار -->
             <div class="section" id="credentials">
                 <div class="card">
@@ -939,6 +960,11 @@
                 
                 document.getElementById(sectionId).classList.add('active');
                 document.querySelector(`[data-section="${sectionId}"]`).classList.add('active');
+                
+                // تحميل البيانات حسب القسم
+                if (sectionId === 'emails') {
+                    loadEmployeeEmails();
+                }
                 
                 // إغلاق القائمة الجانبية على الهواتف
                 if (window.innerWidth <= 768) {
@@ -1847,11 +1873,385 @@
                 showCustomSuccess('✅ تم تسجيل الخروج بنجاح');
             });
 
+            // ====== إدارة البريد الإلكتروني ======
+            async function loadEmployeeEmails() {
+                const supabase = window.supabaseInstance;
+                try {
+                    const { data, error } = await supabase
+                        .from('employees')
+                        .select('employee_id, name, branch_name, email, manager_id, telegram_chat_id')
+                        .order('name');
+
+                    if (error) throw error;
+
+                    const emailsList = document.getElementById('emailsList');
+                    if (!data || data.length === 0) {
+                        emailsList.innerHTML = '<p style="padding:20px;text-align:center;color:#999;">لا يوجد موظفين</p>';
+                        return;
+                    }
+
+                    let html = `
+                        <table style="width:100%;border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:#f5f5f5;border-bottom:2px solid #ddd;">
+                                    <th style="padding:12px;text-align:right;font-weight:bold;">اسم الموظف</th>
+                                    <th style="padding:12px;text-align:right;font-weight:bold;">الرقم الوظيفي</th>
+                                    <th style="padding:12px;text-align:right;font-weight:bold;">الفرع</th>
+                                    <th style="padding:12px;text-align:right;font-weight:bold;">البريد الإلكتروني</th>
+                                    <th style="padding:12px;text-align:right;font-weight:bold;">المدير المباشر</th>
+                                    <th style="padding:12px;text-align:right;font-weight:bold;">Chat ID</th>
+                                    <th style="padding:12px;text-align:center;font-weight:bold;">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="emailsTableBody">
+                    `;
+
+                    data.forEach(emp => {
+                        const hasEmail = emp.email && emp.email.trim() !== '';
+                        const emailStatus = hasEmail 
+                            ? `<span style="color:#28a745;">✓</span> ${emp.email}` 
+                            : '<span style="color:#dc3545;">✗ غير محدد</span>';
+                        
+                        const hasManager = emp.manager_id && emp.manager_id.trim() !== '';
+                        const managerStatus = hasManager
+                            ? `<span style="color:#28a745;">✓</span> ${emp.manager_id}`
+                            : '<span style="color:#dc3545;">✗ غير محدد</span>';
+                        
+                        const hasChatId = emp.telegram_chat_id && emp.telegram_chat_id.trim() !== '';
+                        const chatIdStatus = hasChatId
+                            ? `<span style="color:#28a745;">✓</span> ${emp.telegram_chat_id}`
+                            : '<span style="color:#dc3545;">✗ غير محدد</span>';
+                        
+                        // Escape للأسماء لتجنب مشاكل JavaScript
+                        const safeEmployeeId = emp.employee_id.replace(/'/g, "\\'");
+                        const safeName = emp.name.replace(/'/g, "\\'");
+                        const safeEmail = (emp.email || '').replace(/'/g, "\\'");
+                        const safeManagerId = (emp.manager_id || '').replace(/'/g, "\\'");
+                        const safeChatId = (emp.telegram_chat_id || '').replace(/'/g, "\\'");
+                        
+                        html += `
+                            <tr style="border-bottom:1px solid #eee;" data-employee-id="${emp.employee_id}" data-employee-name="${emp.name}">
+                                <td style="padding:12px;">${emp.name}</td>
+                                <td style="padding:12px;"><code style="background:#f0f0f0;padding:4px 8px;border-radius:4px;">${emp.employee_id}</code></td>
+                                <td style="padding:12px;">${emp.branch_name || '-'} </td>
+                                <td style="padding:12px;" id="email-display-${emp.employee_id}">${emailStatus}</td>
+                                <td style="padding:12px;" id="manager-display-${emp.employee_id}">${managerStatus}</td>
+                                <td style="padding:12px;" id="telegram-display-${emp.employee_id}">${chatIdStatus}</td>
+                                <td style="padding:12px;text-align:center;">
+                                    <button onclick="editEmployeeEmail('${safeEmployeeId}', '${safeName}', '${safeEmail}')"
+                                        style="background:#3182ce;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;margin:2px;">
+                                        ${hasEmail ? '✏️ إيميل' : '➕ إيميل'}
+                                    </button>
+                                    <button onclick="editEmployeeManager('${safeEmployeeId}', '${safeName}', '${safeManagerId}')"
+                                        style="background:#28a745;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;margin:2px;">
+                                        ${hasManager ? '✏️ مدير' : '➕ مدير'}
+                                    </button>
+                                    <button onclick="editEmployeeTelegram('${safeEmployeeId}', '${safeName}', '${safeChatId}')"
+                                        style="background:#0088cc;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;margin:2px;">
+                                        ${hasChatId ? '✏️ Chat' : '➕ Chat'}
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    html += `
+                            </tbody>
+                        </table>
+                    `;
+
+                    emailsList.innerHTML = html;
+
+                    // إضافة البحث
+                    document.getElementById('searchEmailEmployee').addEventListener('input', (e) => {
+                        const searchTerm = e.target.value.toLowerCase();
+                        const rows = document.querySelectorAll('#emailsTableBody tr');
+                        rows.forEach(row => {
+                            const employeeName = row.getAttribute('data-employee-name').toLowerCase();
+                            const employeeId = row.getAttribute('data-employee-id').toLowerCase();
+                            if (employeeName.includes(searchTerm) || employeeId.includes(searchTerm)) {
+                                row.style.display = '';
+                            } else {
+                                row.style.display = 'none';
+                            }
+                        });
+                    });
+
+                } catch (err) {
+                    console.error('خطأ في تحميل البريد الإلكتروني:', err);
+                    document.getElementById('emailsList').innerHTML = '<p style="padding:20px;text-align:center;color:#dc3545;">❌ حدث خطأ في تحميل البيانات</p>';
+                }
+            }
+
+            window.editEmployeeEmail = async function(employeeId, employeeName, currentEmail) {
+                console.log('🔧 Editing email for:', employeeId, employeeName, currentEmail);
+                
+                const newEmail = prompt(
+                    `📧 تعديل البريد الإلكتروني\n\nالموظف: ${employeeName}\nالرقم الوظيفي: ${employeeId}\n\nأدخل البريد الإلكتروني الجديد:`,
+                    currentEmail
+                );
+
+                if (newEmail === null) {
+                    console.log('❌ تم إلغاء العملية');
+                    return; // ألغى المستخدم
+                }
+
+                const resolvedEmail = (newEmail && typeof newEmail.then === 'function')
+                    ? await newEmail
+                    : newEmail;
+
+                if (resolvedEmail === null || resolvedEmail === undefined) {
+                    console.log('❌ تم إلغاء العملية');
+                    return;
+                }
+
+                const emailValue = typeof resolvedEmail === 'string' ? resolvedEmail : String(resolvedEmail ?? '');
+                const normalizedEmail = emailValue
+                    .replace(/[\s\u200b\u200c\u200d\u2060\ufeff\u200e\u200f\u202a-\u202e]/g, '')
+                    .trim();
+
+                // التحقق من صحة البريد الإلكتروني
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (normalizedEmail !== '' && !emailRegex.test(normalizedEmail)) {
+                    console.error('❌ البريد الإلكتروني غير صحيح:', normalizedEmail);
+                    showCustomError('❌ البريد الإلكتروني غير صحيح. يرجى إدخال بريد إلكتروني صحيح مثل: user@example.com');
+                    return;
+                }
+
+                const supabase = window.supabaseInstance;
+                if (!supabase) {
+                    console.error('❌ Supabase غير محمّل');
+                    showCustomError('❌ خطأ: قاعدة البيانات غير متصلة');
+                    return;
+                }
+
+                console.log('💾 حفظ البريد الإلكتروني:', normalizedEmail);
+                
+                try {
+                    const { data, error } = await supabase
+                        .from('employees')
+                        .update({ email: normalizedEmail || null })
+                        .eq('employee_id', employeeId)
+                        .select();
+
+                    if (error) {
+                        console.error('❌ خطأ Supabase:', error);
+                        throw error;
+                    }
+
+                    console.log('✅ تم الحفظ بنجاح:', data);
+                    showCustomSuccess(`✅ تم ${currentEmail ? 'تعديل' : 'إضافة'} البريد الإلكتروني بنجاح`);
+                    
+                    // إعادة تحميل القائمة
+                    setTimeout(() => loadEmployeeEmails(), 500);
+
+                } catch (err) {
+                    console.error('❌ خطأ في حفظ البريد الإلكتروني:', err);
+                    
+                    // رسائل خطأ تفصيلية
+                    let errorMsg = '❌ حدث خطأ في حفظ البريد الإلكتروني';
+                    
+                    if (err.message && err.message.includes('column "email" of relation "employees" does not exist')) {
+                        errorMsg = '❌ عمود البريد الإلكتروني غير موجود في قاعدة البيانات.\n\nيرجى تشغيل ملف add_email_column.sql في Supabase SQL Editor أولاً!';
+                    } else if (err.message) {
+                        errorMsg += ': ' + err.message;
+                    }
+                    
+                    showCustomError(errorMsg);
+                }
+            };
+
+            // ====== إدارة المدير المباشر ======
+            window.editEmployeeManager = async function(employeeId, employeeName, currentManagerId) {
+                console.log('🔧 Editing manager for:', employeeId, employeeName, currentManagerId);
+                
+                // جلب قائمة المدراء المحتملين
+                const supabase = window.supabaseInstance;
+                if (!supabase) {
+                    showCustomError('❌ خطأ: قاعدة البيانات غير متصلة');
+                    return;
+                }
+
+                try {
+                    // جلب جميع الموظفين لاختيار المدير منهم
+                    const { data: allEmployees, error: fetchError } = await supabase
+                        .from('employees')
+                        .select('employee_id, name, branch_name')
+                        .order('name');
+
+                    if (fetchError) throw fetchError;
+
+                    // إنشاء قائمة بأسماء الموظفين
+                    let managerList = '\n\nالمدراء المتاحون:\n';
+                    if (allEmployees && allEmployees.length > 0) {
+                        allEmployees.forEach(emp => {
+                            if (emp.employee_id !== employeeId) { // لا يمكن للموظف أن يكون مديراً لنفسه
+                                managerList += `\n• ${emp.employee_id} - ${emp.name} (${emp.branch_name || '-'})`;
+                            }
+                        });
+                    }
+
+                    const newManagerId = prompt(
+                        `👔 تحديد المدير المباشر\n\nالموظف: ${employeeName}\nالرقم الوظيفي: ${employeeId}\n\nأدخل الرقم الوظيفي للمدير المباشر:\n(أو اترك فارغاً لإزالة المدير)${managerList}`,
+                        currentManagerId || '1003'
+                    );
+
+                    if (newManagerId === null) {
+                        console.log('❌ تم إلغاء العملية');
+                        return;
+                    }
+
+                    const resolvedManagerId = (newManagerId && typeof newManagerId.then === 'function')
+                        ? await newManagerId
+                        : newManagerId;
+
+                    if (resolvedManagerId === null || resolvedManagerId === undefined) {
+                        console.log('❌ تم إلغاء العملية');
+                        return;
+                    }
+
+                    const managerIdValue = typeof resolvedManagerId === 'string' ? resolvedManagerId : String(resolvedManagerId ?? '');
+                    const normalizedManagerId = managerIdValue
+                        .replace(/[\s\u200b\u200c\u200d\u2060\ufeff\u200e\u200f\u202a-\u202e]/g, '')
+                        .trim();
+
+                    // التحقق من وجود المدير إذا تم إدخال رقم
+                    if (normalizedManagerId !== '') {
+                        const { data: managerCheck, error: managerError } = await supabase
+                            .from('employees')
+                            .select('employee_id, name')
+                            .eq('employee_id', normalizedManagerId)
+                            .single();
+
+                        if (managerError || !managerCheck) {
+                            showCustomError(`❌ الرقم الوظيفي "${normalizedManagerId}" غير موجود في قاعدة البيانات.\n\nيرجى إدخال رقم وظيفي صحيح للمدير.`);
+                            return;
+                        }
+
+                        // التأكد من أن الموظف لا يحدد نفسه كمدير
+                        if (normalizedManagerId === employeeId) {
+                            showCustomError('❌ لا يمكن للموظف أن يكون مديراً لنفسه!');
+                            return;
+                        }
+                    }
+
+                    console.log('💾 حفظ المدير المباشر:', normalizedManagerId);
+
+                    const { data, error } = await supabase
+                        .from('employees')
+                        .update({ manager_id: normalizedManagerId || null })
+                        .eq('employee_id', employeeId)
+                        .select();
+
+                    if (error) {
+                        console.error('❌ خطأ Supabase:', error);
+                        throw error;
+                    }
+
+                    console.log('✅ تم الحفظ بنجاح:', data);
+                    showCustomSuccess(`✅ تم ${currentManagerId ? 'تعديل' : 'تحديد'} المدير المباشر بنجاح`);
+
+                    // إعادة تحميل القائمة
+                    setTimeout(() => loadEmployeeEmails(), 500);
+
+                } catch (err) {
+                    console.error('❌ خطأ في حفظ المدير المباشر:', err);
+
+                    let errorMsg = '❌ حدث خطأ في حفظ المدير المباشر';
+
+                    if (err.message && err.message.includes('column "manager_id" of relation "employees" does not exist')) {
+                        errorMsg = '❌ عمود المدير المباشر غير موجود في قاعدة البيانات.\n\nيرجى تشغيل ملف add_email_column.sql في Supabase SQL Editor أولاً!';
+                    } else if (err.message) {
+                        errorMsg += ': ' + err.message;
+                    }
+
+                    showCustomError(errorMsg);
+                }
+            };
+
+            // ====== إدارة Telegram Chat ID ======
+            window.editEmployeeTelegram = async function(employeeId, employeeName, currentChatId) {
+                console.log('🔧 Editing Telegram Chat ID for:', employeeId, employeeName, currentChatId);
+                
+                const newChatId = prompt(
+                    `📱 تعديل Telegram Chat ID\n\nالموظف: ${employeeName}\nالرقم الوظيفي: ${employeeId}\n\nأدخل Chat ID الجديد (أرقام فقط):\n\n💡 للحصول عليه:\n1. افتح تليجرام\n2. ابحث عن: @userinfobot\n3. اضغط Start\n4. سيعطيك Chat ID\n\nمثال: 987654321`,
+                    currentChatId || ''
+                );
+
+                if (newChatId === null) {
+                    console.log('❌ تم إلغاء العملية');
+                    return; // ألغى المستخدم
+                }
+
+                const resolvedChatId = (newChatId && typeof newChatId.then === 'function')
+                    ? await newChatId
+                    : newChatId;
+
+                if (resolvedChatId === null || resolvedChatId === undefined) {
+                    console.log('❌ تم إلغاء العملية');
+                    return;
+                }
+
+                const chatIdValue = typeof resolvedChatId === 'string' ? resolvedChatId : String(resolvedChatId ?? '');
+                const normalizedChatId = chatIdValue
+                    .replace(/[\s\u200b\u200c\u200d\u2060\ufeff\u200e\u200f\u202a-\u202e]/g, '')
+                    .trim();
+
+                // التحقق من صحة Chat ID (يجب يكون أرقام فقط)
+                if (normalizedChatId !== '' && !/^\d+$/.test(normalizedChatId)) {
+                    console.error('❌ Chat ID غير صحيح:', normalizedChatId);
+                    showCustomError('❌ Chat ID يجب يكون أرقام فقط!\n\nمثال: 987654321');
+                    return;
+                }
+
+                const supabase = window.supabaseInstance;
+                if (!supabase) {
+                    console.error('❌ Supabase غير محمّل');
+                    showCustomError('❌ خطأ: قاعدة البيانات غير متصلة');
+                    return;
+                }
+
+                console.log('💾 حفظ Telegram Chat ID:', normalizedChatId);
+                
+                try {
+                    const { data, error } = await supabase
+                        .from('employees')
+                        .update({ telegram_chat_id: normalizedChatId || null })
+                        .eq('employee_id', employeeId)
+                        .select();
+
+                    if (error) {
+                        console.error('❌ خطأ Supabase:', error);
+                        throw error;
+                    }
+
+                    console.log('✅ تم الحفظ بنجاح:', data);
+                    showCustomSuccess(`✅ تم ${currentChatId ? 'تعديل' : 'إضافة'} Telegram Chat ID بنجاح`);
+                    
+                    // إعادة تحميل القائمة
+                    setTimeout(() => loadEmployeeEmails(), 500);
+
+                } catch (err) {
+                    console.error('❌ خطأ في حفظ Chat ID:', err);
+                    
+                    let errorMsg = '❌ حدث خطأ في حفظ Chat ID';
+                    
+                    if (err.message && err.message.includes('column "telegram_chat_id" of relation "employees" does not exist')) {
+                        errorMsg = '❌ عمود Chat ID غير موجود في قاعدة البيانات.\n\nيرجى تشغيل ملف add_telegram_support.sql في Supabase SQL Editor أولاً!';
+                    } else if (err.message) {
+                        errorMsg += ': ' + err.message;
+                    }
+                    
+                    showCustomError(errorMsg);
+                }
+            };
+
             // ====== التهيئة الأولية ======
             loadBranches();
             loadEmployees();
             loadPermissionsManagement();
             loadAndDisplayCredentials();
+            loadEmployeeEmails();
 
             // استعادة بيانات تسجيل الدخول من localStorage
             const savedUser = localStorage.getItem('currentUser');

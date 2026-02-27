@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 فحص اتصال CDN الخاص بـ EmailJS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            margin: 30px 0;
+        }
+        
+        .test-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .cdn-test {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #cbd5e0;
+        }
+        
+        .cdn-test.loading {
+            background: #fffaf0;
+            border-left-color: #f6ad55;
+        }
+        
+        .cdn-test.success {
+            background: #f0fdf4;
+            border-left-color: #22c55e;
+        }
+        
+        .cdn-test.failed {
+            background: #fef2f2;
+            border-left-color: #ef4444;
+        }
+        
+        .status-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .status-icon.pending {
+            background: #fbbf24;
+            color: white;
+        }
+        
+        .status-icon.success {
+            background: #22c55e;
+            color: white;
+        }
+        
+        .status-icon.failed {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .cdn-info {
+            flex: 1;
+        }
+        
+        .cdn-name {
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+        
+        .cdn-url {
+            font-size: 12px;
+            color: #718096;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .status-text {
+            font-size: 12px;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+        
+        .status-text.success {
+            color: #22c55e;
+        }
+        
+        .status-text.failed {
+            color: #ef4444;
+        }
+        
+        .status-text.pending {
+            color: #f59e0b;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+        
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+        
+        .summary {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 8px;
+            background: #f0f9ff;
+            border: 2px solid #0284c7;
+        }
+        
+        .summary h3 {
+            color: #0284c7;
+            margin-bottom: 10px;
+        }
+        
+        .summary p {
+            color: #333;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin-top: 10px;
+            direction: ltr;
+            text-align: left;
+        }
+        
+        .info-box {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            color: #92400e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 فحص اتصال CDN EmailJS</h1>
+        <p class="subtitle">اختبر الاتصال بخوادم CDN المختلفة</p>
+        
+        <div class="info-box">
+            ℹ️ هذه الأداة تفحص ما إذا كان بإمكان متصفحك الوصول إلى خوادم CDN المختلفة.
+            إذا كان لديك مشكلة "EmailJS library failed to load"، استخدم هذه الأداة لتحديد CDN الذي يعمل.
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">مختبرات CDN</div>
+            
+            <div class="cdn-test" id="test-1">
+                <div class="status-icon pending">⏳</div>
+                <div class="cdn-info">
+                    <div class="cdn-name">jsDelivr (الخيار الرئيسي)</div>
+                    <div class="cdn-url">cdn.jsdelivr.net</div>
+                    <div class="status-text pending">جاري الاختبار...</div>
+                </div>
+            </div>
+            
+            <div class="cdn-test" id="test-2">
+                <div class="status-icon pending">⏳</div>
+                <div class="cdn-info">
+                    <div class="cdn-name">unpkg (البديل الموصى به)</div>
+                    <div class="cdn-url">unpkg.com</div>
+                    <div class="status-text pending">جاري الاختبار...</div>
+                </div>
+            </div>
+            
+            <div class="cdn-test" id="test-3">
+                <div class="status-icon pending">⏳</div>
+                <div class="cdn-info">
+                    <div class="cdn-name">cdnjs (الخيار البديل)</div>
+                    <div class="cdn-url">cdnjs.cloudflare.com</div>
+                    <div class="status-text pending">جاري الاختبار...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="summary" class="summary" style="display: none;">
+            <h3>📊 ملخص النتائج</h3>
+            <div id="summary-content"></div>
+        </div>
+        
+        <div class="buttons">
+            <button class="btn-primary" onclick="runTests()">▶️ تشغيل الاختبار</button>
+            <button class="btn-secondary" onclick="clearResults()">🗑️ مسح النتائج</button>
+        </div>
+    </div>
+
+    <script>
+        const tests = [
+            {
+                id: 'test-1',
+                name: 'jsDelivr',
+                url: 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/build/email.min.js',
+                recommended: true
+            },
+            {
+                id: 'test-2',
+                name: 'unpkg',
+                url: 'https://unpkg.com/@emailjs/browser@4/dist/build/email.min.js',
+                recommended: true
+            },
+            {
+                id: 'test-3',
+                name: 'cdnjs',
+                url: 'https://cdnjs.cloudflare.com/ajax/libs/emailjs-com/3.2.0/email.min.js',
+                recommended: false
+            }
+        ];
+
+        async function testCDN(test) {
+            const testEl = document.getElementById(test.id);
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                
+                const response = await fetch(test.url, {
+                    method: 'HEAD',
+                    signal: controller.signal,
+                    mode: 'cors'
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    // Success
+                    testEl.classList.remove('loading');
+                    testEl.classList.add('success');
+                    testEl.querySelector('.status-icon').innerHTML = '✅';
+                    testEl.querySelector('.status-icon').className = 'status-icon success';
+                    testEl.querySelector('.status-text').innerHTML = '✅ يعمل بنجاح (Status: ' + response.status + ')';
+                    testEl.querySelector('.status-text').className = 'status-text success';
+                    return { name: test.name, status: 'success', url: test.url };
+                } else {
+                    // Server responded but with error status
+                    testEl.classList.remove('loading');
+                    testEl.classList.add('failed');
+                    testEl.querySelector('.status-icon').innerHTML = '❌';
+                    testEl.querySelector('.status-icon').className = 'status-icon failed';
+                    testEl.querySelector('.status-text').innerHTML = '❌ فشل (Status: ' + response.status + ')';
+                    testEl.querySelector('.status-text').className = 'status-text failed';
+                    return { name: test.name, status: 'failed', url: test.url };
+                }
+            } catch (error) {
+                testEl.classList.remove('loading');
+                testEl.classList.add('failed');
+                testEl.querySelector('.status-icon').innerHTML = '❌';
+                testEl.querySelector('.status-icon').className = 'status-icon failed';
+                
+                let errorMsg = error.name === 'AbortError' ? 'Timeout' : error.message;
+                testEl.querySelector('.status-text').innerHTML = '❌ خطأ: ' + errorMsg;
+                testEl.querySelector('.status-text').className = 'status-text failed';
+                return { name: test.name, status: 'failed', url: test.url, error: errorMsg };
+            }
+        }
+
+        async function runTests() {
+            document.getElementById('summary').style.display = 'none';
+            
+            // Reset all tests to loading state
+            tests.forEach(test => {
+                const testEl = document.getElementById(test.id);
+                testEl.classList.remove('success', 'failed');
+                testEl.classList.add('loading');
+                testEl.querySelector('.status-icon').innerHTML = '⏳';
+                testEl.querySelector('.status-icon').className = 'status-icon pending';
+                testEl.querySelector('.status-text').innerHTML = 'جاري الاختبار...';
+                testEl.querySelector('.status-text').className = 'status-text pending';
+            });
+
+            // Run all tests
+            const results = await Promise.all(tests.map(t => testCDN(t)));
+            
+            // Show summary
+            showSummary(results);
+        }
+
+        function showSummary(results) {
+            const successTests = results.filter(r => r.status === 'success');
+            const failedTests = results.filter(r => r.status === 'failed');
+            
+            let summaryHTML = '';
+            
+            if (successTests.length > 0) {
+                summaryHTML += '<p>✅ <strong>الخوادم التي تعمل:</strong></p>';
+                summaryHTML += '<ul>';
+                successTests.forEach(test => {
+                    summaryHTML += `<li>${test.name} ✓</li>`;
+                });
+                summaryHTML += '</ul>';
+                
+                summaryHTML += '<p style="margin-top: 15px;"><strong>📝 التوصية:</strong></p>';
+                const working = successTests[0];
+                summaryHTML += '<p>استخدم أحد الخوادم التالية في ملف <code>hr-management.html</code>:</p>';
+                summaryHTML += '<div class="code-block">&lt;script src="' + working.url + '"&gt;&lt;/script&gt;</div>';
+            } else {
+                summaryHTML += '<p>❌ <strong>جميع الخوادم معطلة!</strong></p>';
+                summaryHTML += '<p>هذا يعني:</p>';
+                summaryHTML += '<ul>';
+                summaryHTML += '<li>قد تكون خوادم CDN معطلة عالمياً</li>';
+                summaryHTML += '<li>قد يكون هناك حجب من جهتك (جدار ناري، VPN، Proxy)</li>';
+                summaryHTML += '<li>قد تكون هناك مشكلة في الإنترنت</li>';
+                summaryHTML += '</ul>';
+                summaryHTML += '<p><strong>الحل المقترح:</strong></p>';
+                summaryHTML += '<p>استخدم التحميل المحلي بدلاً من CDN (انظر دليل الحل الكامل)</p>';
+            }
+            
+            if (failedTests.length > 0) {
+                summaryHTML += '<p style="margin-top: 15px;">❌ <strong>الخوادم التي فشلت:</strong></p>';
+                summaryHTML += '<ul>';
+                failedTests.forEach(test => {
+                    summaryHTML += `<li>${test.name} (${test.error || 'فشل الاتصال'})</li>`;
+                });
+                summaryHTML += '</ul>';
+            }
+            
+            document.getElementById('summary-content').innerHTML = summaryHTML;
+            document.getElementById('summary').style.display = 'block';
+            document.getElementById('summary').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function clearResults() {
+            tests.forEach(test => {
+                const testEl = document.getElementById(test.id);
+                testEl.classList.remove('success', 'failed', 'loading');
+                testEl.querySelector('.status-icon').innerHTML = '⏳';
+                testEl.querySelector('.status-icon').className = 'status-icon pending';
+                testEl.querySelector('.status-text').innerHTML = 'جاري الاختبار...';
+                testEl.querySelector('.status-text').className = 'status-text pending';
+            });
+            document.getElementById('summary').style.display = 'none';
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                runTests();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

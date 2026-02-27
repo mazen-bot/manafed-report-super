@@ -881,8 +881,87 @@
     </div>
 
     <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- EmailJS - Try local file first, then CDN fallback -->
+    <script src="email.min.js" onerror="loadEmailJSFromCDN()"></script>
+    <script>
+        // If local file loads successfully, try to initialize
+        function checkAndInitEmailJS() {
+            if (typeof emailjs !== 'undefined') {
+                window.emailjsLoaded = true;
+                console.log('✅ EmailJS loaded from local file');
+                if (typeof initializeEmailJS === 'function') {
+                    initializeEmailJS();
+                }
+            }
+        }
+        
+        
+        // Try to initialize after a short delay
+        setTimeout(checkAndInitEmailJS, 100);
+        
+        // Fallback CDN loader if local file not found
+        function loadEmailJSFromCDN() {
+            console.log('📡 Local EmailJS file not found, loading from CDN...');
+            
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/@emailjs/browser@4.3.0/dist/build/email.min.js';
+            script.id = 'emailjs-cdn-primary';
+            script.onload = () => {
+                window.emailjsLoaded = true;
+                console.log('✅ EmailJS loaded from unpkg CDN');
+                if (typeof initializeEmailJS === 'function') {
+                    initializeEmailJS();
+                }
+            };
+            script.onerror = () => {
+                console.warn('⚠️ unpkg CDN failed, trying jsDelivr...');
+                loadFromJsDelivr();
+            };
+            document.head.appendChild(script);
+        }
+        
+        // Secondary CDN fallback
+        function loadFromJsDelivr() {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4.3.0/dist/build/email.min.js';
+            script.id = 'emailjs-cdn-secondary';
+            script.onload = () => {
+                window.emailjsLoaded = true;
+                console.log('✅ EmailJS loaded from jsDelivr CDN');
+                if (typeof initializeEmailJS === 'function') {
+                    initializeEmailJS();
+                }
+            };
+            script.onerror = () => {
+                console.warn('⚠️ jsDelivr failed, trying cdnjs...');
+                loadFromCdnjs();
+            };
+            document.head.appendChild(script);
+        }
+        
+        // Third CDN fallback
+        function loadFromCdnjs() {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/emailjs-com/3.2.0/email.min.js';
+            script.id = 'emailjs-cdn-tertiary';
+            script.onload = () => {
+                window.emailjsLoaded = true;
+                console.log('✅ EmailJS loaded from cdnjs CDN');
+                if (typeof initializeEmailJS === 'function') {
+                    initializeEmailJS();
+                }
+            };
+            script.onerror = () => {
+                window.emailjsLoadError = true;
+                console.error('❌ All CDN sources failed. See setup-emailjs-offline.html for local setup');
+            };
+            document.head.appendChild(script);
+        }
+    </script>
     <script src="custom-alerts.js"></script>
     <script src="override-alerts.js"></script>
+    <script src="emailjs-notifications.js"></script>
+    <script src="telegram-notifications.js"></script>
     <script>
         let supabaseAttempts = 0;
         const maxAttempts = 50;
@@ -1366,6 +1445,24 @@
 
                 if (error) throw error;
 
+                // Send email notification for leave request
+                if (window.sendLeaveRequestNotification) {
+                    setTimeout(() => {
+                        sendLeaveRequestNotification(requestData).catch(err => {
+                            console.warn('⚠️ Could not send email notification:', err);
+                        });
+                    }, 500);
+                }
+
+                // Send Telegram notification for leave request
+                if (window.sendLeaveRequestTelegram) {
+                    setTimeout(() => {
+                        sendLeaveRequestTelegram(requestData).catch(err => {
+                            console.warn('⚠️ Could not send Telegram notification:', err);
+                        });
+                    }, 1000);
+                }
+
                 const successMsg = requestType === 'sick'
                     ? `تم إرسال الطلب بنجاح! يرجى رفع الشهادة الطبية خلال ${medicalDeadlineDays} أيام.`
                     : 'تم إرسال الطلب بنجاح! سيتم مراجعته من قبل الإدارة.';
@@ -1829,12 +1926,66 @@
             const supabase = window.supabaseInstance;
 
             try {
+                // Get the leave request details before updating
+                const { data: leaveRequest, error: fetchError } = await supabase
+                    .from('leave_requests')
+                    .select('*')
+                    .eq('id', requestId)
+                    .single();
+
+                if (fetchError) throw fetchError;
+
                 const { error } = await supabase
                     .from('leave_requests')
                     .update({ status: status })
                     .eq('id', requestId);
 
                 if (error) throw error;
+
+                // Send email notification for approval/rejection
+                console.log('📧 Attempting to send approval notification...');
+                console.log('sendLeaveApprovalNotification exists?', typeof window.sendLeaveApprovalNotification);
+                console.log('Leave request data:', leaveRequest);
+                console.log('Status:', status);
+                
+                if (window.sendLeaveApprovalNotification && leaveRequest) {
+                    console.log('✅ Starting email notification send...');
+                    setTimeout(() => {
+                        sendLeaveApprovalNotification(leaveRequest, status).then(() => {
+                            console.log('✅ Email notification promise resolved successfully');
+                        }).catch(err => {
+                            console.error('❌ Email notification promise rejected:', err);
+                            console.warn('⚠️ Could not send approval email notification:', err);
+                        });
+                    }, 500);
+                } else {
+                    if (!window.sendLeaveApprovalNotification) {
+                        console.warn('⚠️ sendLeaveApprovalNotification function not found');
+                    }
+                    if (!leaveRequest) {
+                        console.warn('⚠️ Leave request data is missing');
+                    }
+                }
+
+                // Send Telegram notification for approval/rejection
+                console.log('📱 Attempting to send Telegram approval notification...');
+                console.log('sendLeaveApprovalTelegram exists?', typeof window.sendLeaveApprovalTelegram);
+                
+                if (window.sendLeaveApprovalTelegram && leaveRequest) {
+                    console.log('✅ Starting Telegram notification send...');
+                    setTimeout(() => {
+                        sendLeaveApprovalTelegram(leaveRequest, status).then(() => {
+                            console.log('✅ Telegram notification promise resolved successfully');
+                        }).catch(err => {
+                            console.error('❌ Telegram notification promise rejected:', err);
+                            console.warn('⚠️ Could not send Telegram approval notification:', err);
+                        });
+                    }, 1000);
+                } else {
+                    if (!window.sendLeaveApprovalTelegram) {
+                        console.warn('⚠️ sendLeaveApprovalTelegram function not found');
+                    }
+                }
 
                 showCustomSuccess(`تم ${status === 'approved' ? 'قبول' : 'رفض'} الطلب بنجاح`, 'تم التحديث');
                 await loadAllRequests();
@@ -1891,6 +2042,24 @@
                     .insert([warningData]);
 
                 if (error) throw error;
+
+                // Send email notification for warning
+                if (window.sendWarningNotification) {
+                    setTimeout(() => {
+                        sendWarningNotification(warningData.employee_id, warningData).catch(err => {
+                            console.warn('⚠️ Could not send warning email notification:', err);
+                        });
+                    }, 500);
+                }
+
+                // Send Telegram notification for warning
+                if (window.sendWarningTelegram) {
+                    setTimeout(() => {
+                        sendWarningTelegram(warningData.employee_id, warningData).catch(err => {
+                            console.warn('⚠️ Could not send warning Telegram notification:', err);
+                        });
+                    }, 800);
+                }
 
                 showCustomSuccess('تم إضافة الإنذار بنجاح', 'تم الحفظ');
                 document.getElementById('warningForm').reset();
@@ -1976,6 +2145,16 @@
 
                 console.log('[ACKNOWLEDGE] تم التحديث بنجاح:', data);
                 showCustomSuccess('تم تأكيد استلام الإنذار بنجاح', '✓ تم التأكيد');
+
+                // Send Telegram notification to manager after acknowledgement
+                if (window.sendWarningAcknowledgementTelegram && data && data.length > 0) {
+                    const warningRow = data[0];
+                    setTimeout(() => {
+                        sendWarningAcknowledgementTelegram(warningRow.employee_id, warningRow).catch(err => {
+                            console.warn('⚠️ Could not send warning acknowledgement Telegram:', err);
+                        });
+                    }, 800);
+                }
                 
                 // إعادة تحميل البيانات
                 await loadUserData();
@@ -2044,6 +2223,15 @@
                         statusText = '⏰ يوم واحد متبقي';
                         alertClass = 'alert alert-warning';
                         alertText = '⚠️ تنبيه: يتبقى يوم واحد فقط لرفع الملف';
+                        
+                        // Send medical deadline reminder notification
+                        if (window.sendMedicalDeadlineReminder) {
+                            setTimeout(() => {
+                                sendMedicalDeadlineReminder(leave, daysLeft).catch(err => {
+                                    console.warn('⚠️ Could not send medical reminder:', err);
+                                });
+                            }, 500);
+                        }
                     } else {
                         statusColor = '#4299e1'; // أزرق
                         statusText = `📅 ${daysLeft} أيام متبقية`;
@@ -2370,5 +2558,16 @@
         addMedicalCertificatesStyles();
     
     </script>
+    <script type="text/javascript"
+        src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
+</script>
+<script type="text/javascript">
+   (function(){
+      emailjs.init({
+        publicKey: "raY5iQKog8iggJUoY",
+      });
+   })();
+</script>
+
 </body>
 </html>

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار إشعارات تليجرام</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+        
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeaa7;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+            font-size: 1.05em;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .config-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .config-section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            border-right: 4px solid #2196F3;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .info-box h4 {
+            color: #1976D2;
+            margin-bottom: 8px;
+        }
+        
+        .info-box ul {
+            margin-right: 20px;
+            color: #424242;
+        }
+        
+        .info-box li {
+            margin-bottom: 5px;
+        }
+        
+        .test-results {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .test-results.show {
+            display: block;
+        }
+        
+        .test-results h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .test-results pre {
+            background: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            overflow-x: auto;
+            direction: ltr;
+            text-align: left;
+        }
+        
+        .emoji {
+            font-size: 1.5em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><span class="emoji">📱</span> اختبار إشعارات تليجرام</h1>
+        <p class="subtitle">تأكد من عمل البوت وإرسال الإشعارات</p>
+        
+        <div id="status-message"></div>
+        
+        <div class="info-box">
+            <h4><span class="emoji">📋</span> خطوات الاختبار:</h4>
+            <ul>
+                <li>1. احصل على Bot Token من @BotFather</li>
+                <li>2. احصل على Chat ID من @userinfobot</li>
+                <li>3. اضغط /start في البوت الخاص بك</li>
+                <li>4. أدخل البيانات أدناه واضغط إرسال</li>
+            </ul>
+        </div>
+        
+        <div class="config-section">
+            <h3><span class="emoji">⚙️</span> إعدادات البوت</h3>
+            
+            <div class="form-group">
+                <label for="botToken">Bot Token:</label>
+                <input 
+                    type="text" 
+                    id="botToken" 
+                    placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+                    value=""
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="chatId">Chat ID:</label>
+                <input 
+                    type="text" 
+                    id="chatId" 
+                    placeholder="987654321"
+                    value=""
+                >
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="messageText">نص الرسالة:</label>
+            <textarea 
+                id="messageText" 
+                placeholder="اكتب رسالة الاختبار هنا..."
+            >🔔 <b>رسالة اختبار</b>
+
+مرحباً! هذه رسالة اختبار من نظام إدارة الموارد البشرية.
+
+✅ إذا استلمت هذه الرسالة، يعني البوت شغال بنجاح!
+
+⏰ التاريخ: ${new Date().toLocaleString('ar-EG')}</textarea>
+        </div>
+        
+        <button class="btn" onclick="sendTestMessage()">
+            <span class="emoji">📤</span> إرسال رسالة اختبار
+        </button>
+        
+        <button class="btn" onclick="testBotConnection()" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+            <span class="emoji">🔍</span> اختبار اتصال البوت
+        </button>
+        
+        <div class="test-results" id="test-results">
+            <h3><span class="emoji">📊</span> نتائج الاختبار:</h3>
+            <pre id="results-content"></pre>
+        </div>
+    </div>
+    
+    <script>
+        // تحميل القيم المحفوظة
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedToken = localStorage.getItem('telegram_bot_token');
+            const savedChatId = localStorage.getItem('telegram_chat_id');
+            
+            if (savedToken) {
+                document.getElementById('botToken').value = savedToken;
+            }
+            
+            if (savedChatId) {
+                document.getElementById('chatId').value = savedChatId;
+            }
+        });
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+        }
+        
+        function showResults(content) {
+            const resultsDiv = document.getElementById('test-results');
+            const contentDiv = document.getElementById('results-content');
+            contentDiv.textContent = JSON.stringify(content, null, 2);
+            resultsDiv.classList.add('show');
+        }
+        
+        async function testBotConnection() {
+            const botToken = document.getElementById('botToken').value.trim();
+            
+            if (!botToken) {
+                showStatus('❌ الرجاء إدخال Bot Token', 'error');
+                return;
+            }
+            
+            // حفظ Token
+            localStorage.setItem('telegram_bot_token', botToken);
+            
+            showStatus('🔄 جاري اختبار الاتصال بالبوت...', 'warning');
+            
+            try {
+                const url = `https://api.telegram.org/bot${botToken}/getMe`;
+                const response = await fetch(url);
+                const result = await response.json();
+                
+                if (result.ok) {
+                    showStatus(`✅ البوت شغال! الاسم: ${result.result.first_name} (@${result.result.username})`, 'success');
+                    showResults(result.result);
+                } else {
+                    showStatus('❌ فشل الاتصال بالبوت: ' + result.description, 'error');
+                    showResults(result);
+                }
+            } catch (error) {
+                showStatus('❌ خطأ في الاتصال: ' + error.message, 'error');
+                showResults({error: error.message});
+            }
+        }
+        
+        async function sendTestMessage() {
+            const botToken = document.getElementById('botToken').value.trim();
+            const chatId = document.getElementById('chatId').value.trim();
+            const messageText = document.getElementById('messageText').value.trim();
+            
+            // التحقق من البيانات
+            if (!botToken) {
+                showStatus('❌ الرجاء إدخال Bot Token', 'error');
+                return;
+            }
+            
+            if (!chatId) {
+                showStatus('❌ الرجاء إدخال Chat ID', 'error');
+                return;
+            }
+            
+            if (!messageText) {
+                showStatus('❌ الرجاء إدخال نص الرسالة', 'error');
+                return;
+            }
+            
+            // حفظ البيانات
+            localStorage.setItem('telegram_bot_token', botToken);
+            localStorage.setItem('telegram_chat_id', chatId);
+            
+            showStatus('🔄 جاري إرسال الرسالة...', 'warning');
+            
+            try {
+                // استبدال ${new Date()...} بالتاريخ الفعلي
+                const finalMessage = messageText.replace(
+                    '${new Date().toLocaleString(\'ar-EG\')}',
+                    new Date().toLocaleString('ar-EG')
+                );
+                
+                const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: finalMessage,
+                        parse_mode: 'HTML',
+                        disable_web_page_preview: true
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.ok) {
+                    showStatus('✅ تم إرسال الرسالة بنجاح! افتح تليجرام وتحقق من استلامها.', 'success');
+                    showResults(result.result);
+                } else {
+                    showStatus('❌ فشل إرسال الرسالة: ' + result.description, 'error');
+                    showResults(result);
+                    
+                    // نصائح حسب نوع الخطأ
+                    if (result.description.includes('chat not found')) {
+                        showStatus('❌ Chat ID غير موجود. تأكد أنك فتحت البوت وضغطت /start', 'error');
+                    } else if (result.description.includes('bot was blocked')) {
+                        showStatus('❌ البوت محظور. افتح البوت واضغط /start مرة أخرى', 'error');
+                    } else if (result.description.includes('Unauthorized')) {
+                        showStatus('❌ Bot Token خطأ. تحقق من التوكن من @BotFather', 'error');
+                    }
+                }
+            } catch (error) {
+                showStatus('❌ خطأ في الإرسال: ' + error.message, 'error');
+                showResults({error: error.message});
+            }
+        }
+    </script>
+</body>
+</html>

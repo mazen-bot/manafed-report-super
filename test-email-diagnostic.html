@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تشخيص مشكلة الإيميل</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 { 
+            color: #6b2d87; 
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .test-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        .test-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 13px;
+            margin-left: 10px;
+        }
+        .status.loading {
+            background: #ffc107;
+            color: #000;
+        }
+        .status.success {
+            background: #28a745;
+            color: white;
+        }
+        .status.error {
+            background: #dc3545;
+            color: white;
+        }
+        .result {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .info-box {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #0c5460;
+        }
+        .info-box strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+        .step {
+            display: flex;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-left: 15px;
+            flex-shrink: 0;
+        }
+        .step-content {
+            flex: 1;
+        }
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin-top: 10px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 تشخيص مشكلة البريد الإلكتروني</h1>
+        <p class="subtitle">هذه الأداة تساعدك في تشخيص وحل مشاكل إضافة البريد الإلكتروني</p>
+
+        <div class="info-box">
+            <strong>📋 الخطوات المتوقعة:</strong>
+            1. التحقق من اتصال Supabase<br>
+            2. فحص وجود جدول employees<br>
+            3. التحقق من وجود عمود email<br>
+            4. اختبار إضافة/تعديل البريد الإلكتروني<br>
+            5. التحقق من صلاحيات RLS
+        </div>
+
+        <!-- اختبار 1: Supabase Connection -->
+        <div class="test-section">
+            <h3>
+                1️⃣ اتصال Supabase
+                <span class="status loading" id="status1">⏳ جاري الفحص...</span>
+            </h3>
+            <div class="result" id="result1">جاري التحقق من اتصال Supabase...</div>
+        </div>
+
+        <!-- اختبار 2: Employees Table -->
+        <div class="test-section">
+            <h3>
+                2️⃣ جدول الموظفين
+                <span class="status loading" id="status2">⏳ انتظار...</span>
+            </h3>
+            <div class="result" id="result2">في انتظار نجاح الاختبار الأول...</div>
+        </div>
+
+        <!-- اختبار 3: Email Column -->
+        <div class="test-section">
+            <h3>
+                3️⃣ عمود البريد الإلكتروني
+                <span class="status loading" id="status3">⏳ انتظار...</span>
+            </h3>
+            <div class="result" id="result3">في انتظار نجاح الاختبارات السابقة...</div>
+        </div>
+
+        <!-- اختبار 4: Write Test -->
+        <div class="test-section">
+            <h3>
+                4️⃣ اختبار الكتابة
+                <span class="status loading" id="status4">⏳ انتظار...</span>
+            </h3>
+            <div class="result" id="result4">في انتظار نجاح الاختبارات السابقة...</div>
+            <button id="testWriteBtn" style="margin-top:10px;" disabled>اختبار إضافة إيميل تجريبي</button>
+        </div>
+
+        <!-- الحل -->
+        <div class="test-section" id="solutionSection" style="display:none;">
+            <h3>💡 الحل المقترح</h3>
+            <div id="solutionContent"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const supabaseUrl = 'https://rgblfimktfasocahzqtg.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnYmxmaW1rdGZhc29jYWh6cXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NDg5NTQsImV4cCI6MjA4NTUyNDk1NH0.BMKXS1hTX5ntacnOQH5c2I5KDp5jpSWwJeHIDkz2els';
+        
+        let supabaseClient;
+        let hasEmailColumn = false;
+        let employeesData = [];
+
+        async function test1_SupabaseConnection() {
+            const status = document.getElementById('status1');
+            const result = document.getElementById('result1');
+            
+            try {
+                // انتظار تحميل Supabase
+                let attempts = 0;
+                while (typeof window.supabase === 'undefined' && attempts < 50) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+
+                if (typeof window.supabase === 'undefined') {
+                    throw new Error('مكتبة Supabase لم يتم تحميلها');
+                }
+
+                supabaseClient = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+                
+                // اختبار الاتصال
+                const { data, error } = await supabaseClient.from('employees').select('count', { count: 'exact', head: true });
+                
+                if (error) throw error;
+
+                status.className = 'status success';
+                status.textContent = '✅ نجح';
+                result.textContent = '✅ الاتصال بـ Supabase نجح بنجاح!\n\nالعنوان: ' + supabaseUrl + '\nالحالة: متصل';
+                
+                return true;
+            } catch (err) {
+                status.className = 'status error';
+                status.textContent = '❌ فشل';
+                result.textContent = '❌ فشل الاتصال بـ Supabase:\n\n' + err.message + '\n\nالرجاء التحقق من اتصال الإنترنت ومن صحة بيانات Supabase.';
+                return false;
+            }
+        }
+
+        async function test2_EmployeesTable() {
+            const status = document.getElementById('status2');
+            const result = document.getElementById('result2');
+            
+            try {
+                const { data, error, count } = await supabaseClient
+                    .from('employees')
+                    .select('*', { count: 'exact' })
+                    .limit(5);
+                
+                if (error) throw error;
+
+                employeesData = data || [];
+                
+                status.className = 'status success';
+                status.textContent = '✅ نجح';
+                result.textContent = `✅ جدول الموظفين موجود!\n\nعدد الموظفين: ${count || 0}\nعينة من البيانات:\n\n${JSON.stringify(data, null, 2)}`;
+                
+                return true;
+            } catch (err) {
+                status.className = 'status error';
+                status.textContent = '❌ فشل';
+                result.textContent = '❌ خطأ في الوصول لجدول الموظفين:\n\n' + err.message;
+                return false;
+            }
+        }
+
+        async function test3_EmailColumn() {
+            const status = document.getElementById('status3');
+            const result = document.getElementById('result3');
+            
+            try {
+                if (employeesData.length === 0) {
+                    status.className = 'status error';
+                    status.textContent = '⚠️ تحذير';
+                    result.textContent = '⚠️ لا يوجد موظفين في الجدول لفحص عمود البريد الإلكتروني.\n\nيُنصح بإضافة موظف واحد على الأقل أولاً.';
+                    return false;
+                }
+
+                // فحص إذا كان عمود email موجود
+                const firstEmployee = employeesData[0];
+                const columns = Object.keys(firstEmployee);
+                
+                result.textContent = 'الأعمدة الموجودة في جدول employees:\n\n' + columns.join(', ');
+                
+                if (columns.includes('email')) {
+                    hasEmailColumn = true;
+                    status.className = 'status success';
+                    status.textContent = '✅ نجح';
+                    result.textContent += '\n\n✅ عمود "email" موجود بنجاح!';
+                    
+                    // عرض حالة الإيميلات
+                    const withEmail = employeesData.filter(e => e.email && e.email.trim() !== '');
+                    const withoutEmail = employeesData.filter(e => !e.email || e.email.trim() === '');
+                    
+                    result.textContent += `\n\nالإحصائيات:\n- موظفين لديهم إيميل: ${withEmail.length}\n- موظفين بدون إيميل: ${withoutEmail.length}`;
+                    
+                    return true;
+                } else {
+                    status.className = 'status error';
+                    status.textContent = '❌ فشل';
+                    result.textContent += '\n\n❌ عمود "email" غير موجود في جدول employees!';
+                    
+                    showSolution('missing_column');
+                    return false;
+                }
+            } catch (err) {
+                status.className = 'status error';
+                status.textContent = '❌ فشل';
+                result.textContent = '❌ خطأ في فحص عمود البريد الإلكتروني:\n\n' + err.message;
+                return false;
+            }
+        }
+
+        async function test4_WriteTest() {
+            const status = document.getElementById('status4');
+            const result = document.getElementById('result4');
+            const btn = document.getElementById('testWriteBtn');
+            
+            if (hasEmailColumn && employeesData.length > 0) {
+                status.textContent = '⏸️ جاهز للاختبار';
+                result.textContent = 'اضغط على الزر أدناه لاختبار إضافة بريد إلكتروني تجريبي';
+                btn.disabled = false;
+                
+                btn.onclick = async () => {
+                    btn.disabled = true;
+                    btn.textContent = '⏳ جاري الاختبار...';
+                    status.className = 'status loading';
+                    status.textContent = '⏳ جاري...';
+                    
+                    try {
+                        const testEmployee = employeesData[0];
+                        const testEmail = 'test_' + Date.now() + '@example.com';
+                        
+                        result.textContent = `📝 محاولة تحديث:\nEmployee ID: ${testEmployee.employee_id}\nEmail: ${testEmail}\n\n`;
+                        
+                        const { data, error } = await supabaseClient
+                            .from('employees')
+                            .update({ email: testEmail })
+                            .eq('employee_id', testEmployee.employee_id)
+                            .select();
+                        
+                        if (error) throw error;
+                        
+                        status.className = 'status success';
+                        status.textContent = '✅ نجح';
+                        result.textContent += '✅ تم الاختبار بنجاح!\n\nالنتيجة:\n' + JSON.stringify(data, null, 2);
+                        result.textContent += '\n\n🎉 جميع الاختبارات نجحت! يمكنك الآن استخدام نظام الإيميلات بشكل طبيعي.';
+                        
+                        btn.textContent = '✅ النظام يعمل بشكل صحيح';
+                        
+                    } catch (err) {
+                        status.className = 'status error';
+                        status.textContent = '❌ فشل';
+                        result.textContent += '❌ فشل اختبار الكتابة:\n\n' + err.message;
+                        
+                        if (err.message.includes('permission')) {
+                            result.textContent += '\n\n⚠️ المشكلة: صلاحيات RLS';
+                            showSolution('rls_permission');
+                        }
+                        
+                        btn.textContent = 'إعادة المحاولة';
+                        btn.disabled = false;
+                    }
+                };
+            } else {
+                status.className = 'status error';
+                status.textContent = '❌ غير جاهز';
+                result.textContent = 'لا يمكن إجراء اختبار الكتابة. يرجى حل المشاكل السابقة أولاً.';
+            }
+        }
+
+        function showSolution(type) {
+            const section = document.getElementById('solutionSection');
+            const content = document.getElementById('solutionContent');
+            section.style.display = 'block';
+            
+            if (type === 'missing_column') {
+                content.innerHTML = `
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <strong>افتح Supabase SQL Editor</strong>
+                            <p>اذهب إلى <a href="https://rgblfimktfasocahzqtg.supabase.co" target="_blank">Supabase Dashboard</a> → SQL Editor</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <strong>شغّل هذا الأمر SQL</strong>
+                            <div class="code-block">ALTER TABLE employees
+ADD COLUMN IF NOT EXISTS email TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_employees_email ON employees(email);</div>
+                            <p style="margin-top:10px;">أو افتح ملف <code>add_email_column.sql</code> وانسخ محتواه</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <strong>حدّث هذه الصفحة</strong>
+                            <p>بعد تشغيل SQL، حدّث الصفحة (F5) لإعادة الاختبار</p>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'rls_permission') {
+                content.innerHTML = `
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <strong>افتح Supabase SQL Editor</strong>
+                            <p>اذهب إلى <a href="https://rgblfimktfasocahzqtg.supabase.co" target="_blank">Supabase Dashboard</a> → SQL Editor</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <strong>شغّل هذا الأمر لإصلاح الصلاحيات</strong>
+                            <div class="code-block">-- السماح بالتحديث
+DROP POLICY IF EXISTS "Allow public update employees" ON employees;
+CREATE POLICY "Allow public update employees" ON employees 
+FOR UPDATE USING (true);
+
+-- السماح بالقراءة
+DROP POLICY IF EXISTS "Allow public read employees" ON employees;
+CREATE POLICY "Allow public read employees" ON employees 
+FOR SELECT USING (true);</div>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <strong>حدّث هذه الصفحة</strong>
+                            <p>بعد تشغيل SQL، حدّث الصفحة (F5) لإعادة الاختبار</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // تشغيل الاختبارات بالتسلسل
+        async function runAllTests() {
+            const test1Success = await test1_SupabaseConnection();
+            if (!test1Success) return;
+
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const test2Success = await test2_EmployeesTable();
+            if (!test2Success) return;
+
+            await new Promise(resolve => setTimeout(resolve, 500));
+            const test3Success = await test3_EmailColumn();
+            if (!test3Success) return;
+
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await test4_WriteTest();
+        }
+
+        // بدء الاختبارات عند تحميل الصفحة
+        window.addEventListener('load', () => {
+            setTimeout(runAllTests, 500);
+        });
+    </script>
+</body>
+</html>
