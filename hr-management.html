@@ -490,18 +490,341 @@
             margin-bottom: 20px;
         }
 
-        @media (max-width: 768px) {
-            .form-grid {
-                grid-template-columns: 1fr;
+        @media (max-width: 1024px) {
+            body {
+                padding: 14px;
+            }
+
+            .header {
+                padding: 16px 18px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .user-info {
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            .tabs {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 6px;
+            }
+
+            .tab {
+                flex: 0 0 auto;
+                white-space: nowrap;
+            }
+
+            .card {
+                padding: 18px;
+                overflow-x: auto;
             }
 
             .requests-table {
+                min-width: 760px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .login-section {
+                margin: 40px auto;
+                padding: 24px;
+            }
+
+            .header {
+                padding: 14px;
+                border-radius: 12px;
+            }
+
+            .header h1 {
+                width: 100%;
+                font-size: 20px;
+            }
+
+            .user-info {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .user-details {
+                width: 100%;
+                text-align: right;
+            }
+
+            .btn {
+                padding: 10px 14px;
+                font-size: 13px;
+            }
+
+            .stats-grid,
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .card-title {
+                font-size: 18px;
+            }
+
+            .requests-table {
+                width: 100%;
+                min-width: 0;
+                border-collapse: separate;
+                border-spacing: 0;
                 font-size: 12px;
+            }
+
+            .requests-table thead {
+                display: none;
+            }
+
+            .requests-table,
+            .requests-table tbody,
+            .requests-table tr,
+            .requests-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .requests-table tr {
+                border: 1px solid #e2e8f0;
+                border-radius: 10px;
+                margin-bottom: 10px;
+                background: #fff;
+                padding: 4px;
             }
 
             .requests-table th,
             .requests-table td {
-                padding: 10px 5px;
+                padding: 10px 8px;
+                white-space: normal;
+            }
+
+            .requests-table td {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 10px;
+                border-bottom: 1px dashed #edf2f7;
+            }
+
+            .requests-table td:last-child {
+                border-bottom: none;
+            }
+
+            .requests-table td::before {
+                content: attr(data-label);
+                font-weight: 700;
+                color: #4a5568;
+                flex: 0 0 42%;
+                max-width: 42%;
+            }
+
+            .requests-table td.empty-state,
+            .requests-table td[colspan] {
+                display: block;
+                text-align: center;
+                border-bottom: none;
+            }
+
+            .requests-table td.empty-state::before,
+            .requests-table td[colspan]::before {
+                content: none;
+            }
+
+            .report-table {
+                display: table;
+                width: 100%;
+                min-width: 760px;
+                border-collapse: collapse;
+            }
+
+            .report-table thead {
+                display: table-header-group;
+            }
+
+            .report-table tbody {
+                display: table-row-group;
+            }
+
+            .report-table tr {
+                display: table-row;
+                border: none;
+                margin: 0;
+                padding: 0;
+                background: transparent;
+            }
+
+            .report-table th,
+            .report-table td {
+                display: table-cell;
+                white-space: nowrap;
+                border-bottom: 1px solid #e2e8f0;
+                padding: 10px 8px;
+            }
+
+            .report-table td::before {
+                content: none;
+            }
+
+            .report-table td.empty-state,
+            .report-table td[colspan] {
+                display: table-cell;
+                text-align: center;
+                border-bottom: 1px solid #e2e8f0;
+            }
+
+            .modal {
+                padding: 10px;
+            }
+
+            .modal-content {
+                padding: 18px;
+            }
+
+            .warning-actions {
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 8px;
+            }
+
+            .container {
+                max-width: 420px;
+                margin: 0 auto;
+            }
+
+            #mainContent .container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            #mainContent .container > * {
+                width: 100%;
+                max-width: 420px;
+            }
+
+            .header {
+                padding: 12px;
+                text-align: center;
+            }
+
+            .header h1 {
+                width: 100%;
+                font-size: 16px;
+                justify-content: center;
+                gap: 8px;
+            }
+
+            .tab {
+                padding: 8px 10px;
+                font-size: 12px;
+            }
+
+            .btn {
+                width: auto;
+                min-width: 96px;
+                justify-content: center;
+                font-size: 12px;
+                padding: 8px 10px;
+                gap: 5px;
+                border-radius: 6px;
+            }
+
+            .user-info .btn {
+                width: auto;
+                min-width: 90px;
+            }
+
+            .user-info {
+                width: 100%;
+                gap: 6px;
+                justify-content: center;
+            }
+
+            .user-details {
+                width: 100%;
+                text-align: center;
+            }
+
+            .user-name {
+                font-size: 14px;
+            }
+
+            .user-role {
+                font-size: 12px;
+            }
+
+            .stat-card {
+                padding: 14px;
+            }
+
+            .stat-icon {
+                width: 38px;
+                height: 38px;
+                font-size: 18px;
+            }
+
+            .stat-value {
+                font-size: 22px;
+            }
+
+            .stat-label {
+                font-size: 12px;
+            }
+
+            .card {
+                padding: 12px;
+            }
+
+            .card-title {
+                font-size: 16px;
+            }
+
+            .form-group label {
+                font-size: 13px;
+            }
+
+            .form-group input,
+            .form-group select,
+            .form-group textarea {
+                font-size: 13px;
+                padding: 10px;
+            }
+
+            .requests-table td {
+                font-size: 12px;
+            }
+
+            .requests-table td::before {
+                font-size: 11px;
+            }
+
+            .modal-title {
+                font-size: 18px;
+            }
+
+            .close-modal {
+                font-size: 24px;
             }
         }
     </style>
@@ -761,7 +1084,7 @@
                         <h2 class="card-title">تقارير الإجازات</h2>
                         <div class="stat-label">عدد النتائج: <span id="reportRequestsCount">0</span></div>
                     </div>
-                    <table class="requests-table">
+                    <table class="requests-table report-table">
                         <thead>
                             <tr>
                                 <th>الموظف</th>
@@ -794,7 +1117,7 @@
                         <h2 class="card-title">تقارير الإنذارات</h2>
                         <div class="stat-label">عدد النتائج: <span id="reportWarningsCount">0</span></div>
                     </div>
-                    <table class="requests-table">
+                    <table class="requests-table report-table">
                         <thead>
                             <tr>
                                 <th>الموظف</th>
@@ -1011,8 +1334,52 @@
         };
         let leaveEntitlementRules = [];
 
+        function applyResponsiveTableLabels() {
+            const tables = document.querySelectorAll('.requests-table:not(.report-table)');
+            tables.forEach(table => {
+                const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim() || 'القيمة');
+                const rows = table.querySelectorAll('tbody tr');
+
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach((cell, index) => {
+                        if (cell.classList.contains('empty-state') || cell.hasAttribute('colspan')) {
+                            cell.removeAttribute('data-label');
+                            return;
+                        }
+
+                        const label = headers[index] || 'القيمة';
+                        cell.setAttribute('data-label', label);
+                    });
+                });
+            });
+        }
+
+        function setupResponsiveTablesObserver() {
+            applyResponsiveTableLabels();
+
+            const target = document.getElementById('mainContent');
+            if (!target) return;
+
+            let pending = false;
+            const observer = new MutationObserver(() => {
+                if (pending) return;
+                pending = true;
+                requestAnimationFrame(() => {
+                    applyResponsiveTableLabels();
+                    pending = false;
+                });
+            });
+
+            observer.observe(target, {
+                childList: true,
+                subtree: true
+            });
+        }
+
         function initializeApp() {
             const supabase = window.supabaseInstance;
+            setupResponsiveTablesObserver();
 
             // التحقق من الجلسة المحفوظة
             const sessionData = localStorage.getItem('hrSession');
@@ -1941,6 +2308,35 @@
                     .eq('id', requestId);
 
                 if (error) throw error;
+
+                // عند رفض إجازة مرضية، احذف الشهادة الطبية إن وجدت
+                if (status === 'rejected' && leaveRequest.request_type === 'sick' && leaveRequest.medical_certificate_url) {
+                    try {
+                        const urlParts = leaveRequest.medical_certificate_url.split('/object/public/');
+                        if (urlParts.length > 1) {
+                            const filePath = urlParts[1];
+                            const { error: deleteError } = await supabase
+                                .storage
+                                .from('medical_certificates')
+                                .remove([filePath]);
+                            if (deleteError) {
+                                console.warn('⚠️ تعذر حذف الملف من التخزين:', deleteError);
+                            }
+                        }
+
+                        await supabase
+                            .from('leave_requests')
+                            .update({
+                                medical_certificate_url: null,
+                                attachment_uploaded: false,
+                                attachment_uploaded_at: null
+                            })
+                            .eq('id', requestId);
+                        console.log('✅ تم تنظيف بيانات الشهادة الطبية بعد الرفض');
+                    } catch (cleanupErr) {
+                        console.warn('⚠️ خطأ أثناء حذف الشهادة الطبية بعد الرفض:', cleanupErr);
+                    }
+                }
 
                 // Send email notification for approval/rejection
                 console.log('📧 Attempting to send approval notification...');

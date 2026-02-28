@@ -1061,6 +1061,15 @@
                 return permissions.some(p => hasPermission(p));
             }
 
+            function resolveBranchName(employee) {
+                if (employee?.branch_name && String(employee.branch_name).toLowerCase() !== 'null') {
+                    return employee.branch_name;
+                }
+
+                const branch = branchesCache.find(b => String(b.id) === String(employee?.branch_id));
+                return branch?.name || '-';
+            }
+
             function updateUIByPermissions() {
                 if (!currentUser) return;
                 const btnExport = document.getElementById('btnExport');
@@ -1169,6 +1178,9 @@
                     });
                     
                     displayBranches();
+                    if (employeesCache.length > 0) {
+                        displayEmployees();
+                    }
                 } catch (err) {
                     console.error('خطأ في تحميل الفروع:', err);
                 }
@@ -1400,7 +1412,7 @@
                                 <tr>
                                     <td>${e.name}</td>
                                     <td>${e.employee_id}</td>
-                                    <td>${e.branch_name}</td>
+                                    <td>${resolveBranchName(e)}</td>
                                     <td>${[e.employment_type, e.job_grade].filter(Boolean).join(' / ') || '-'}</td>
                                     <td>${e.leave_eligible_override === true ? 'مستحق' : e.leave_eligible_override === false ? 'غير مستحق' : 'حسب الشروط'}</td>
                                     <td>${e.annual_leave_days_override ?? '-'}</td>
@@ -1561,6 +1573,8 @@
                 const name = empName.value.trim();
                 const employee_id = empId.value.trim();
                 const branch_id = empBranch.value;
+                const selectedBranch = branchesCache.find(b => String(b.id) === String(branch_id));
+                const branch_name = selectedBranch?.name || null;
                 const password = empPassword.value;
                 const permissions = Array.from(document.querySelectorAll('#permissionsContainer input:checked')).map(cb => cb.value);
                 const employment_type = empEmploymentType.value || null;
@@ -1595,6 +1609,7 @@
                                 name,
                                 employee_id,
                                 branch_id,
+                                branch_name,
                                 password,
                                 permissions,
                                 employment_type,
@@ -1616,6 +1631,7 @@
                                 name,
                                 employee_id,
                                 branch_id,
+                                branch_name,
                                 password,
                                 permissions,
                                 employment_type,

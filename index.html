@@ -530,15 +530,10 @@
             if (financingGroup.style.display === 'none') {
                 financingGroup.style.display = 'block';
                 btnToggleFinancing.textContent = '💳 إخفاء التمويل';
+                checkFinancingNotes();
             } else {
                 financingGroup.style.display = 'none';
                 btnToggleFinancing.textContent = '💳 تمويل';
-                tamaraInput.value = '0';
-                tabbyInput.value = '0';
-                financingNotesGroup.style.display = 'none';
-                financingNotesInput.removeAttribute('required');
-                financingNotesInput.value = '';
-                calculateCash();
             }
         });
         expensesInput.addEventListener('input', function() {
