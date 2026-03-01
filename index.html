@@ -657,7 +657,7 @@
             e.preventDefault();
 
             if (!currentEmployee) {
-                showCustomError('الرجاء تسجيل الدخول قبل الحفظ');
+                await showCustomAlert('الرجاء تسجيل الدخول قبل الحفظ', '❌ خطأ', 'error');
                 return;
             }
 
@@ -667,10 +667,14 @@
             
             // التحقق من البيانات المطلوبة
             if (!employeeId || !branch || !saleDate) {
-                showCustomError('البيانات الأساسية ناقصة: ' + 
-                      (!employeeId ? 'رقم الموظف' : '') +
-                      (!branch ? ' الفرع' : '') + 
-                      (!saleDate ? ' التاريخ' : ''), 'بيانات ناقصة');
+                let missingDataMessage = '❌ البيانات التالية مفقودة:\n\n';
+                if (!employeeId) missingDataMessage += '• رقم الموظف\n';
+                if (!branch) missingDataMessage += '• الفرع\n';
+                if (!saleDate) missingDataMessage += '• التاريخ\n';
+                missingDataMessage += '\n💡 سبب عدم الحفظ:\n';
+                missingDataMessage += 'هذه البيانات ضرورية لتحديد هوية العملية وتوثيقها بشكل صحيح. يرجى إكمال جميع الحقول المطلوبة.';
+                
+                await showCustomAlert(missingDataMessage, '❌ لا يمكن الحفظ - بيانات ناقصة', 'error');
                 return;
             }
             
@@ -683,7 +687,15 @@
             const expenses = parseFloat(document.getElementById('expenses').value) || 0;
             
             if ((tamara > 0 || tabby > 0) && !document.getElementById('financingNotes').value.trim()) {
-                showCustomError('يرجى إدخال ملاحظة توضح سبب التمويل (تمارا/تابي)', 'ملاحظة مطلوبة');
+                let financingDetails = '📋 البيانات المدخلة:\n';
+                if (tamara > 0) financingDetails += `• تمارا: ${tamara.toFixed(2)} ريال\n`;
+                if (tabby > 0) financingDetails += `• تابي: ${tabby.toFixed(2)} ريال\n`;
+                financingDetails += '\n❌ الملاحظة المفقودة:\n';
+                financingDetails += '• ملاحظات التمويل\n';
+                financingDetails += '\n💡 سبب الطلب:\n';
+                financingDetails += 'يجب توضيح سبب استخدام التمويل لتوثيق العملية وضمان الشفافية.';
+                
+                await showCustomAlert(financingDetails, '⚠️ لا يمكن الحفظ - ملاحظة مطلوبة', 'warning');
                 document.getElementById('financingNotes').focus();
                 return;
             }
@@ -695,19 +707,40 @@
             const withdrawalNotes = withdrawalNotesInput.value.trim();
 
             if (expenses > 0 && !expenseNotes) {
-                showCustomError('يرجى إدخال ملاحظة توضح سبب المصروفات', 'ملاحظة مطلوبة');
+                let expenseMessage = '📋 البيانات المدخلة:\n';
+                expenseMessage += `• قيمة المصروفات: ${expenses.toFixed(2)} ريال\n`;
+                expenseMessage += '\n❌ الملاحظة المفقودة:\n';
+                expenseMessage += '• ملاحظات المصروفات\n';
+                expenseMessage += '\n💡 سبب الطلب:\n';
+                expenseMessage += 'يجب توضيح سبب المصروفات (مثل: رسوم شحن، أدوات مكتبية، إلخ) لتوثيق العملية.';
+                
+                await showCustomAlert(expenseMessage, '⚠️ لا يمكن الحفظ - ملاحظة مطلوبة', 'warning');
                 expenseNotesInput.focus();
                 return;
             }
 
             if (returns > 0 && !returnsNotes) {
-                showCustomError('يرجى إدخال ملاحظة توضح سبب المردود', 'ملاحظة مطلوبة');
+                let returnsMessage = '📋 البيانات المدخلة:\n';
+                returnsMessage += `• قيمة المردود: ${returns.toFixed(2)} ريال\n`;
+                returnsMessage += '\n❌ الملاحظة المفقودة:\n';
+                returnsMessage += '• ملاحظات المردود\n';
+                returnsMessage += '\n💡 سبب الطلب:\n';
+                returnsMessage += 'يجب توضيح سبب المردود (مثل: عيب في المنتج، طلب العميل، إلخ) لتوثيق العملية.';
+                
+                await showCustomAlert(returnsMessage, '⚠️ لا يمكن الحفظ - ملاحظة مطلوبة', 'warning');
                 returnsNotesInput.focus();
                 return;
             }
 
             if (withdrawal > 0 && !withdrawalNotes) {
-                showCustomError('يرجى إدخال ملاحظة توضح سبب السحب/العجز', 'ملاحظة مطلوبة');
+                let withdrawalMessage = '📋 البيانات المدخلة:\n';
+                withdrawalMessage += `• قيمة السحب/العجز: ${withdrawal.toFixed(2)} ريال\n`;
+                withdrawalMessage += '\n❌ الملاحظة المفقودة:\n';
+                withdrawalMessage += '• ملاحظات السحب/العجز\n';
+                withdrawalMessage += '\n💡 سبب الطلب:\n';
+                withdrawalMessage += 'يجب توضيح سبب السحب أو العجز (مثل: سحب نقدي، فرق في الحسابات، إلخ) لتوثيق العملية.';
+                
+                await showCustomAlert(withdrawalMessage, '⚠️ لا يمكن الحفظ - ملاحظة مطلوبة', 'warning');
                 withdrawalNotesInput.focus();
                 return;
             }
