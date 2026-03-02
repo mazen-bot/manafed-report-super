@@ -834,48 +834,25 @@ function showSummaryConfirm(title, items, confirmText = 'تأكيد', cancelText
     if (cancelBtn) cancelBtn.textContent = cancelText;
 
     return new Promise(resolve => {
-        // متغيرات لتتبع حالة المعالج
-        let isResolved = false;
-        
-        const handleConfirm = (e) => {
-            if (isResolved) return; // منع التنفيذ المتكرر
-            isResolved = true;
-            e.preventDefault();
-            e.stopPropagation();
+        const handleConfirm = () => {
             cleanup();
             resolve(true);
         };
 
-        const handleCancel = (e) => {
-            if (isResolved) return; // منع التنفيذ المتكرر
-            isResolved = true;
-            e.preventDefault();
-            e.stopPropagation();
+        const handleCancel = () => {
             cleanup();
             resolve(false);
         };
 
         const cleanup = () => {
-            // التأكد من إزالة المعالجات
-            if (confirmBtn) {
-                confirmBtn.removeEventListener('click', handleConfirm);
-            }
-            if (cancelBtn) {
-                cancelBtn.removeEventListener('click', handleCancel);
-            }
-            if (modal) {
-                modal.style.display = 'none';
-            }
+            if (confirmBtn) confirmBtn.removeEventListener('click', handleConfirm);
+            if (cancelBtn) cancelBtn.removeEventListener('click', handleCancel);
+            if (modal) modal.style.display = 'none';
             document.body.style.overflow = '';
         };
 
-        // إضافة المعالجات
-        if (confirmBtn) {
-            confirmBtn.addEventListener('click', handleConfirm);
-        }
-        if (cancelBtn) {
-            cancelBtn.addEventListener('click', handleCancel);
-        }
+        if (confirmBtn) confirmBtn.addEventListener('click', handleConfirm);
+        if (cancelBtn) cancelBtn.addEventListener('click', handleCancel);
     });
 }
 

@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 تشخيص مشكلة تحديث التاريخ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            direction: rtl;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-right: 4px solid #667eea;
+        }
+        
+        .test-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .test-section p {
+            color: #666;
+            margin-bottom: 10px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .status-loading {
+            background: #ffc107;
+            animation: pulse 1s infinite;
+        }
+        
+        .status-success {
+            background: #28a745;
+        }
+        
+        .status-error {
+            background: #dc3545;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .result-item {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .result-item.error {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        
+        .result-item.success {
+            border-left-color: #28a745;
+            background: #f1f9f3;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            flex: 1;
+            min-width: 150px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button.secondary {
+            background: #6c757d;
+        }
+        
+        button.secondary:hover {
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+        
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            border-radius: 8px;
+            border-right: 4px solid #0066cc;
+            margin-bottom: 20px;
+        }
+        
+        .info-box strong {
+            color: #0051a5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 تشخيص مشكلة تحديث التاريخ</h1>
+            <p>اختبر الاتصال والصلاحيات والحقول المتعلقة بتحديث تاريخ المبيعات</p>
+        </div>
+        
+        <div class="content">
+            <div class="info-box">
+                <strong>💡 تلميح:</strong> هذه الأداة ستساعدك في تحديد سبب فشل تحديث التاريخ وستقدم لك الحلول اللازمة.
+            </div>
+            
+            <!-- اختبار الاتصال -->
+            <div class="test-section">
+                <h3>
+                    <span class="status-indicator status-loading" id="status-connection"></span>
+                    ✅ اختبار اتصال Supabase
+                </h3>
+                <p>التحقق من الاتصال بقاعدة البيانات...</p>
+                <div id="connection-result"></div>
+                <button onclick="testConnection()">اختبار الاتصال</button>
+            </div>
+            
+            <!-- التحقق من الأعمدة -->
+            <div class="test-section">
+                <h3>
+                    <span class="status-indicator status-loading" id="status-columns"></span>
+                    📋 التحقق من أعمدة جدول المبيعات
+                </h3>
+                <p>التحقق من وجود عمود saleDate وغيره...</p>
+                <div id="columns-result"></div>
+                <button onclick="checkColumns()">فحص الأعمدة</button>
+            </div>
+            
+            <!-- اختبار التحديث -->
+            <div class="test-section">
+                <h3>
+                    <span class="status-indicator status-loading" id="status-update-test"></span>
+                    🔄 اختبار تحديث التاريخ
+                </h3>
+                <p>محاولة تحديث سجل تجريبي للتحقق من الصلاحيات...</p>
+                <div id="update-test-result"></div>
+                <button onclick="testDateUpdate()">اختبار التحديث</button>
+            </div>
+            
+            <!-- فحص الصلاحيات -->
+            <div class="test-section">
+                <h3>
+                    <span class="status-indicator status-loading" id="status-permissions"></span>
+                    🔒 فحص صلاحيات المستخدم
+                </h3>
+                <p>التحقق من صلاحيات تعديل المبيعات...</p>
+                <div id="permissions-result"></div>
+                <button onclick="checkPermissions()">فحص الصلاحيات</button>
+            </div>
+            
+            <!-- نتائج الفحص الشامل -->
+            <div class="test-section">
+                <h3>📊 الفحص الشامل</h3>
+                <p>قم بتشغيل جميع الاختبارات والحصول على تقرير شامل...</p>
+                <div id="comprehensive-result"></div>
+                <div class="buttons">
+                    <button onclick="runAllTests()">🚀 تشغيل جميع الاختبارات</button>
+                    <button class="secondary" onclick="downloadDiagnostics()">📥 تحميل التقرير</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        let supabase = null;
+        const diagnosticsLog = [];
+        
+        // تهيئة Supabase
+        async function initializeSupabase() {
+            return new Promise((resolve) => {
+                let attempts = 0;
+                const maxAttempts = 50;
+                
+                function init() {
+                    attempts++;
+                    try {
+                        if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                            const url = 'https://rgblfimktfasocahzqtg.supabase.co';
+                            const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnYmxmaW1rdGZhc29jYWh6cXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NDg5NTQsImV4cCI6MjA4NTUyNDk1NH0.BMKXS1hTX5ntacnOQH5c2I5KDp5jpSWwJeHIDkz2els';
+                            supabase = window.supabase.createClient(url, key);
+                            console.log('✅ تم تهيئة Supabase بنجاح');
+                            resolve(true);
+                        } else if (attempts < maxAttempts) {
+                            setTimeout(init, 100);
+                        } else {
+                            console.error('❌ انتهت محاولات تحميل Supabase');
+                            resolve(false);
+                        }
+                    } catch (err) {
+                        console.error('خطأ في التهيئة:', err);
+                        resolve(false);
+                    }
+                }
+                init();
+            });
+        }
+        
+        // اختبار الاتصال
+        async function testConnection() {
+            const resultDiv = document.getElementById('connection-result');
+            const indicator = document.getElementById('status-connection');
+            
+            indicator.className = 'status-indicator status-loading';
+            resultDiv.innerHTML = '<p style="color: #666;">جاري الفحص...</p>';
+            
+            try {
+                // انتظر تهيئة Supabase
+                if (!supabase) {
+                    const initialized = await initializeSupabase();
+                    if (!initialized) {
+                        throw new Error('فشل تحميل مكتبة Supabase - تأكد من الاتصال بالإنترنت');
+                    }
+                }
+                
+                // اختبر بسيط - جلب سجل واحد
+                const { data, error } = await supabase
+                    .from('sales')
+                    .select('id')
+                    .limit(1)
+                    .timeout(5000);
+                
+                if (error) {
+                    throw new Error(error.message || 'خطأ في الاتصال');
+                }
+                
+                indicator.className = 'status-indicator status-success';
+                resultDiv.innerHTML = `
+                    <div class="result-item success">
+                        <strong>✅ النتيجة:</strong> الاتصال بنجاح مع قاعدة البيانات
+                        <br/>تم جلب ${data?.length || 0} سجل للتحقق
+                    </div>
+                `;
+                
+                logDiagnostic('قاعدة البيانات', 'الاتصال بنجاح', 'success');
+            } catch (err) {
+                console.error('Connection test error:', err);
+                indicator.className = 'status-indicator status-error';
+                resultDiv.innerHTML = `
+                    <div class="result-item error">
+                        <strong>❌ خطأ:</strong> ${err?.message || 'خطأ غير معروف'}
+                    </div>
+                `;
+                
+                logDiagnostic('قاعدة البيانات', `خطأ: ${err?.message}`, 'error');
+            }
+        }
+        
+        // فحص الأعمدة
+        async function checkColumns() {
+            const resultDiv = document.getElementById('columns-result');
+            const indicator = document.getElementById('status-columns');
+            
+            indicator.className = 'status-indicator status-loading';
+            resultDiv.innerHTML = '<p style="color: #666;">جاري الفحص...</p>';
+            
+            try {
+                if (!supabase) {
+                    const initialized = await initializeSupabase();
+                    if (!initialized) throw new Error('Supabase not initialized');
+                }
+                
+                // جلب أول سجل للتحقق من البنية
+                const { data, error } = await supabase
+                    .from('sales')
+                    .select('*')
+                    .limit(1)
+                    .timeout(5000);
+                
+                if (error) throw new Error(error.message);
+                
+                if (!data || data.length === 0) {
+                    throw new Error('لا توجد سجلات في جدول المبيعات');
+                }
+                
+                const record = data[0];
+                const columns = Object.keys(record);
+                const hasSaleDate = 'saleDate' in record;
+                
+                let html = `<div class="result-item ${hasSaleDate ? 'success' : 'error'}">
+                    <strong>${hasSaleDate ? '✅' : '❌'} حقل saleDate:</strong> 
+                    ${hasSaleDate ? 'موجود ✓' : 'غير موجود ✗'}<br/>
+                    <strong>القيمة:</strong> ${record.saleDate || '(فارغ)'}<br/>
+                    <strong>النوع:</strong> ${typeof record.saleDate}
+                </div>`;
+                
+                html += '<div class="result-item" style="margin-top: 10px;"><strong>جميع الأعمدة:</strong><div class="code-block">' + columns.join(', ') + '</div></div>';
+                
+                resultDiv.innerHTML = html;
+                
+                indicator.className = hasSaleDate ? 'status-indicator status-success' : 'status-indicator status-error';
+                logDiagnostic('الأعمدة', hasSaleDate ? 'حقل saleDate موجود' : 'حقل saleDate غير موجود', hasSaleDate ? 'success' : 'error');
+            } catch (err) {
+                console.error('Columns check error:', err);
+                indicator.className = 'status-indicator status-error';
+                resultDiv.innerHTML = `
+                    <div class="result-item error">
+                        <strong>❌ خطأ:</strong> ${err?.message || 'خطأ غير معروف'}
+                    </div>
+                `;
+                
+                logDiagnostic('الأعمدة', `خطأ: ${err?.message}`, 'error');
+            }
+        }
+        
+        // اختبار تحديث التاريخ
+        async function testDateUpdate() {
+            const resultDiv = document.getElementById('update-test-result');
+            const indicator = document.getElementById('status-update-test');
+            
+            indicator.className = 'status-indicator status-loading';
+            resultDiv.innerHTML = '<p style="color: #666;">جاري الاختبار...</p>';
+            
+            try {
+                if (!supabase) {
+                    const initialized = await initializeSupabase();
+                    if (!initialized) throw new Error('Supabase not initialized');
+                }
+                
+                // احصل على أول سجل
+                const { data: records, error: getError } = await supabase
+                    .from('sales')
+                    .select('id, saleDate')
+                    .limit(1)
+                    .timeout(5000);
+                
+                if (getError) throw new Error(getError.message);
+                if (!records || records.length === 0) {
+                    throw new Error('لا توجد سجلات للاختبار');
+                }
+                
+                const testId = records[0].id;
+                const originalDate = records[0].saleDate;
+                const testDate = new Date().toISOString().split('T')[0];
+                
+                // حاول تحديث السجل
+                const { error: updateError } = await supabase
+                    .from('sales')
+                    .update({ saleDate: testDate })
+                    .eq('id', testId)
+                    .timeout(5000);
+                
+                if (updateError) throw new Error(updateError.message);
+                
+                indicator.className = 'status-indicator status-success';
+                resultDiv.innerHTML = `
+                    <div class="result-item success">
+                        <strong>✅ تم التحديث بنجاح!</strong><br/>
+                        <strong>معرف السجل:</strong> ${testId}<br/>
+                        <strong>التاريخ القديم:</strong> ${originalDate}<br/>
+                        <strong>التاريخ الجديد:</strong> ${testDate}<br/>
+                        📌 لا توجد مشاكل في صلاحيات التحديث!
+                    </div>
+                `;
+                
+                logDiagnostic('تحديث البيانات', 'تحديث التاريخ نجح', 'success');
+            } catch (err) {
+                console.error('Date update test error:', err);
+                indicator.className = 'status-indicator status-error';
+                const errorMsg = err?.message || 'خطأ غير معروف';
+                resultDiv.innerHTML = `
+                    <div class="result-item error">
+                        <strong>❌ فشل التحديث:</strong> ${errorMsg}<br/>
+                        <strong>💡 الحل المقترح:</strong>
+                        <ul style="margin-top: 10px; margin-right: 20px;">
+                            <li>تحقق من صلاحيات RLS في قاعدة البيانات</li>
+                            <li>تأكد من أن المستخدم لديه صلاحيات التعديل</li>
+                            <li>جرّب تعطيل RLS مؤقتاً للاختبار</li>
+                        </ul>
+                    </div>
+                `;
+                
+                logDiagnostic('تحديث البيانات', `خطأ: ${errorMsg}`, 'error');
+            }
+        }
+        
+        // فحص الصلاحيات
+        async function checkPermissions() {
+            const resultDiv = document.getElementById('permissions-result');
+            const indicator = document.getElementById('status-permissions');
+            
+            indicator.className = 'status-indicator status-loading';
+            resultDiv.innerHTML = '<p style="color: #666;">جاري الفحص...</p>';
+            
+            try {
+                // جلب بيانات المستخدم الحالي من localStorage
+                const userData = localStorage.getItem('user_profile');
+                
+                if (!userData) {
+                    indicator.className = 'status-indicator status-error';
+                    throw new Error('لم يتم تسجيل الدخول. يرجى تسجيل الدخول أولاً');
+                }
+                
+                const user = JSON.parse(userData);
+                const hasEditPermission = user.permissions && user.permissions.includes('editSales');
+                
+                indicator.className = hasEditPermission ? 'status-indicator status-success' : 'status-indicator status-error';
+                
+                resultDiv.innerHTML = `
+                    <div class="result-item ${hasEditPermission ? 'success' : 'error'}">
+                        <strong>👤 بيانات المستخدم:</strong><br/>
+                        <strong>الاسم:</strong> ${user.full_name || user.name || '-'}<br/>
+                        <strong>البريد:</strong> ${user.email || '-'}<br/>
+                        <strong>صلاحية التعديل:</strong> ${hasEditPermission ? '✅ موجودة' : '❌ غير موجودة'}<br/>
+                        <strong>جميع الصلاحيات:</strong>
+                        <div class="code-block">${(user.permissions || []).join(', ') || 'لا توجد صلاحيات'}</div>
+                    </div>
+                `;
+                
+                logDiagnostic('الصلاحيات', hasEditPermission ? 'يمتلك صلاحية التعديل' : 'لا يمتلك صلاحية التعديل', hasEditPermission ? 'success' : 'error');
+            } catch (err) {
+                console.error('Permissions check error:', err);
+                indicator.className = 'status-indicator status-error';
+                const errorMsg = err?.message || 'خطأ غير معروف';
+                resultDiv.innerHTML = `
+                    <div class="result-item error">
+                        <strong>❌ خطأ:</strong> ${errorMsg}
+                    </div>
+                `;
+                
+                logDiagnostic('الصلاحيات', `خطأ: ${errorMsg}`, 'error');
+            }
+        }
+        
+        // تشغيل جميع الاختبارات
+        async function runAllTests() {
+            diagnosticsLog.length = 0;
+            const resultDiv = document.getElementById('comprehensive-result');
+            resultDiv.innerHTML = '<p style="color: #666;">جاري تشغيل جميع الاختبارات...</p>';
+            
+            try {
+                // تهيئة Supabase أولاً
+                if (!supabase) {
+                    const initialized = await initializeSupabase();
+                    if (!initialized) {
+                        resultDiv.innerHTML = '<div class="result-item error"><strong>❌ فشل:</strong> تعذر تحميل Supabase</div>';
+                        return;
+                    }
+                }
+                
+                await testConnection();
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                await checkColumns();
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                await testDateUpdate();
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                await checkPermissions();
+                
+                // عرض النتائج النهائية
+                const successCount = diagnosticsLog.filter(l => l.status === 'success').length;
+                const errorCount = diagnosticsLog.filter(l => l.status === 'error').length;
+                
+                resultDiv.innerHTML = `
+                    <div class="result-item success">
+                        <strong>✅ اكتمل الفحص الشامل</strong><br/>
+                        तم إجراء 4 اختبارات<br/>
+                        <strong>النجاحات:</strong> ${successCount} | <strong>الأخطاء:</strong> ${errorCount}<br/>
+                        📋 تحقق من النتائج أعلاه للحصول على التفاصيل
+                    </div>
+                `;
+            } catch (err) {
+                console.error('Comprehensive test error:', err);
+                resultDiv.innerHTML = `
+                    <div class="result-item error">
+                        <strong>❌ خطأ:</strong> ${err?.message || 'حدث خطأ أثناء الاختبار'}
+                    </div>
+                `;
+            }
+        }
+        
+        // تسجيل التشخيصات
+        function logDiagnostic(category, message, status) {
+            diagnosticsLog.push({
+                timestamp: new Date().toLocaleString('ar-EG'),
+                category,
+                message,
+                status
+            });
+        }
+        
+        // تحميل التقرير
+        function downloadDiagnostics() {
+            if (diagnosticsLog.length === 0) {
+                alert('⚠️ يرجى تشغيل الاختبارات أولاً');
+                return;
+            }
+            
+            const report = `تقرير تشخيص مشكلة تحديث التاريخ
+=====================================
+تاريخ التقرير: ${new Date().toLocaleString('ar-EG')}
+
+النتائج:
+${diagnosticsLog.map(log => `[${log.status.toUpperCase()}] ${log.category}: ${log.message} (${log.timestamp})`).join('\n')}
+
+الخطوات المقترحة للحل:
+1. تأكد من اتصالك بالإنترنت
+2. حقق من أن المستخدم يملك صلاحية 'editSales'
+3. تحقق من أن حقل 'saleDate' موجود في جدول المبيعات
+4. جرب إعادة تحميل الصفحة
+5. إذا استمرت المشكلة، اتصل بقسم الدعم الفني
+`;
+            
+            const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `diagnostic_report_${new Date().getTime()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        // تشغيل الاختبارات عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('📝 جاري تحضير أداة التشخيص...');
+            try {
+                const initialized = await initializeSupabase();
+                if (initialized) {
+                    console.log('✅ Supabase محهز وجاهز');
+                } else {
+                    console.warn('⚠️ تحذير: فشل تحميل Supabase - قد تحتاج إلى تحديث الصفحة');
+                    alert('⚠️ تحذير: قد لا تعمل بعض الاختبارات. يرجى التأكد من الاتصال بالإنترنت وإعادة تحميل الصفحة.');
+                }
+            } catch (err) {
+                console.error('❌ خطأ في التحضير:', err);
+            }
+        });
+    </script>
+</body>
+</html>

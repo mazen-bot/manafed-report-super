@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تشخيص تحديث التاريخ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            direction: rtl;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .test-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-right: 4px solid #667eea;
+        }
+        
+        .test-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .test-section p {
+            color: #666;
+            margin-bottom: 10px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .result {
+            margin-top: 12px;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .result.success {
+            border-left-color: #28a745;
+            background: #f1f9f3;
+            color: #155724;
+        }
+        
+        .result.error {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+            color: #721c24;
+        }
+        
+        .result.warning {
+            border-left-color: #ffc107;
+            background: #fff8f5;
+            color: #856404;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 15px;
+            border-radius: 8px;
+            border-right: 4px solid #0066cc;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .code {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 8px;
+            overflow-x: auto;
+            word-break: break-all;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 تشخيص مشكلة تحديث التاريخ</h1>
+            <p>أداة تشخيصية لتحديد سبب فشل تحديث تاريخ المبيعات</p>
+        </div>
+        
+        <div class="content">
+            <div class="info-box">
+                <strong>💡 التعليمات:</strong> اضغط على أزرار الاختبار أدناه لفحص كل جزء على حدة
+            </div>
+            
+            <!-- اختبار الاتصال -->
+            <div class="test-section">
+                <h3>1️⃣ اختبار الاتصال بـ Supabase</h3>
+                <p>التحقق من الاتصال بقاعدة البيانات والقدرة على جلب البيانات</p>
+                <button onclick="testConnection()">اختبر الاتصال</button>
+                <div id="test1-result"></div>
+            </div>
+            
+            <!-- فحص الأعمدة -->
+            <div class="test-section">
+                <h3>2️⃣ فحص أعمدة جدول المبيعات</h3>
+                <p>التحقق من وجود عمود <code>saleDate</code> والأعمدة الأخرى</p>
+                <button onclick="checkColumns()">فحص الأعمدة</button>
+                <div id="test2-result"></div>
+            </div>
+            
+            <!-- اختبار التحديث -->
+            <div class="test-section">
+                <h3>3️⃣ اختبار تحديث التاريخ</h3>
+                <p>محاولة تحديث سجل تجريبي للتحقق من وجود مشاكل صلاحيات</p>
+                <button onclick="testUpdate()">اختبر التحديث</button>
+                <div id="test3-result"></div>
+            </div>
+            
+            <!-- فحص الصلاحيات -->
+            <div class="test-section">
+                <h3>4️⃣ فحص صلاحيات المستخدم</h3>
+                <p>التحقق من امتلاك المستخدم صلاحية <code>editSales</code></p>
+                <button onclick="checkUserPermissions()">فحص الصلاحيات</button>
+                <div id="test4-result"></div>
+            </div>
+            
+            <!-- الفحص الشامل -->
+            <div class="test-section">
+                <h3>✅ الفحص الشامل الكامل</h3>
+                <p>تشغيل جميع الاختبارات بالتالي والحصول على ملخص شامل</p>
+                <button onclick="runAllTests()">تشغيل جميع الاختبارات</button>
+                <div id="summary-result"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- تحميل مكتبة Supabase من CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        // دالة مساعدة لعرض النتائج
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : '';
+            element.innerHTML = `<div class="result ${className}">${message}</div>`;
+        }
+        
+        // استخراج Supabase من الصفحة الرئيسية
+        async function getSupabaseClient() {
+            try {
+                // انتظر حتى تتحقق من أن المكتبة محملة
+                let attempts = 0;
+                while (typeof window.supabase === 'undefined' && attempts < 50) {
+                    await new Promise(r => setTimeout(r, 100));
+                    attempts++;
+                }
+                
+                if (typeof window.supabase === 'undefined') {
+                    throw new Error('مكتبة Supabase غير متاحة - جرب إعادة تحميل الصفحة');
+                }
+                
+                const url = 'https://rgblfimktfasocahzqtg.supabase.co';
+                const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnYmxmaW1rdGZhc29jYWh6cXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NDg5NTQsImV4cCI6MjA4NTUyNDk1NH0.BMKXS1hTX5ntacnOQH5c2I5KDp5jpSWwJeHIDkz2els';
+                
+                return window.supabase.createClient(url, key);
+            } catch (err) {
+                throw new Error(`خطأ في الحصول على Supabase: ${err.message}`);
+            }
+        }
+        
+        // اختبار الاتصال
+        async function testConnection() {
+            const resultId = 'test1-result';
+            showResult(resultId, '<span class="loading"></span> جاري الاختبار...');
+            
+            try {
+                const supabase = await getSupabaseClient();
+                const { data, error } = await supabase.from('sales').select('id').limit(1);
+                
+                if (error) {
+                    showResult(resultId, `❌ خطأ: ${error.message}`, 'error');
+                    return;
+                }
+                
+                showResult(resultId, `✅ الاتصال بنجاح! تم جلب ${data?.length || 0} سجل`, 'success');
+            } catch (err) {
+                showResult(resultId, `❌ خطأ: ${err.message}`, 'error');
+            }
+        }
+        
+        // فحص الأعمدة
+        async function checkColumns() {
+            const resultId = 'test2-result';
+            showResult(resultId, '<span class="loading"></span> جاري الفحص...');
+            
+            try {
+                const supabase = await getSupabaseClient();
+                const { data, error } = await supabase.from('sales').select('*').limit(1);
+                
+                if (error) {
+                    showResult(resultId, `❌ خطأ: ${error.message}`, 'error');
+                    return;
+                }
+                
+                if (!data || data.length === 0) {
+                    showResult(resultId, `⚠️ لا توجد سجلات في جدول المبيعات`, 'warning');
+                    return;
+                }
+                
+                const columns = Object.keys(data[0]);
+                const hasSaleDate = 'saleDate' in data[0];
+                
+                let message = `<strong>الأعمدة الموجودة:</strong><br>`;
+                columns.forEach(col => {
+                    const icon = col === 'saleDate' ? '✅' : '📋';
+                    message += `${icon} ${col}<br>`;
+                });
+                
+                if (!hasSaleDate) {
+                    message += `<br><strong style="color: #dc3545;">⚠️ تنبيه:</strong> عمود saleDate غير موجود!`;
+                    showResult(resultId, message, 'error');
+                } else {
+                    message = `✅ عمود saleDate موجود بنجاح!<br><br>${message}`;
+                    showResult(resultId, message, 'success');
+                }
+            } catch (err) {
+                showResult(resultId, `❌ خطأ: ${err.message}`, 'error');
+            }
+        }
+        
+        // اختبار التحديث
+        async function testUpdate() {
+            const resultId = 'test3-result';
+            showResult(resultId, '<span class="loading"></span> جاري الاختبار...');
+            
+            try {
+                const supabase = await getSupabaseClient();
+                
+                // احصل على أول سجل
+                const { data: records, error: getError } = await supabase
+                    .from('sales')
+                    .select('id, saleDate')
+                    .limit(1);
+                
+                if (getError) {
+                    showResult(resultId, `❌ خطأ في جلب البيانات: ${getError.message}`, 'error');
+                    return;
+                }
+                
+                if (!records || records.length === 0) {
+                    showResult(resultId, `⚠️ لا توجد سجلات للاختبار`, 'warning');
+                    return;
+                }
+                
+                const testId = records[0].id;
+                const originalDate = records[0].saleDate;
+                const testDate = new Date().toISOString().split('T')[0];
+                
+                // حاول التحديث
+                const { error: updateError } = await supabase
+                    .from('sales')
+                    .update({ saleDate: testDate })
+                    .eq('id', testId);
+                
+                if (updateError) {
+                    const msg = updateError.message.toLowerCase();
+                    let suggestion = '';
+                    
+                    if (msg.includes('permission')) {
+                        suggestion = '<br><strong>💡 السبب المحتمل:</strong> مشكلة في صلاحيات RLS أو المستخدم';
+                    } else if (msg.includes('column')) {
+                        suggestion = '<br><strong>💡 السبب المحتمل:</strong> العمود saleDate قد لا يكون موجوداً أو له مشكلة';
+                    }
+                    
+                    showResult(resultId, `❌ خطأ في التحديث: ${updateError.message}${suggestion}`, 'error');
+                    return;
+                }
+                
+                showResult(resultId, `✅ تم التحديث بنجاح!<br>المعرف: ${testId}<br>التاريخ الجديد: ${testDate}`, 'success');
+            } catch (err) {
+                showResult(resultId, `❌ خطأ: ${err.message}`, 'error');
+            }
+        }
+        
+        // فحص صلاحيات المستخدم
+        function checkUserPermissions() {
+            const resultId = 'test4-result';
+            
+            try {
+                const userData = localStorage.getItem('user_profile');
+                
+                if (!userData) {
+                    showResult(resultId, `⚠️ لم يتم تسجيل الدخول. يرجى تسجيل الدخول أولاً في التقارير`, 'warning');
+                    return;
+                }
+                
+                const user = JSON.parse(userData);
+                const permissions = user.permissions || [];
+                const hasEditPermission = permissions.includes('editSales');
+                
+                let message = `<strong>بيانات المستخدم:</strong><br>`;
+                message += `الاسم: ${user.full_name || user.name || '-'}<br>`;
+                message += `البريد: ${user.email || '-'}<br>`;
+                message += `<br><strong>الصلاحيات:</strong><br>`;
+                
+                if (permissions.length === 0) {
+                    message += `⚠️ لا توجد صلاحيات<br>`;
+                } else {
+                    permissions.forEach(p => {
+                        const icon = p === 'editSales' ? '✅' : '📋';
+                        message += `${icon} ${p}<br>`;
+                    });
+                }
+                
+                if (!hasEditPermission) {
+                    message += `<br><strong style="color: #dc3545;">❌ المستخدم لا يملك صلاحية editSales!</strong>`;
+                    showResult(resultId, message, 'error');
+                } else {
+                    showResult(resultId, message, 'success');
+                }
+            } catch (err) {
+                showResult(resultId, `❌ خطأ: ${err.message}`, 'error');
+            }
+        }
+        
+        // تشغيل جميع الاختبارات
+        async function runAllTests() {
+            const summaryId = 'summary-result';
+            showResult(summaryId, '<span class="loading"></span> جاري تشغيل جميع الاختبارات...');
+            
+            const results = {
+                connection: false,
+                columns: false,
+                update: false,
+                permissions: false
+            };
+            
+            try {
+                // اختبار الاتصال
+                const supabase = await getSupabaseClient();
+                const { data: testData, error: testError } = await supabase.from('sales').select('id').limit(1);
+                results.connection = !testError;
+                
+                // فحص الأعمدة
+                if (testData && testData.length > 0) {
+                    results.columns = 'saleDate' in testData[0];
+                }
+                
+                // فحص الصلاحيات
+                const userData = localStorage.getItem('user_profile');
+                if (userData) {
+                    const user = JSON.parse(userData);
+                    results.permissions = (user.permissions || []).includes('editSales');
+                }
+                
+                // محاولة التحديث
+                if (results.connection && testData && testData.length > 0) {
+                    const { error: updateError } = await supabase
+                        .from('sales')
+                        .update({ saleDate: new Date().toISOString().split('T')[0] })
+                        .eq('id', testData[0].id);
+                    results.update = !updateError;
+                }
+                
+            } catch (err) {
+                console.error('Error in comprehensive test:', err);
+            }
+            
+            // عرض النتائج
+            let summary = `<strong>📊 ملخص النتائج:</strong><br><br>`;
+            summary += `${results.connection ? '✅' : '❌'} الاتصال: ${results.connection ? 'يعمل' : 'معطل'}<br>`;
+            summary += `${results.columns ? '✅' : '❌'} الأعمدة: ${results.columns ? 'موجودة' : 'ناقصة'}<br>`;
+            summary += `${results.permissions ? '✅' : '❌'} الصلاحيات: ${results.permissions ? 'كافية' : 'ناقصة'}<br>`;
+            summary += `${results.update ? '✅' : '❌'} التحديث: ${results.update ? 'يعمل' : 'معطل'}<br>`;
+            
+            const allPass = Object.values(results).every(v => v);
+            
+            if (allPass) {
+                summary += `<br><strong style="color: #28a745;">✅ جميع الاختبارات نجحت!</strong>`;
+                showResult(summaryId, summary, 'success');
+            } else {
+                summary += `<br><strong style="color: #dc3545;">⚠️ هناك مشاكل تحتاج إلى إصلاح</strong>`;
+                showResult(summaryId, summary, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
