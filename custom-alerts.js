@@ -834,25 +834,48 @@ function showSummaryConfirm(title, items, confirmText = 'تأكيد', cancelText
     if (cancelBtn) cancelBtn.textContent = cancelText;
 
     return new Promise(resolve => {
-        const handleConfirm = () => {
+        // متغيرات لتتبع حالة المعالج
+        let isResolved = false;
+        
+        const handleConfirm = (e) => {
+            if (isResolved) return; // منع التنفيذ المتكرر
+            isResolved = true;
+            e.preventDefault();
+            e.stopPropagation();
             cleanup();
             resolve(true);
         };
 
-        const handleCancel = () => {
+        const handleCancel = (e) => {
+            if (isResolved) return; // منع التنفيذ المتكرر
+            isResolved = true;
+            e.preventDefault();
+            e.stopPropagation();
             cleanup();
             resolve(false);
         };
 
         const cleanup = () => {
-            if (confirmBtn) confirmBtn.removeEventListener('click', handleConfirm);
-            if (cancelBtn) cancelBtn.removeEventListener('click', handleCancel);
-            if (modal) modal.style.display = 'none';
+            // التأكد من إزالة المعالجات
+            if (confirmBtn) {
+                confirmBtn.removeEventListener('click', handleConfirm);
+            }
+            if (cancelBtn) {
+                cancelBtn.removeEventListener('click', handleCancel);
+            }
+            if (modal) {
+                modal.style.display = 'none';
+            }
             document.body.style.overflow = '';
         };
 
-        if (confirmBtn) confirmBtn.addEventListener('click', handleConfirm);
-        if (cancelBtn) cancelBtn.addEventListener('click', handleCancel);
+        // إضافة المعالجات
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', handleConfirm);
+        }
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', handleCancel);
+        }
     });
 }
 

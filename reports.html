@@ -137,7 +137,6 @@
 
                 <button class="btn-reset-filter" onclick="resetFilters()">🔄 إعادة تعيين</button>
                 <button class="btn-export" onclick="exportToExcel()" id="btnExport">📥 تصدير Excel</button>
-                <button id="btnRefreshData" type="button" class="btn-refresh" onclick="refreshReportsData()" style="background:linear-gradient(135deg, #76c7c0 0%, #2ab77e 100%);color:white;padding:10px 16px;border:none;border-radius:8px;font-weight:600;cursor:pointer;transition:all 0.3s;box-shadow:0 4px 12px rgba(42, 183, 126, 0.3);" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">🔄 تحديث البيانات</button>
                 <button class="btn-backup" onclick="downloadBackup()" id="btnDownloadBackup" style="display:none;background:linear-gradient(135deg,#27ae60,#229954);color:white;padding:10px 16px;border:none;border-radius:8px;font-weight:600;cursor:pointer;">💾 تحميل نسخة احتياطية</button>
                 <button class="btn-restore" onclick="document.getElementById('backupFileInput').click()" id="btnRestoreBackup" style="display:none;background:linear-gradient(135deg,#2980b9,#1f618d);color:white;padding:10px 16px;border:none;border-radius:8px;font-weight:600;cursor:pointer;">📤 رفع نسخة احتياطية</button>
                 <input type="file" id="backupFileInput" accept=".json" style="display:none;">
@@ -595,38 +594,6 @@
             </div>
         </div>
 
-        <!-- نموذج تأكيد حذف مخصص -->
-        <div id="deleteConfirmModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:3000;justify-content:center;align-items:center;">
-            <div style="background:white;border-radius:16px;padding:30px;max-width:500px;width:85%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-                <h2 style="margin:0 0 20px;color:#d32f2f;font-size:24px;text-align:center;font-weight:700;">⚠️ تأكيد الحذف</h2>
-                
-                <!-- جدول بيانات السجل -->
-                <div style="border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;margin-bottom:20px;">
-                    <div style="background:#e3f2fd;padding:12px 16px;font-weight:600;color:#1976d2;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;align-items:center;">
-                        <span>📍 الفرع:</span>
-                        <span id="confirmBranchCell" style="color:#333;font-weight:500;">-</span>
-                    </div>
-                    <div style="background:#f5f5f5;padding:12px 16px;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;align-items:center;">
-                        <span style="font-weight:600;color:#333;">📅 التاريخ:</span>
-                        <span id="confirmDateCell" style="color:#555;font-weight:500;">-</span>
-                    </div>
-                    <div style="background:#e3f2fd;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
-                        <span style="font-weight:600;color:#1976d2;">💰 المبيعات:</span>
-                        <span id="confirmSalesCell" style="color:#c62828;font-weight:700;">-</span>
-                    </div>
-                </div>
-                
-                <div style="background:#fff3e0;border-right:4px solid #ff9800;padding:15px;border-radius:6px;margin-bottom:20px;text-align:right;">
-                    <p style="margin:0;color:#e65100;font-weight:600;font-size:14px;">🔔 تنبيه: هذا الإجراء لا يمكن التراجع عنه!</p>
-                </div>
-                
-                <div style="display:flex;gap:12px;justify-content:flex-end;">
-                    <button onclick="cancelDeleteConfirm()" style="padding:12px 24px;background:#e0e0e0;color:#333;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;transition:all 0.2s;min-width:100px;">إلغاء</button>
-                    <button id="confirmDeleteBtn" onclick="confirmDelete()" style="padding:12px 24px;background:linear-gradient(135deg, #d32f2f 0%, #c62828 100%);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;transition:all 0.2s;box-shadow:0 4px 12px rgba(211, 47, 47, 0.3);min-width:120px;">🗑️ حذف نهائياً</button>
-                </div>
-            </div>
-        </div>
-        
         </div>
         <!-- نهاية reports-main -->
 
@@ -1042,10 +1009,6 @@
         } else {
             setupLoginHandler();
         }
-        
-        // ربط الأزرار الأخرى
-        // تم حذف addEventListener للـ btnRefreshData لأنه مربوط مباشرة عن طريق onclick
-        
         // تسجيل الخروج
         document.getElementById('btnLogout').addEventListener('click', async function() {
             const confirmed = await confirm('هل تريد تسجيل الخروج؟');
@@ -1670,43 +1633,6 @@
                 throw err;
             }
         }
-
-        // ========== دالة تحديث البيانات الداخلية ==========
-        window.refreshReportsData = async function refreshReportsData() {
-            const btnRefresh = document.getElementById('btnRefreshData');
-            if (!btnRefresh) return;
-            
-            try {
-                // تغيير مظهر الزر أثناء التحديث
-                const originalContent = btnRefresh.innerHTML;
-                btnRefresh.innerHTML = '⏳ جاري التحديث...';
-                btnRefresh.disabled = true;
-                btnRefresh.style.opacity = '0.6';
-                
-                // أعد تحميل البيانات
-                await loadData();
-                
-                // عرض رسالة النجاح
-                showCustomSuccess('تم تحديث البيانات بنجاح', 'تم التحديث');
-                
-                // إعادة الزر إلى حالته الطبيعية
-                btnRefresh.innerHTML = originalContent;
-                btnRefresh.disabled = false;
-                btnRefresh.style.opacity = '1';
-                
-            } catch (err) {
-                console.error('خطأ في تحديث البيانات:', err);
-                showCustomError(`خطأ في التحديث: ${err.message || 'حاول مرة أخرى'}`, 'خطأ');
-                
-                // إعادة الزر إلى حالته الطبيعية
-                const btnRefresh = document.getElementById('btnRefreshData');
-                if (btnRefresh) {
-                    btnRefresh.innerHTML = '🔄 تحديث البيانات';
-                    btnRefresh.disabled = false;
-                    btnRefresh.style.opacity = '1';
-                }
-            }
-        };
 
         window.onload = function() {
             checkExistingSession();
@@ -3421,7 +3347,6 @@
             }
 
             const updateData = {
-                sale_date: document.getElementById('editReportDate').value || null,
                 total_sales: parseFloat(document.getElementById('editReportTotalSales').value) || 0,
                 total_cash: parseFloat(document.getElementById('editReportCash').value) || 0,
                 total_card: parseFloat(document.getElementById('editReportCard').value) || 0,
@@ -3446,7 +3371,6 @@
                 if (recordIndex !== -1) {
                     allData[recordIndex] = {
                         ...allData[recordIndex],
-                        saleDate: updateData.sale_date,
                         totalSales: updateData.total_sales,
                         totalCash: updateData.total_cash,
                         totalCard: updateData.total_card,
@@ -3493,20 +3417,12 @@
             }
 
             try {
-                // التحقق من تهيئة Supabase
-                if (!supabase) {
-                    throw new Error('Supabase client not initialized');
-                }
-
                 const { error } = await supabase
                     .from('sales')
-                    .update({ sale_date: newDate })
+                    .update({ saleDate: newDate })
                     .eq('id', id);
                 
-                if (error) {
-                    console.error('Supabase update error:', error);
-                    throw error;
-                }
+                if (error) throw error;
                 
                 // تحديث البيانات المحلية
                 const recordIndex = allData.findIndex(r => r.id === id);
@@ -3518,9 +3434,8 @@
                 displayData(allData);
                 updateStats(allData);
             } catch (err) {
-                console.error('Date update error:', err);
-                const errorMsg = err?.message || 'خطأ غير معروف';
-                showCustomError(`تعذر تحديث التاريخ: ${errorMsg}`, 'خطأ التحديث');
+                console.error(err);
+                showCustomError('تعذر تحديث التاريخ. حاول مرة أخرى', 'خطأ التحديث');
             }
         }
 
@@ -3533,49 +3448,10 @@
                 return;
             }
 
-            // البحث عن السجل للحصول على معلومات إضافية
-            const record = allData.find(r => String(r.id) === String(id));
-            if (!record) {
-                showCustomError('لم يتم العثور على السجل', 'خطأ');
-                return;
-            }
-            
-            // حفظ معرّف السجل الحالي
-            window.currentDeleteRecordId = id;
-            
-            // ملء بيانات النموذج
-            const branchName = record.branch || 'غير معروف';
-            const saleDate = record.saleDate || '-';
-            const totalSales = record.totalSales ? `${record.totalSales.toLocaleString('ar-EG')} ريال` : '-';
-            
-            document.getElementById('confirmBranchCell').textContent = branchName;
-            document.getElementById('confirmDateCell').textContent = saleDate;
-            document.getElementById('confirmSalesCell').textContent = totalSales;
-            
-            // عرض النموذج
-            document.getElementById('deleteConfirmModal').style.display = 'flex';
-        }
-
-        window.deleteRecord = deleteRecord;
-
-        // دوال التأكيد والإلغاء للحذف
-        window.cancelDeleteConfirm = function() {
-            document.getElementById('deleteConfirmModal').style.display = 'none';
-            window.currentDeleteRecordId = null;
-        };
-
-        window.confirmDelete = async function() {
-            const id = window.currentDeleteRecordId;
-            if (!id) return;
-
-            document.getElementById('deleteConfirmModal').style.display = 'none';
+            const confirmed = await confirm('هل أنت متأكد من حذف هذا السجل؟');
+            if (!confirmed) return;
 
             try {
-                // تعطيل الزر أثناء الحذف
-                const confirmBtn = document.getElementById('confirmDeleteBtn');
-                confirmBtn.disabled = true;
-                confirmBtn.innerHTML = '⏳ جاري الحذف...';
-
                 const { error } = await supabase
                     .from('sales')
                     .delete()
@@ -3597,22 +3473,13 @@
                 await new Promise(resolve => setTimeout(resolve, 300));
                 
                 showCustomSuccess('تم حذف السجل بنجاح وتحديث البيانات', 'تم الحذف');
-                
-                // إعادة الزر
-                confirmBtn.disabled = false;
-                confirmBtn.innerHTML = 'حذف نهائياً';
             } catch (err) {
                 console.error(err);
                 showCustomError('تعذر حذف السجل من Supabase. حاول مرة أخرى.', 'خطأ الحذف');
-                
-                // إعادة الزر
-                const confirmBtn = document.getElementById('confirmDeleteBtn');
-                confirmBtn.disabled = false;
-                confirmBtn.innerHTML = 'حذف نهائياً';
             }
+        }
 
-            window.currentDeleteRecordId = null;
-        };
+        window.deleteRecord = deleteRecord;
 
         async function clearAllData() {
             // التحقق من الصلاحية
