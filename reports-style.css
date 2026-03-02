@@ -1262,10 +1262,10 @@ td a:hover {
     }
 
     .dashboard-header-content {
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
         justify-content: center;
-        gap: 10px;
+        gap: 8px;
         position: relative;
         z-index: 1;
     }
@@ -1279,9 +1279,7 @@ td a:hover {
         font-size: 14px;
         font-weight: 700;
         color: white;
-        width: 100%;
-        text-align: center;
-        display: block;
+        flex: 0 0 auto;
     }
 
     .dashboard-header-info {
@@ -1291,48 +1289,6 @@ td a:hover {
     /* إظهار معلومات المستخدم القائمة في الهيدر */
     .dashboard-user-menu {
         display: flex !important;
-        width: 100%;
-        justify-content: center;
-        align-items: center;
-        position: relative;
-        z-index: 3;
-    }
-
-    .user-info-compact {
-        gap: 6px;
-        padding: 6px 10px;
-        border-radius: 8px;
-        position: relative;
-        z-index: 1;
-    }
-
-    .user-info-icon {
-        font-size: 16px;
-        display: inline-block;
-    }
-
-    #dropdownToggleBtnInHeader {
-        display: flex !important;
-        position: absolute;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        flex-shrink: 0;
-        z-index: 2;
-        padding: 6px 12px !important;
-        font-size: 16px !important;
-    }
-
-    .user-info-text {
-        gap: 0;
-    }
-
-    .user-name-text {
-        font-size: 12px;
-    }
-
-    .user-branch-text {
-        font-size: 10px;
     }
 
     /* إخفاء العناصر القديمة */
@@ -1345,20 +1301,13 @@ td a:hover {
         background: rgba(244, 67, 54, 0.8) !important;
         padding: 6px 12px !important;
         font-size: 16px !important;
-        border-radius: 8px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
+        border-radius: 6px !important;
+        display: block !important;
         flex-shrink: 0;
         border: none !important;
         margin: 0 !important;
         width: auto !important;
         height: auto !important;
-        position: absolute;
-        left: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 2;
     }
 
     /* إخفاء رابط العودة */
@@ -1749,6 +1698,7 @@ tbody tr:hover {
 
 /* ===== Buttons ===== */
 .btn-reset-filter,
+.btn-refresh-data,
 .btn-export,
 .btn-clear-all,
 .btn-filter-special {
@@ -1773,6 +1723,35 @@ tbody tr:hover {
 .btn-reset-filter:hover {
     background: #e8e8e8;
     transform: translateY(-2px);
+}
+
+/* زر تحديث البيانات */
+.btn-refresh-data {
+    background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+    transition: all 0.3s ease;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-refresh-data:hover {
+    background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+}
+
+.btn-refresh-data:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .btn-export {
@@ -1827,9 +1806,9 @@ tbody tr:hover {
     }
 
     .dashboard-header-content {
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
-        justify-content: center;
+        justify-content: space-between;
         gap: 8px;
         position: relative;
         z-index: 1;
@@ -1842,64 +1821,16 @@ tbody tr:hover {
     /* عرض الكلمة "التقارير" فقط */
     .dashboard-header-content::before {
         content: '📊 التقارير';
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 700;
         color: white;
-        width: 100%;
-        text-align: center;
-        display: block;
+        flex: 1;
     }
 
     .dashboard-header-info {
         display: none !important;
         width: 100%;
         gap: 20px;
-    }
-
-    .dashboard-user-menu {
-        display: flex !important;
-        width: 100%;
-        justify-content: center;
-        align-items: center;
-        position: relative;
-        z-index: 3;
-    }
-
-    .user-info-compact {
-        gap: 4px;
-        padding: 4px 8px;
-        border-radius: 7px;
-        position: relative;
-        z-index: 1;
-    }
-
-    .user-info-icon {
-        font-size: 13px;
-        display: inline-block;
-    }
-
-    #dropdownToggleBtnInHeader {
-        display: flex !important;
-        position: absolute;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        flex-shrink: 0;
-        z-index: 2;
-        padding: 5px 10px !important;
-        font-size: 14px !important;
-    }
-
-    .user-info-text {
-        gap: 0;
-    }
-
-    .user-name-text {
-        font-size: 11px;
-    }
-
-    .user-branch-text {
-        font-size: 9px;
     }
 
     /* إخفاء معلومات المستخدم في الهيدر */
@@ -1910,27 +1841,15 @@ tbody tr:hover {
     /* تحويل زر الخروج إلى أيقونة صغيرة */
     #btnLogout {
         background: rgba(244, 67, 54, 0.9) !important;
-        padding: 5px 10px !important;
-        font-size: 14px !important;
-        border-radius: 8px !important;
-        width: auto !important;
-        height: auto !important;
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+        border-radius: 50% !important;
+        width: 36px !important;
+        height: 36px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         flex-shrink: 0;
-        border: none !important;
-        margin: 0 !important;
-        position: absolute;
-        left: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 2;
-    }
-        left: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 2;
     }
 
     /* إخفاء رابط العودة في الهيدر للهواتف */
@@ -2194,6 +2113,7 @@ tbody tr:hover {
     }
 
     .btn-reset-filter,
+    .btn-refresh-data,
     .btn-export {
         width: 100%;
         margin-bottom: 8px;
