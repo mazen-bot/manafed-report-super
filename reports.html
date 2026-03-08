@@ -15,14 +15,48 @@
     <meta property="og:title" content="التقارير والبيانات - لوحة التحكم">
     <meta property="og:description" content="نظام إدارة مبيعات الفروع العصري">
     <title>التقارير والبيانات - لوحة التحكم</title>
+    <!-- Favicon Links for all browsers -->
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon.png?v=2">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=2">
+    <link rel="icon" type="image/png" sizes="48x48" href="favicon.png?v=2">
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon.png?v=2">
+    <link rel="shortcut icon" href="favicon.png?v=2">
     <link rel="stylesheet" href="reports-style.css">
     <style>
         /* تحسينات إضافية للتوافقية */
+        html,
+        body {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+        }
+
+        .reports-container,
+        .dashboard-header {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+        }
+
         @supports (padding: max(0px)) {
             body {
                 padding-bottom: max(100px, env(safe-area-inset-bottom, 0px));
                 padding-left: max(20px, env(safe-area-inset-left, 0px));
                 padding-right: max(20px, env(safe-area-inset-right, 0px));
+            }
+        }
+
+        /* نسخة الكمبيوتر: تمديد الصفحة بدون فراغات يمين/يسار */
+        @media (min-width: 769px) {
+            body {
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+
+            .reports-container,
+            .dashboard-header-content,
+            .dashboard-stats {
+                max-width: 100% !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
             }
         }
     </style>
@@ -240,6 +274,7 @@
                         <th class="col-returns">المردود</th>
                         <th class="col-withdrawal">السحب</th>
                         <th class="col-notes">الملاحظات</th>
+                        <th class="col-general-notes">ملاحظات عامة</th>
                         <th class="col-attachment">الملف المرفق</th>
                         <th class="col-actions" id="actionsHeader">الإجراءات</th>
                     </tr>
@@ -454,6 +489,15 @@
                 </div>
 
                 <div style="margin-top:12px;overflow:auto;">
+                    <!-- تنبيهات الفروع المتأخرة -->
+                    <div id="lateDeliveriesAlert" style="display:none; background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border-right: 4px solid #ff9800; padding: 16px; margin-bottom: 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                            <span style="font-size: 24px;">⚠️</span>
+                            <h4 style="margin: 0; color: #e65100; font-size: 16px;">تنبيه: فروع لم تسلم الكاش بالكامل</h4>
+                        </div>
+                        <div id="lateDeliveriesList" style="color: #5d4037; font-size: 14px; line-height: 1.6;"></div>
+                    </div>
+                    
                     <!-- بطاقات إحصائيات الكاش -->
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px;">
                         <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border-radius:12px;padding:16px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
@@ -480,13 +524,14 @@
                                 <th style="padding:8px;border:1px solid #e6e6e6;">الفرع</th>
                                 <th style="padding:8px;border:1px solid #e6e6e6;">المتوقع (إجمالي الكاش)</th>
                                 <th style="padding:8px;border:1px solid #e6e6e6;">المسلّم</th>
-                                <th style="padding:8px;border:1px solid #e6e6e6;">المتبقّي</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">💸 الكاش غير المسلّم</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">📊 نسبة التسليم</th>
                                 <th style="padding:8px;border:1px solid #e6e6e6;">آخر تحديث</th>
                                 <th id="reconActionHeader" style="padding:8px;border:1px solid #e6e6e6;">إجراء</th>
                             </tr>
                         </thead>
                         <tbody id="reconciliationBody">
-                            <tr><td colspan="6" style="padding:12px;text-align:center;color:#777;">اضغط "تحديث التسوية" لعرض النتائج</td></tr>
+                            <tr><td colspan="7" style="padding:12px;text-align:center;color:#777;">اضغط "تحديث التسوية" لعرض النتائج</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1682,6 +1727,7 @@
                         returns: data.returns,
                         withdrawal: data.withdrawal,
                         notes: data.notes,
+                        generalNotes: data.general_notes,
                         financingNotes: data.financing_notes,
                         attachment: data.attachment,
                         createdAt
@@ -2155,7 +2201,7 @@
             if (!tableBody) return;
 
             if (!currentDisplayData || currentDisplayData.length === 0) {
-                tableBody.innerHTML = '<tr class="no-data"><td colspan="17">لا توجد بيانات متاحة</td></tr>';
+                tableBody.innerHTML = '<tr class="no-data"><td colspan="18">لا توجد بيانات متاحة</td></tr>';
                 updatePaginationInfo();
                 return;
             }
@@ -2219,6 +2265,7 @@
                     <td class="col-returns">${parseFloat(record.returns).toFixed(2)}</td>
                     <td class="col-withdrawal">${parseFloat(record.withdrawal).toFixed(2)}</td>
                     <td class="col-notes notes-cell">${record.notes || '-'}</td>
+                    <td class="col-general-notes">${record.generalNotes || '-'}</td>
                     <td class="col-attachment">${getAttachmentCell(record)}</td>
                     ${actionsCell.replace('<td', '<td class="col-actions"')}
                 `;
@@ -3398,7 +3445,9 @@
                 return;
             }
 
+            const newDate = document.getElementById('editReportDate').value;
             const updateData = {
+                sale_date: newDate || null,
                 total_sales: parseFloat(document.getElementById('editReportTotalSales').value) || 0,
                 total_cash: parseFloat(document.getElementById('editReportCash').value) || 0,
                 total_card: parseFloat(document.getElementById('editReportCard').value) || 0,
@@ -3423,6 +3472,7 @@
                 if (recordIndex !== -1) {
                     allData[recordIndex] = {
                         ...allData[recordIndex],
+                        saleDate: updateData.sale_date,
                         totalSales: updateData.total_sales,
                         totalCash: updateData.total_cash,
                         totalCard: updateData.total_card,
@@ -3480,7 +3530,7 @@
                 
                 const { data, error } = await supabase
                     .from('sales')
-                    .update({ saleDate: newDate })
+                    .update({ sale_date: newDate })
                     .eq('id', id)
                     .select();
                 
@@ -4034,7 +4084,7 @@
 
         window.exportToExcel = exportToExcel;
 
-        function generateHandoverReport() {
+        async function generateHandoverReport() {
             // الحصول على البيانات المعروضة حالياً (بعد التطبيق الفلاتر)
             const tableBody = document.getElementById('tableBody');
             if (!tableBody || tableBody.children.length === 0) {
@@ -4042,15 +4092,16 @@
                 return;
             }
 
-            // جمع بيانات الموظفين الفريدة من البيانات المعروضة
-            const employeesMap = new Map();
+            // جمع بيانات الفروع من البيانات المعروضة
+            const branchesMap = new Map();
+            
+            // الحصول على قيم الفلاتر مرة واحدة
+            const filterBranch = document.getElementById('filterBranch').value;
+            const filterDateFrom = document.getElementById('filterDateFrom').value;
+            const filterDateTo = document.getElementById('filterDateTo').value;
             
             allData.forEach(record => {
                 // التحقق مما إذا كان السجل مطابقاً للفلاتر المطبقة
-                const filterBranch = document.getElementById('filterBranch').value;
-                const filterDateFrom = document.getElementById('filterDateFrom').value;
-                const filterDateTo = document.getElementById('filterDateTo').value;
-                
                 let isFiltered = true;
                 
                 if (filterBranch && record.branch !== filterBranch) isFiltered = false;
@@ -4059,26 +4110,56 @@
                 
                 if (!isFiltered) return;
                 
-                const key = `${record.employeeId}-${record.branch}`;
-                
-                if (!employeesMap.has(key)) {
-                    employeesMap.set(key, {
-                        employeeId: record.employeeId,
-                        employeeName: record.employeeName || 'غير محدد',
-                        branch: record.branch || 'غير محدد',
+                const key = record.branch || 'غير محدد';
+
+                if (!branchesMap.has(key)) {
+                    branchesMap.set(key, {
+                        branch: key,
                         totalCash: 0,
                         totalExpenses: 0,
                         recordCount: 0
                     });
                 }
+
+                const branchData = branchesMap.get(key);
+                branchData.totalCash += parseFloat(record.totalCash || 0);
+                branchData.totalExpenses += parseFloat(record.expenses || 0);
+                branchData.recordCount += 1;
+            });
+            
+            // جلب بيانات التسليمات من Supabase
+            let deliveriesData = [];
+            try {
+                if (window.supabaseInstance && typeof window.supabaseInstance.from === 'function') {
+                    const { data: deliveries, error } = await window.supabaseInstance
+                        .from('cash_deliveries')
+                        .select('*');
+                    
+                    if (!error && deliveries) {
+                        deliveriesData = deliveries;
+                    }
+                }
+            } catch (err) {
+                console.warn('تعذر جلب بيانات التسليمات:', err);
+            }
+            
+            // حساب الكاش المسلم لكل فرع (مع الأخذ في الاعتبار فلتر التاريخ)
+            const branchDeliveries = {};
+            deliveriesData.forEach(d => {
+                const branch = d.branch;
+                const deliveryDate = (d.delivered_at || d.created_at || '').split('T')[0];
                 
-                const emp = employeesMap.get(key);
-                emp.totalCash += parseFloat(record.totalCash || 0);
-                emp.totalExpenses += parseFloat(record.expenses || 0);
-                emp.recordCount += 1;
+                // تطبيق فلتر التاريخ على التسليمات أيضاً
+                if (filterDateFrom && deliveryDate < filterDateFrom) return;
+                if (filterDateTo && deliveryDate > filterDateTo) return;
+                
+                if (!branchDeliveries[branch]) {
+                    branchDeliveries[branch] = 0;
+                }
+                branchDeliveries[branch] += parseFloat(d.delivered_amount || 0);
             });
 
-            if (employeesMap.size === 0) {
+            if (branchesMap.size === 0) {
                 alert('⚠️ لا توجد بيانات مطابقة للفلاتر المحددة');
                 return;
             }
@@ -4088,9 +4169,7 @@
             const reportDate = new Date().toLocaleDateString('ar-EG');
             const reportTime = new Date().toLocaleTimeString('ar-EG');
             
-            // الحصول على التواريخ من الفلاتر
-            const filterDateFrom = document.getElementById('filterDateFrom').value;
-            const filterDateTo = document.getElementById('filterDateTo').value;
+            // تنسيق التواريخ للعرض في التقرير
             const dateFromFormatted = filterDateFrom ? new Date(filterDateFrom).toLocaleDateString('ar-EG') : 'بداية الفترة';
             const dateToFormatted = filterDateTo ? new Date(filterDateTo).toLocaleDateString('ar-EG') : 'نهاية الفترة';
             
@@ -4243,49 +4322,64 @@
         <thead>
             <tr>
                 <th>#</th>
-                <th>اسم الموظف</th>
                 <th>الفرع</th>
-                <th>رقم الوظيفي</th>
-                <th>إجمالي الكاش</th>
-                <th>المصروفات</th>
+                <th>إجمالي كاش الفرع</th>
+                <th>إجمالي الكاش المسلم</th>
+                <th>صافي العهدة المتبقية</th>
             </tr>
         </thead>
         <tbody>
 `;
 
             let totalCash = 0;
-            let totalExpenses = 0;
+            let totalDelivered = 0;
+            let totalRemaining = 0;
             let count = 0;
 
-            employeesMap.forEach((emp, key) => {
+            branchesMap.forEach((branchData) => {
                 count++;
-                totalCash += emp.totalCash;
-                totalExpenses += emp.totalExpenses;
+                const delivered = branchDeliveries[branchData.branch] || 0;
+                const remaining = branchData.totalCash - delivered;
+                
+                totalCash += branchData.totalCash;
+                totalDelivered += delivered;
+                totalRemaining += remaining;
                 
                 htmlContent += `
             <tr>
                 <td>${count}</td>
-                <td class="label">${emp.employeeName}</td>
-                <td>${emp.branch}</td>
-                <td>${emp.employeeId}</td>
-                <td>${emp.totalCash.toFixed(2)}</td>
-                <td>${emp.totalExpenses.toFixed(2)}</td>
+                <td class="label">${branchData.branch}</td>
+                <td>${branchData.totalCash.toFixed(2)}</td>
+                <td style="color: #4caf50; font-weight: 600;">${delivered.toFixed(2)}</td>
+                <td style="color: ${remaining > 0 ? '#d32f2f' : '#4caf50'}; font-weight: 700;">${remaining.toFixed(2)}</td>
             </tr>
 `;
             });
 
             htmlContent += `
             <tr class="total-row">
-                <td colspan="4"><strong>الإجمالي</strong></td>
+                <td colspan="2"><strong>الإجمالي</strong></td>
                 <td><strong>${totalCash.toFixed(2)}</strong></td>
-                <td><strong>${totalExpenses.toFixed(2)}</strong></td>
+                <td style="color: #4caf50;"><strong>${totalDelivered.toFixed(2)}</strong></td>
+                <td style="color: ${totalRemaining > 0 ? '#d32f2f' : '#4caf50'};"><strong>${totalRemaining.toFixed(2)}</strong></td>
             </tr>
         </tbody>
     </table>
     
     <div class="report-footer">
-        <div style="margin: 10px 0;">
-            <strong>صافي التسليم:</strong> ${totalCash.toFixed(2)} ريال
+        <div style="border: 2px solid #333; padding: 10px; margin: 10px 0; background: #f9f9f9; border-radius: 5px;">
+            <div style="margin: 5px 0; font-size: 12px;">
+                <strong>إجمالي الكاش:</strong> 
+                <span style="color: #667eea; font-weight: bold;">${totalCash.toFixed(2)} ريال</span>
+            </div>
+            <div style="margin: 5px 0; font-size: 12px;">
+                <strong>المسلّم:</strong> 
+                <span style="color: #4caf50; font-weight: bold;">${totalDelivered.toFixed(2)} ريال</span>
+            </div>
+            <div style="margin: 5px 0; font-size: 13px; padding-top: 5px; border-top: 1px dashed #666;">
+                <strong>صافي المتبقي للتسليم:</strong> 
+                <span style="color: ${totalRemaining > 0 ? '#d32f2f' : '#4caf50'}; font-weight: bold; font-size: 14px;">${totalRemaining.toFixed(2)} ريال</span>
+            </div>
         </div>
         
         <div style="display: flex; justify-content: space-around; margin-top: 20px;">
@@ -4974,7 +5068,12 @@
 
             const branches = Object.keys(grouped);
             if (branches.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="padding:30px;text-align:center;color:#999;">لا توجد بيانات</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="padding:30px;text-align:center;color:#999;">لا توجد بيانات</td></tr>';
+                
+                // إخفاء التنبيهات عند عدم وجود بيانات
+                const lateDeliveriesAlert = document.getElementById('lateDeliveriesAlert');
+                if (lateDeliveriesAlert) lateDeliveriesAlert.style.display = 'none';
+                
                 return;
             }
 
@@ -4991,8 +5090,41 @@
                 totalDelivered += delivered;
                 totalRemaining += remaining;
 
+                // حساب نسبة التسليم
+                const deliveryPercentage = expected > 0 ? ((delivered / expected) * 100) : 0;
+                
+                // تحديد حالة التسليم والأيقونة
+                let statusIcon = '';
+                let statusColor = '';
+                let rowStyle = 'border-bottom: 1px solid #e0e0e0;';
+                
+                if (deliveryPercentage >= 100) {
+                    statusIcon = '✅';
+                    statusColor = '#4caf50';
+                } else if (deliveryPercentage >= 70) {
+                    statusIcon = '⚠️';
+                    statusColor = '#ff9800';
+                } else if (deliveryPercentage >= 40) {
+                    statusIcon = '⚠️';
+                    statusColor = '#ff5722';
+                    rowStyle += ' background: #fff3e0;';
+                } else {
+                    statusIcon = '🚨';
+                    statusColor = '#d32f2f';
+                    rowStyle += ' background: #ffebee;';
+                }
+                
+                // تحسين عرض المتبقي
+                const remainingDisplay = remaining > 0 
+                    ? `<div style="background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%); color: white; padding: 8px 12px; border-radius: 8px; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 2px 8px rgba(211,47,47,0.3);">
+                        💸 ${remaining.toFixed(2)} ريال
+                       </div>`
+                    : `<div style="background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%); color: white; padding: 8px 12px; border-radius: 8px; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 2px 8px rgba(76,175,80,0.3);">
+                        ✅ تم التسليم
+                       </div>`;
+
                 const row = document.createElement('tr');
-                row.style.borderBottom = '1px solid #e0e0e0;';
+                row.style.cssText = rowStyle;
                 const actionButtons = manageCash
                     ? `
                         <button onclick="openCashEditModal('${branch}')" style="padding:6px 10px;background:#ff9800;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:12px;margin-left:4px;">✏️ تعديل</button>
@@ -5003,15 +5135,20 @@
                     `;
 
                 row.innerHTML = `
-                    <td style="padding:8px;text-align:right;font-weight:600;">${branch}</td>
+                    <td style="padding:8px;text-align:right;font-weight:600;">${statusIcon} ${branch}</td>
                     <td style="padding:8px;text-align:center;">
                         <strong style="color:#667eea;">${expected.toFixed(2)} ريال</strong>
                     </td>
                     <td style="padding:8px;text-align:center;">
                         <strong style="color:#4caf50;">${delivered.toFixed(2)} ريال</strong>
                     </td>
-                    <td style="padding:8px;text-align:center;color:${remaining>0? '#d84315' : '#2e7d32'};">
-                        <strong>${remaining.toFixed(2)} ريال</strong>
+                    <td style="padding:8px;text-align:center;">
+                        ${remainingDisplay}
+                    </td>
+                    <td style="padding:8px;text-align:center;">
+                        <div style="background: ${statusColor}; color: white; padding: 6px 12px; border-radius: 6px; font-weight: 700; display: inline-block; min-width: 60px;">
+                            ${deliveryPercentage.toFixed(1)}%
+                        </div>
                     </td>
                     <td style="padding:8px;text-align:center;font-size:13px;">${lastUpdate}</td>
                     <td style="padding:8px;text-align:center;">
@@ -5026,6 +5163,53 @@
             document.getElementById('reconcileDeliveredTotal').textContent = totalDelivered.toFixed(2) + ' ر.س';
             document.getElementById('reconcileRemainingTotal').textContent = totalRemaining.toFixed(2) + ' ر.س';
             document.getElementById('reconcileBranchCount').textContent = branches.length;
+            
+            // تحديث التنبيهات للفروع المتأخرة
+            const lateDeliveriesAlert = document.getElementById('lateDeliveriesAlert');
+            const lateDeliveriesList = document.getElementById('lateDeliveriesList');
+            
+            if (lateDeliveriesAlert && lateDeliveriesList) {
+                const lateBranches = [];
+                
+                branches.forEach(branch => {
+                    const data = grouped[branch];
+                    const expected = data.expected;
+                    const delivered = data.delivered;
+                    const remaining = expected - delivered;
+                    const deliveryPercentage = expected > 0 ? ((delivered / expected) * 100) : 0;
+                    
+                    if (remaining > 0 && deliveryPercentage < 100) {
+                        lateBranches.push({
+                            name: branch,
+                            remaining: remaining,
+                            percentage: deliveryPercentage
+                        });
+                    }
+                });
+                
+                if (lateBranches.length > 0) {
+                    // ترتيب حسب المتبقي (الأكبر أولاً)
+                    lateBranches.sort((a, b) => b.remaining - a.remaining);
+                    
+                    let alertHTML = '<ul style="margin: 0; padding-right: 20px;">';
+                    lateBranches.forEach(branch => {
+                        const urgencyIcon = branch.percentage < 40 ? '🚨' : branch.percentage < 70 ? '⚠️' : '⚡';
+                        const urgencyText = branch.percentage < 40 ? 'عاجل جداً' : branch.percentage < 70 ? 'مطلوب التسليم' : 'قريب من الاكتمال';
+                        alertHTML += `<li style="margin-bottom: 8px;">
+                            <strong>${urgencyIcon} ${branch.name}</strong> - 
+                            متبقي: <strong style="color: #d32f2f;">${branch.remaining.toFixed(2)} ريال</strong> - 
+                            نسبة التسليم: <strong style="color: ${branch.percentage >= 70 ? '#ff9800' : '#d32f2f'};">${branch.percentage.toFixed(1)}%</strong> - 
+                            <span style="background: ${branch.percentage < 40 ? '#d32f2f' : '#ff9800'}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">${urgencyText}</span>
+                        </li>`;
+                    });
+                    alertHTML += '</ul>';
+                    
+                    lateDeliveriesList.innerHTML = alertHTML;
+                    lateDeliveriesAlert.style.display = 'block';
+                } else {
+                    lateDeliveriesAlert.style.display = 'none';
+                }
+            }
         }
 
         // حذف تسليم كاش

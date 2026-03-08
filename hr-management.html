@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>إدارة الموارد البشرية - الإجازات والإنذارات</title>
+    <!-- Favicon Links for all browsers -->
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon.png?v=2">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=2">
+    <link rel="icon" type="image/png" sizes="48x48" href="favicon.png?v=2">
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon.png?v=2">
+    <link rel="shortcut icon" href="favicon.png?v=2">
     <link rel="stylesheet" href="style.css">
     <style>
         * {
@@ -929,7 +935,7 @@
                                 <th>النوع</th>
                                 <th>من</th>
                                 <th>إلى</th>
-                                <th>الأيام</th>
+                                <th>المدة</th>
                                 <th>السبب</th>
                                 <th>الحالة</th>
                             </tr>
@@ -963,17 +969,43 @@
                                     <option value="permission">استئذان</option>
                                 </select>
                             </div>
-                            <div class="form-group">
+
+                            <div class="form-group" id="permissionModeGroup" style="display: none;">
+                                <label>نوع الاستئذان <span style="color: red;">*</span></label>
+                                <select id="permissionMode">
+                                    <option value="days">أيام</option>
+                                    <option value="hours">ساعات</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" id="requestFromGroup">
                                 <label>من تاريخ <span style="color: red;">*</span></label>
                                 <input type="date" id="requestFrom" required>
                             </div>
-                            <div class="form-group">
+
+                            <div class="form-group" id="requestToGroup">
                                 <label>إلى تاريخ <span style="color: red;">*</span></label>
                                 <input type="date" id="requestTo" required>
                             </div>
-                            <div class="form-group">
+
+                            <div class="form-group" id="requestDaysGroup">
                                 <label>عدد الأيام</label>
                                 <input type="number" id="requestDays" readonly style="background: #f7fafc;">
+                            </div>
+
+                            <div class="form-group" id="requestTimeFromGroup" style="display: none;">
+                                <label>من وقت <span style="color: red;">*</span></label>
+                                <input type="time" id="requestTimeFrom">
+                            </div>
+
+                            <div class="form-group" id="requestTimeToGroup" style="display: none;">
+                                <label>إلى وقت <span style="color: red;">*</span></label>
+                                <input type="time" id="requestTimeTo">
+                            </div>
+
+                            <div class="form-group" id="requestHoursGroup" style="display: none;">
+                                <label>عدد الساعات</label>
+                                <input type="number" id="requestHours" readonly style="background: #f7fafc;">
                             </div>
                         </div>
                         <div class="form-group">
@@ -1092,7 +1124,7 @@
                                 <th>النوع</th>
                                 <th>من</th>
                                 <th>إلى</th>
-                                <th>الأيام</th>
+                                <th>المدة</th>
                                 <th>الملف المرفوع</th>
                                 <th>حالة الرفع</th>
                                 <th>مدة التأخير</th>
@@ -1155,7 +1187,7 @@
                                 <th>النوع</th>
                                 <th>من</th>
                                 <th>إلى</th>
-                                <th>الأيام</th>
+                                <th>المدة</th>
                                 <th>السبب</th>
                                 <th>الحالة</th>
                                 <th>الإجراءات</th>
@@ -1484,11 +1516,95 @@
             document.getElementById('requestFrom').addEventListener('change', calculateDays);
             document.getElementById('requestTo').addEventListener('change', calculateDays);
 
+            document.getElementById('requestType').addEventListener('change', updatePermissionModeUI);
+            document.getElementById('permissionMode').addEventListener('change', updatePermissionModeUI);
+            document.getElementById('requestTimeFrom').addEventListener('change', calculateHours);
+            document.getElementById('requestTimeTo').addEventListener('change', calculateHours);
             // إرسال طلب إجازة
             document.getElementById('leaveRequestForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 await submitLeaveRequest();
+
+            updatePermissionModeUI();
             });
+
+        function updatePermissionModeUI() {
+            const requestType = document.getElementById('requestType').value;
+            const permissionMode = document.getElementById('permissionMode').value;
+
+            const permissionModeGroup = document.getElementById('permissionModeGroup');
+            const requestFromGroup = document.getElementById('requestFromGroup');
+            const requestToGroup = document.getElementById('requestToGroup');
+            const requestDaysGroup = document.getElementById('requestDaysGroup');
+            const requestTimeFromGroup = document.getElementById('requestTimeFromGroup');
+            const requestTimeToGroup = document.getElementById('requestTimeToGroup');
+            const requestHoursGroup = document.getElementById('requestHoursGroup');
+
+            const requestFrom = document.getElementById('requestFrom');
+            const requestTo = document.getElementById('requestTo');
+            const requestTimeFrom = document.getElementById('requestTimeFrom');
+            const requestTimeTo = document.getElementById('requestTimeTo');
+            const requestDays = document.getElementById('requestDays');
+            const requestHours = document.getElementById('requestHours');
+
+            if (requestType === 'permission') {
+                permissionModeGroup.style.display = 'block';
+
+                if (permissionMode === 'hours') {
+                    requestFromGroup.style.display = 'none';
+                    requestToGroup.style.display = 'none';
+                    requestDaysGroup.style.display = 'none';
+                    requestTimeFromGroup.style.display = 'block';
+                    requestTimeToGroup.style.display = 'block';
+                    requestHoursGroup.style.display = 'block';
+
+                    requestFrom.removeAttribute('required');
+                    requestTo.removeAttribute('required');
+                    requestTimeFrom.setAttribute('required', 'required');
+                    requestTimeTo.setAttribute('required', 'required');
+
+                    requestFrom.value = '';
+                    requestTo.value = '';
+                    requestDays.value = '';
+                    calculateHours();
+                } else {
+                    requestFromGroup.style.display = 'block';
+                    requestToGroup.style.display = 'block';
+                    requestDaysGroup.style.display = 'block';
+                    requestTimeFromGroup.style.display = 'none';
+                    requestTimeToGroup.style.display = 'none';
+                    requestHoursGroup.style.display = 'none';
+
+                    requestFrom.setAttribute('required', 'required');
+                    requestTo.setAttribute('required', 'required');
+                    requestTimeFrom.removeAttribute('required');
+                    requestTimeTo.removeAttribute('required');
+
+                    requestTimeFrom.value = '';
+                    requestTimeTo.value = '';
+                    requestHours.value = '';
+                    calculateDays();
+                }
+            } else {
+                permissionModeGroup.style.display = 'none';
+                requestFromGroup.style.display = 'block';
+                requestToGroup.style.display = 'block';
+                requestDaysGroup.style.display = 'block';
+                requestTimeFromGroup.style.display = 'none';
+                requestTimeToGroup.style.display = 'none';
+                requestHoursGroup.style.display = 'none';
+
+                requestFrom.setAttribute('required', 'required');
+                requestTo.setAttribute('required', 'required');
+                requestTimeFrom.removeAttribute('required');
+                requestTimeTo.removeAttribute('required');
+
+                requestTimeFrom.value = '';
+                requestTimeTo.value = '';
+                requestHours.value = '';
+                calculateDays();
+            }
+        }
 
             // إرسال إنذار
             document.getElementById('warningForm').addEventListener('submit', async function(e) {
@@ -1537,6 +1653,62 @@
             await loadUserData();
         }
 
+        function parsePermissionHoursMeta(reasonText) {
+            const reason = String(reasonText || '').trim();
+            const regex = /\|\s*نوع الاستئذان:\s*ساعات\s*\|\s*الوقت:\s*([^|]+?)\s*-\s*([^|]+?)\s*\|\s*المدة:\s*([\d.]+)\s*ساعة\s*$/;
+            const match = reason.match(regex);
+
+            if (!match) {
+                return {
+                    isPermissionHours: false,
+                    cleanReason: reason || '-',
+                    timeFrom: '',
+                    timeTo: '',
+                    hours: null
+                };
+            }
+
+            const cleanReason = reason.replace(regex, '').trim().replace(/[|\s]+$/, '').trim() || '-';
+            return {
+                isPermissionHours: true,
+                cleanReason,
+                timeFrom: match[1].trim(),
+                timeTo: match[2].trim(),
+                hours: parseFloat(match[3])
+            };
+        }
+
+        function formatRequestFrom(request) {
+            const parsed = parsePermissionHoursMeta(request.reason);
+            if (request.request_type === 'permission' && parsed.isPermissionHours) {
+                return parsed.timeFrom;
+            }
+            return request.from_date || '-';
+        }
+
+        function formatRequestTo(request) {
+            const parsed = parsePermissionHoursMeta(request.reason);
+            if (request.request_type === 'permission' && parsed.isPermissionHours) {
+                return parsed.timeTo;
+            }
+            return request.to_date || '-';
+        }
+
+        function formatRequestDuration(request) {
+            const parsed = parsePermissionHoursMeta(request.reason);
+            if (request.request_type === 'permission' && parsed.isPermissionHours) {
+                const hours = Number.isFinite(parsed.hours) ? parsed.hours : 0;
+                return `${hours.toFixed(2)} ساعة`;
+            }
+            const days = parseInt(request.days_count || 0, 10);
+            return `${days} يوم`;
+        }
+
+        function formatRequestReason(request) {
+            const parsed = parsePermissionHoursMeta(request.reason);
+            return parsed.cleanReason || '-';
+        }
+
         function calculateDays() {
             const from = document.getElementById('requestFrom').value;
             const to = document.getElementById('requestTo').value;
@@ -1547,6 +1719,28 @@
                 const days = Math.ceil((toDate - fromDate) / (1000 * 60 * 60 * 24)) + 1;
                 document.getElementById('requestDays').value = days > 0 ? days : 0;
             }
+        }
+
+        function calculateHours() {
+            const from = document.getElementById('requestTimeFrom').value;
+            const to = document.getElementById('requestTimeTo').value;
+            const hoursInput = document.getElementById('requestHours');
+
+            if (!from || !to) {
+                hoursInput.value = '';
+                return;
+            }
+
+            const [fromHour, fromMinute] = from.split(':').map(Number);
+            const [toHour, toMinute] = to.split(':').map(Number);
+
+            const fromTotalMinutes = (fromHour * 60) + fromMinute;
+            const toTotalMinutes = (toHour * 60) + toMinute;
+
+            const diffMinutes = toTotalMinutes - fromTotalMinutes;
+            const diffHours = diffMinutes > 0 ? (diffMinutes / 60) : 0;
+
+            hoursInput.value = diffHours > 0 ? diffHours.toFixed(2) : '0';
         }
 
         async function confirmAction(message) {
@@ -1686,10 +1880,10 @@
                 <tr>
                     <td>${new Date(req.created_at).toLocaleDateString('ar-EG')}</td>
                     <td>${getRequestTypeLabel(req.request_type)}</td>
-                    <td>${req.from_date}</td>
-                    <td>${req.to_date}</td>
-                    <td>${req.days_count} يوم</td>
-                    <td>${req.reason}</td>
+                    <td>${formatRequestFrom(req)}</td>
+                    <td>${formatRequestTo(req)}</td>
+                    <td>${formatRequestDuration(req)}</td>
+                    <td>${formatRequestReason(req)}</td>
                     <td><span class="status-badge status-${req.status}">${getStatusLabel(req.status)}</span></td>
                 </tr>
             `).join('');
@@ -1774,10 +1968,37 @@
             const supabase = window.supabaseInstance;
 
             const requestType = document.getElementById('requestType').value;
-            const fromDate = document.getElementById('requestFrom').value;
-            const toDate = document.getElementById('requestTo').value;
-            const daysCount = parseInt(document.getElementById('requestDays').value);
-            const reason = document.getElementById('requestReason').value;
+            const permissionMode = document.getElementById('permissionMode').value;
+            const rawFromDate = document.getElementById('requestFrom').value;
+            const rawToDate = document.getElementById('requestTo').value;
+            const rawDaysCount = parseInt(document.getElementById('requestDays').value);
+            const rawReason = document.getElementById('requestReason').value;
+            const requestTimeFrom = document.getElementById('requestTimeFrom').value;
+            const requestTimeTo = document.getElementById('requestTimeTo').value;
+            const requestHours = parseFloat(document.getElementById('requestHours').value || '0');
+
+            let fromDate = rawFromDate;
+            let toDate = rawToDate;
+            let daysCount = rawDaysCount;
+            let reason = rawReason;
+
+            if (requestType === 'permission' && permissionMode === 'hours') {
+                if (!requestTimeFrom || !requestTimeTo) {
+                    showCustomError('يرجى تحديد وقت البداية ووقت النهاية للاستئذان بالساعات', 'بيانات ناقصة');
+                    return;
+                }
+
+                if (!(requestHours > 0)) {
+                    showCustomError('مدة الاستئذان بالساعات يجب أن تكون أكبر من صفر', 'خطأ في الوقت');
+                    return;
+                }
+
+                const today = new Date().toISOString().split('T')[0];
+                fromDate = today;
+                toDate = today;
+                daysCount = 0;
+                reason = `${rawReason} | نوع الاستئذان: ساعات | الوقت: ${requestTimeFrom} - ${requestTimeTo} | المدة: ${requestHours.toFixed(2)} ساعة`;
+            }
 
             if (requestType === 'vacation' && !getLeaveEligibility()) {
                 showCustomError('❌ أنت غير مستحق للإجازات حالياً حسب الشروط المعتمدة', 'خطأ');
@@ -1836,6 +2057,7 @@
 
                 showCustomSuccess(successMsg, 'نجح الإرسال');
                 document.getElementById('leaveRequestForm').reset();
+                updatePermissionModeUI();
                 await loadUserData();
             } catch (err) {
                 console.error('خطأ في إرسال الطلب:', err);
@@ -1880,10 +2102,10 @@
                     <td>${req.employee_name}</td>
                     <td>${req.branch}</td>
                     <td>${getRequestTypeLabel(req.request_type)}</td>
-                    <td>${req.from_date}</td>
-                    <td>${req.to_date}</td>
-                    <td>${req.days_count} يوم</td>
-                    <td>${req.reason}</td>
+                    <td>${formatRequestFrom(req)}</td>
+                    <td>${formatRequestTo(req)}</td>
+                    <td>${formatRequestDuration(req)}</td>
+                    <td>${formatRequestReason(req)}</td>
                     <td><span class="status-badge status-${req.status}">${getStatusLabel(req.status)}</span></td>
                     <td>
                         ${req.status === 'pending' ? `
@@ -2031,9 +2253,9 @@
                         <td>${req.employee_name || '-'}</td>
                         <td>${req.branch || '-'}</td>
                         <td>${getRequestTypeLabel(req.request_type)}</td>
-                        <td>${req.from_date}</td>
-                        <td>${req.to_date}</td>
-                        <td>${req.days_count} يوم</td>
+                        <td>${formatRequestFrom(req)}</td>
+                        <td>${formatRequestTo(req)}</td>
+                        <td>${formatRequestDuration(req)}</td>
                         <td>${fileLink}</td>
                         <td><span class="status-badge">${attachmentInfo.statusText}</span></td>
                         <td>${attachmentInfo.delayText}</td>
