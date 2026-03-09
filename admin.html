@@ -782,6 +782,7 @@
                             <label class="perm-item"><input type="checkbox" value="viewAllBranches"> 🌐 عرض جميع الفروع</label>
                             <label class="perm-item"><input type="checkbox" value="viewSensitiveData"> 🔒 بيانات حساسة</label>
                             <label class="perm-item"><input type="checkbox" value="manageSettings"> ⚙️ إعدادات النظام</label>
+                            <label class="perm-item"><input type="checkbox" value="manageHR"> 👔 إدارة الموارد البشرية</label>
                         </div>
                         <div style="margin-top: 12px; padding: 12px; background: #f0f0f0; border-radius: 8px; font-size: 13px; color: #666;">
                             <strong>الصلاحيات المختارة:</strong>
@@ -1050,7 +1051,8 @@
                 'viewCash': { label: '👁️ عرض تسويات الكاش', description: 'عرض تسويات الكاش بدون تعديل أو تسليم' },
                 'viewAllBranches': { label: '🌐 عرض جميع الفروع', description: 'الوصول لبيانات جميع الفروع' },
                 'viewSensitiveData': { label: '🔒 بيانات حساسة', description: 'عرض البيانات الحساسة' },
-                'manageSettings': { label: '⚙️ إعدادات النظام', description: 'التحكم في إعدادات النظام' }
+                'manageSettings': { label: '⚙️ إعدادات النظام', description: 'التحكم في إعدادات النظام' },
+                'manageHR': { label: '👔 إدارة الموارد البشرية', description: 'صلاحية كاملة لإدارة الموارد البشرية (إجازات، إنذارات، تقارير)' }
             };
 
             function hasPermission(permission) {
@@ -1144,6 +1146,11 @@
                     showCustomSuccess(`✅ مرحباً ${currentUser.name}`);
                     updateUIByPermissions();
 
+                    await loadBranches();
+                    await loadEmployees();
+                    await loadPermissionsManagement();
+                    await loadAndDisplayCredentials();
+                    await loadEmployeeEmails();
                     await loadHrSettings();
                     await loadEntitlementRules();
                     
@@ -2268,41 +2275,15 @@
                 }
             };
 
-            // ====== التهيئة الأولية ======
-            loadBranches();
-            loadEmployees();
-            loadPermissionsManagement();
-            loadAndDisplayCredentials();
-            loadEmployeeEmails();
-
-            // استعادة بيانات تسجيل الدخول من localStorage
-            const savedUser = localStorage.getItem('currentUser');
-            if (savedUser) {
-                try {
-                    currentUser = JSON.parse(savedUser);
-                    loginStatus.innerHTML = `✅ <strong>${currentUser.name}</strong> (${currentUser.employee_id})<br><small>${currentUser.branch_name}</small>`;
-                    loginStatus.style.background = '#d4edda';
-                    loginStatus.style.color = '#155724';
-                    updateUIByPermissions();
-                    loadHrSettings();
-                    loadEntitlementRules();
-
-                    // تحديث معلومات المستخدم في الـ header
-                    document.getElementById('userDisplayName').textContent = currentUser.name;
-                    document.getElementById('userDisplayDetails').textContent = `${currentUser.employee_id} - ${currentUser.branch_name}`;
-
-                    // إخفاء نموذج تسجيل وإظهار المحتوى
-                    document.getElementById('loginContainer').style.display = 'none';
-                    document.getElementById('sidebar').classList.add('visible');
-                    document.getElementById('userInfoDisplay').classList.remove('hidden-before-login');
-                    document.querySelector('.header-buttons').classList.remove('hidden-before-login');
-                    document.getElementById('menuToggleContainer').classList.remove('hidden-before-login');
-                    document.getElementById('mainContainer').classList.remove('hidden-before-login');
-                    switchSection('branches');
-                } catch (err) {
-                    console.error('خطأ في استعادة بيانات المستخدم:', err);
-                }
-            }
+            // ====== التهيئة الأولية (مقفلة حتى تسجيل الدخول) ======
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            document.getElementById('loginContainer').style.display = 'flex';
+            document.getElementById('sidebar').classList.remove('visible');
+            document.getElementById('userInfoDisplay').classList.add('hidden-before-login');
+            document.querySelector('.header-buttons').classList.add('hidden-before-login');
+            document.getElementById('menuToggleContainer').classList.add('hidden-before-login');
+            document.getElementById('mainContainer').classList.add('hidden-before-login');
         }
         
         startMainScript();

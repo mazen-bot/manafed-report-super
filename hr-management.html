@@ -1366,6 +1366,13 @@
         };
         let leaveEntitlementRules = [];
 
+        // === وظائف مساعدة للصلاحيات ===
+        // التحقق من صلاحية إدارة الموارد البشرية
+        function hasHRPermission() {
+            if (!currentUser || !Array.isArray(currentUser.permissions)) return false;
+            return currentUser.permissions.includes('manageHR') || currentUser.permissions.includes('manageEmployees');
+        }
+
         function applyResponsiveTableLabels() {
             const tables = document.querySelectorAll('.requests-table:not(.report-table)');
             tables.forEach(table => {
@@ -1524,8 +1531,6 @@
             document.getElementById('leaveRequestForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 await submitLeaveRequest();
-
-            updatePermissionModeUI();
             });
 
         function updatePermissionModeUI() {
@@ -1627,7 +1632,7 @@
             document.getElementById('userRole').textContent = `${currentUser.employee_id} - ${currentUser.branch_name}`;
 
             // إظهار تبويبات المدير
-            const isManager = currentUser.permissions.includes('manageEmployees');
+            const isManager = hasHRPermission();
             document.getElementById('tabAllRequests').style.display = isManager ? 'block' : 'none';
             document.getElementById('tabAddWarning').style.display = isManager ? 'block' : 'none';
 
@@ -1852,7 +1857,7 @@
                 await loadMedicalCertificatesRequests();
 
                 // للمدير: جلب جميع الطلبات
-                if (currentUser.permissions.includes('manageEmployees')) {
+                if (hasHRPermission()) {
                     await loadAllRequests();
                     await loadEmployeesForSelect();
                 }
@@ -2058,7 +2063,11 @@
                 showCustomSuccess(successMsg, 'نجح الإرسال');
                 document.getElementById('leaveRequestForm').reset();
                 updatePermissionModeUI();
-                await loadUserData();
+                
+                // تحميل البيانات بشكل منفصل - عدم رمي الخطأ للمستوى العلوي
+                loadUserData().catch(err => {
+                    console.warn('⚠️ تعذر تحديث البيانات المعروضة:', err);
+                });
             } catch (err) {
                 console.error('خطأ في إرسال الطلب:', err);
                 showCustomError('فشل إرسال الطلب. حاول مرة أخرى.', 'خطأ');
@@ -2119,7 +2128,7 @@
 
         async function loadReports() {
             const supabase = window.supabaseInstance;
-            const isManager = currentUser.permissions.includes('manageEmployees');
+            const isManager = hasHRPermission();
 
             const employeeId = isManager
                 ? document.getElementById('reportEmployee').value
@@ -2227,7 +2236,7 @@
 
         function displayReportRequests(requests) {
             const tbody = document.getElementById('reportRequestsBody');
-            const isManager = currentUser.permissions.includes('manageEmployees');
+            const isManager = hasHRPermission();
             const emptyColspan = isManager ? 12 : 11;
 
             if (requests.length === 0) {
@@ -2274,7 +2283,7 @@
 
         function displayReportWarnings(warnings) {
             const tbody = document.getElementById('reportWarningsBody');
-            const isManager = currentUser.permissions.includes('manageEmployees');
+            const isManager = hasHRPermission();
             const emptyColspan = isManager ? 7 : 6;
 
             if (warnings.length === 0) {
@@ -2324,7 +2333,7 @@
         }
 
         async function editReportRequest(requestId) {
-            if (!currentUser.permissions.includes('manageEmployees')) {
+            if (!hasHRPermission()) {
                 showCustomError('ليس لديك صلاحية التعديل', 'رفض');
                 return;
             }
@@ -2393,7 +2402,7 @@
         }
 
         async function deleteReportRequest(requestId) {
-            if (!currentUser.permissions.includes('manageEmployees')) {
+            if (!hasHRPermission()) {
                 showCustomError('ليس لديك صلاحية الحذف', 'رفض');
                 return;
             }
@@ -2421,7 +2430,7 @@
         }
 
         async function editReportWarning(warningId) {
-            if (!currentUser.permissions.includes('manageEmployees')) {
+            if (!hasHRPermission()) {
                 showCustomError('ليس لديك صلاحية التعديل', 'رفض');
                 return;
             }
@@ -2484,7 +2493,7 @@
         }
 
         async function deleteReportWarning(warningId) {
-            if (!currentUser.permissions.includes('manageEmployees')) {
+            if (!hasHRPermission()) {
                 showCustomError('ليس لديك صلاحية الحذف', 'رفض');
                 return;
             }

@@ -803,7 +803,10 @@
         }
 
         function canManageCash() {
-            return hasPermission('manageCash');
+            // فقط المستخدم 1003 يمكنه إضافة/تعديل/حذف تسليمات الكاش
+            if (!currentUser) return false;
+            const employeeId = String(currentUser.employee_id);
+            return employeeId === '1003' && hasPermission('manageCash');
         }
 
         function canViewCash() {
@@ -1609,7 +1612,7 @@
             const hasManageCash = currentUser.permissions.includes('manageCash');
             const hasViewCash = currentUser.permissions.includes('viewCash');
             const canViewCash = hasManageCash || hasViewCash;
-            const canManageCash = hasManageCash;
+            const canManageCashLocal = canManageCash();
 
             let permissionsText = '📋 الصلاحيات: ';
             if (hasViewReports) permissionsText += 'عرض التقارير ';
@@ -1661,12 +1664,12 @@
                 const btnReconRefresh = document.getElementById('btnReconRefresh');
                 const btnReconAddDelivery = document.getElementById('btnReconAddDelivery');
                 const btnReconExport = document.getElementById('btnReconExport');
-                if (btnReconRefresh) btnReconRefresh.style.display = canManageCash ? 'inline-block' : 'none';
-                if (btnReconAddDelivery) btnReconAddDelivery.style.display = canManageCash ? 'inline-block' : 'none';
-                if (btnReconExport) btnReconExport.style.display = canManageCash ? 'inline-block' : 'none';
+                if (btnReconRefresh) btnReconRefresh.style.display = canManageCashLocal ? 'inline-block' : 'none';
+                if (btnReconAddDelivery) btnReconAddDelivery.style.display = canManageCashLocal ? 'inline-block' : 'none';
+                if (btnReconExport) btnReconExport.style.display = canManageCashLocal ? 'inline-block' : 'none';
 
                 const addDeliveryForm = document.getElementById('addDeliveryForm');
-                if (addDeliveryForm && !canManageCash) addDeliveryForm.style.display = 'none';
+                if (addDeliveryForm && !canManageCashLocal) addDeliveryForm.style.display = 'none';
 
                 if (!hasExport) {
                     const btnExportEl = document.getElementById('btnExport');
