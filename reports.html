@@ -4167,6 +4167,22 @@
                 branchData.recordCount += 1;
             });
             
+            // فتح نافذة الطباعة مباشرة لتجنب حظر pop-up في بعض أجهزة الهاتف
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                alert('⚠️ تعذر فتح نافذة التقرير. الرجاء السماح بالنوافذ المنبثقة ثم إعادة المحاولة.');
+                return;
+            }
+
+            printWindow.document.write(`
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>جاري تجهيز التقرير</title></head>
+<body style="font-family: Arial, sans-serif; direction: rtl; padding: 20px;">⏳ جاري تجهيز تقرير تسليم العهدة...</body>
+</html>
+            `);
+            printWindow.document.close();
+
             // جلب بيانات التسليمات من Supabase
             let deliveriesData = [];
             try {
@@ -4204,8 +4220,6 @@
                 return;
             }
 
-            // إنشاء نافذة الطباعة
-            const printWindow = window.open('', '_blank');
             const reportDate = new Date().toLocaleDateString('ar-EG');
             const reportTime = new Date().toLocaleTimeString('ar-EG');
             
@@ -4437,6 +4451,7 @@
 <\/html>
             `;
 
+            printWindow.document.open();
             printWindow.document.write(htmlContent);
             printWindow.document.close();
         }
