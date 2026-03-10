@@ -30,6 +30,18 @@
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(107, 45, 135, 0.2);
         }
+
+        /* إخفاء أسهم الزيادة/النقصان في حقول الأرقام */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
         
         /* Loading Overlay Animation */
         #loadingOverlay {
@@ -243,6 +255,21 @@
                     <textarea id="withdrawalNotes" name="withdrawalNotes" rows="3" placeholder="اكتب سبب السحب أو العجز..."></textarea>
                 </div>
             </div>
+
+            <!-- قسم سحب الرواتب: منفصل بعد تفاصيل أخرى -->
+            <div id="salaryWithdrawalGroup" style="display:none;background:#f3faff;padding:16px;border-radius:12px;border:2px solid #90caf9;margin:12px 0;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label for="salaryWithdrawal" style="display:flex;align-items:center;gap:8px;">
+                        💰 رواتب كاش
+                        <span id="salaryEmployeeInfo" style="font-size:12px;padding:4px 8px;background:#e3f2fd;border-radius:6px;color:#1976d2;"></span>
+                    </label>
+                    <input type="number" id="salaryWithdrawal" name="salaryWithdrawal" step="0.01" placeholder="أدخل مبلغ سحب الراتب" value="" style="border:2px solid #2196f3;">
+                    <div id="salaryAvailableAmount" style="margin-top:8px;padding:10px;background:#e8f5e9;border-radius:8px;font-weight:600;color:#2e7d32;display:none;">
+                        💵 المتاح للسحب: <span id="salaryAvailableValue">0</span> ريال
+                    </div>
+                </div>
+            </div>
+
              <div class="form-group">
                 <button type="button" id="btnToggleFinancing" style="width:100%;padding:12px 20px;background:transparent;color:#6b2d87;border:2px solid #6b2d87;border-radius:10px;cursor:pointer;font-size:15px;font-weight:600;transition:all 0.3s;">💳 تابي -- تمارا - تمويل </button>
             </div>
@@ -436,6 +463,13 @@
         const tamaraInput = document.getElementById('tamara');
         const tabbyInput = document.getElementById('tabby');
         const extraCashInput = document.getElementById('extraCash');
+            const salaryWithdrawalGroup = document.getElementById('salaryWithdrawalGroup');
+            const salaryWithdrawalInput = document.getElementById('salaryWithdrawal');
+            const salaryEmployeeInfo = document.getElementById('salaryEmployeeInfo');
+            const salaryAvailableAmount = document.getElementById('salaryAvailableAmount');
+            const salaryAvailableValue = document.getElementById('salaryAvailableValue');
+        
+            let employeeMonthlySalary = null; // بيانات راتب الموظف الشهري
         const returnsInput = document.getElementById('returns');
         const withdrawalInput = document.getElementById('withdrawal');
         const totalCashInput = document.getElementById('totalCash');
@@ -466,8 +500,9 @@
             const expenses = parseFloat(expensesInput.value) || 0;
             const withdrawal = parseFloat(withdrawalInput.value) || 0;
             const returns = parseFloat(returnsInput.value) || 0;
+            const salaryWithdrawal = parseFloat(salaryWithdrawalInput?.value) || 0;
 
-            const cash = totalSales - totalCard - tamara - tabby - expenses - withdrawal - returns + extraCash;
+            const cash = totalSales - totalCard - tamara - tabby - expenses - withdrawal - returns - salaryWithdrawal + extraCash;
             totalCashInput.value = cash.toFixed(2);
         }
 
@@ -502,6 +537,20 @@
         tamaraInput.addEventListener('input', calculateCash);
         tabbyInput.addEventListener('input', calculateCash);
         extraCashInput.addEventListener('input', calculateCash);
+        
+        // سحب الرواتب
+        if (salaryWithdrawalInput) {
+            salaryWithdrawalInput.addEventListener('input', function() {
+                calculateCash();
+                const salaryValue = parseFloat(this.value) || 0;
+                if (salaryValue > 0 && employeeMonthlySalary) {
+                    const remaining = employeeMonthlySalary.remaining_amount || employeeMonthlySalary.net_salary;
+                    if (salaryValue > remaining) {
+                        showCustomWarning(`المبلغ المدخل (${salaryValue.toFixed(2)} ر.س) أكبر من المتاح (${remaining.toFixed(2)} ر.س)`);
+                    }
+                }
+            });
+        }
 
         if (btnToggleCardBreakdown) {
             btnToggleCardBreakdown.addEventListener('click', function() {
@@ -534,6 +583,123 @@
 
         tamaraInput.addEventListener('input', checkFinancingNotes);
         tabbyInput.addEventListener('input', checkFinancingNotes);
+
+        // تحميل راتب الموظف وإظهار خانة السحب فقط عند وجود متبقي
+        async function loadEmployeeMonthlySalary(employeeId, employeeName = '') {
+            const normalizedEmployeeId = (employeeId || '').trim();
+            const normalizedEmployeeName = (employeeName || '').trim();
+
+            if (!normalizedEmployeeId && !normalizedEmployeeName) {
+                employeeMonthlySalary = null;
+                salaryWithdrawalGroup.style.display = 'none';
+                return;
+            }
+
+            const currentDate = new Date();
+            const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+            const currentYear = currentDate.getFullYear();
+
+            const getRemainingAmount = (record) => {
+                const remaining = record.remaining_amount !== undefined && record.remaining_amount !== null
+                    ? parseFloat(record.remaining_amount)
+                    : parseFloat(record.net_salary || 0);
+                return Number.isFinite(remaining) ? remaining : 0;
+            };
+
+            const pickBestRecord = (records) => {
+                if (!records || records.length === 0) return null;
+                return records.find((record) => getRemainingAmount(record) > 0) || records[0];
+            };
+
+            try {
+                // 1) البحث عن راتب الشهر الحالي عبر employee_id
+                let { data: currentMonthData, error: currentMonthError } = await supabase
+                    .from('monthly_salary_records')
+                    .select('*')
+                    .eq('employee_id', normalizedEmployeeId)
+                    .eq('salary_month', currentMonth)
+                    .eq('salary_year', currentYear)
+                    .neq('payment_status', 'cancelled')
+                    .order('updated_at', { ascending: false })
+                    .limit(20);
+
+                if (currentMonthError) {
+                    console.error('خطأ في تحميل راتب الشهر الحالي:', currentMonthError);
+                    employeeMonthlySalary = null;
+                    salaryWithdrawalGroup.style.display = 'none';
+                    return;
+                }
+
+                let selectedSalary = pickBestRecord(currentMonthData);
+
+                // 2) في حال عدم المطابقة بالرقم الوظيفي، نحاول بالاسم
+                if (!selectedSalary && normalizedEmployeeName) {
+                    const { data: currentMonthByName, error: currentMonthByNameError } = await supabase
+                        .from('monthly_salary_records')
+                        .select('*')
+                        .eq('employee_name', normalizedEmployeeName)
+                        .eq('salary_month', currentMonth)
+                        .eq('salary_year', currentYear)
+                        .neq('payment_status', 'cancelled')
+                        .order('updated_at', { ascending: false })
+                        .limit(20);
+
+                    if (!currentMonthByNameError) {
+                        selectedSalary = pickBestRecord(currentMonthByName);
+                    }
+                }
+
+                // 3) إذا لم يوجد للشهر الحالي، نرجع لآخر سجل راتب متاح
+                if (!selectedSalary) {
+                    const { data: latestSalaryData, error: latestSalaryError } = await supabase
+                        .from('monthly_salary_records')
+                        .select('*')
+                        .eq('employee_id', normalizedEmployeeId)
+                        .neq('payment_status', 'cancelled')
+                        .order('salary_year', { ascending: false })
+                        .order('salary_month', { ascending: false })
+                        .order('updated_at', { ascending: false })
+                        .limit(20);
+
+                    if (latestSalaryError) {
+                        console.error('خطأ في تحميل آخر راتب متاح:', latestSalaryError);
+                        employeeMonthlySalary = null;
+                        salaryWithdrawalGroup.style.display = 'none';
+                        return;
+                    }
+
+                    selectedSalary = pickBestRecord(latestSalaryData);
+                }
+
+                if (!selectedSalary) {
+                    employeeMonthlySalary = null;
+                    salaryWithdrawalGroup.style.display = 'none';
+                    console.log('ℹ️ لا يوجد أي راتب مسجل لهذا الموظف');
+                    return;
+                }
+
+                const remaining = getRemainingAmount(selectedSalary);
+                if (remaining <= 0) {
+                    employeeMonthlySalary = null;
+                    salaryWithdrawalGroup.style.display = 'none';
+                    console.log('ℹ️ لا يوجد مبلغ متبقي للسحب لهذا الموظف');
+                    return;
+                }
+
+                employeeMonthlySalary = selectedSalary;
+
+                salaryWithdrawalGroup.style.display = 'block';
+                salaryEmployeeInfo.textContent = `${selectedSalary.employee_name} - ${selectedSalary.salary_month}`;
+                salaryAvailableAmount.style.display = 'block';
+                salaryAvailableValue.textContent = remaining.toLocaleString('ar-SA', { minimumFractionDigits: 2 });
+
+                console.log('✅ تم تحميل راتب الموظف:', selectedSalary);
+            } catch (err) {
+                console.error('خطأ في تحميل راتب الموظف:', err);
+                employeeMonthlySalary = null;
+                salaryWithdrawalGroup.style.display = 'none';
+            }
+        }
 
         let withdrawalAlertShown = false;
 
@@ -606,6 +772,8 @@
                     expenses: recordData.expenses,
                     returns: recordData.returns,
                     withdrawal: recordData.withdrawal,
+                                        salary_withdrawal: recordData.salaryWithdrawal || 0,
+                                        salary_employee_id: recordData.salaryEmployeeId || null,
                     notes: recordData.notes,
                     financing_notes: recordData.financingNotes,
                     attachment: recordData.attachment,
@@ -627,16 +795,41 @@
                     insertData.mada_sales = recordData.madaSales;
                 }
                 
+                const optionalColumns = new Set([
+                    'general_notes',
+                    'visa_sales',
+                    'master_sales',
+                    'mada_sales',
+                    'salary_withdrawal',
+                    'salary_employee_id',
+                    'financing_notes',
+                    'attachment'
+                ]);
+
                 let { data, error } = await supabase
                     .from('sales')
-                    .insert([insertData]);
+                    .insert([insertData])
+                    .select('id');
 
-                if (error && Object.prototype.hasOwnProperty.call(insertData, 'general_notes') && String(error.message || '').includes('general_notes')) {
-                    console.warn('general_notes column is missing in DB. Retrying insert without it.');
-                    delete insertData.general_notes;
+                // في حال كان بعض الأعمدة الاختيارية غير موجودة في قاعدة البيانات،
+                // نحذف العمود المفقود ونعيد المحاولة تلقائياً حتى ينجح الحفظ.
+                while (error) {
+                    const msg = String(error.message || '');
+                    const missingColumnMatch = msg.match(/Could not find the '([^']+)' column/i);
+                    const missingColumn = missingColumnMatch ? missingColumnMatch[1] : null;
+
+                    if (!missingColumn || !optionalColumns.has(missingColumn) || !Object.prototype.hasOwnProperty.call(insertData, missingColumn)) {
+                        break;
+                    }
+
+                    console.warn(`Optional column ${missingColumn} is missing in DB. Retrying insert without it.`);
+                    delete insertData[missingColumn];
+
                     const retryResult = await supabase
                         .from('sales')
-                        .insert([insertData]);
+                        .insert([insertData])
+                        .select('id');
+
                     data = retryResult.data;
                     error = retryResult.error;
                 }
@@ -649,6 +842,11 @@
                 }
                 
                 console.log('Insert successful:', data);
+                const insertedId = Array.isArray(data) && data.length > 0 ? data[0].id : null;
+                return {
+                    salesId: insertedId,
+                    salarySavedInSales: Object.prototype.hasOwnProperty.call(insertData, 'salary_withdrawal')
+                };
             } catch (err) {
                 console.error('Save to Supabase failed:', err);
                 throw err;
@@ -801,12 +999,14 @@
             }
 
             // إضافة العمليات الإضافية إن وجدت
-            if (extraCash > 0 || expenses > 0 || returns > 0 || withdrawal > 0) {
+            const salaryWithdrawal = parseFloat(salaryWithdrawalInput?.value) || 0;
+            if (extraCash > 0 || expenses > 0 || returns > 0 || withdrawal > 0 || salaryWithdrawal > 0) {
                 const additionalItems = [];
                 if (extraCash > 0) additionalItems.push({ category: 'العمليات الإضافية', label: '💰 كاش زائد', value: extraCash.toFixed(2) + ' ريال' });
                 if (expenses > 0) additionalItems.push({ category: 'العمليات الإضافية', label: '📤 المصروفات', value: expenses.toFixed(2) + ' ريال' });
                 if (returns > 0) additionalItems.push({ category: 'العمليات الإضافية', label: '↩️ المردود', value: returns.toFixed(2) + ' ريال' });
                 if (withdrawal > 0) additionalItems.push({ category: 'العمليات الإضافية', label: '📉 السحب/العجز', value: withdrawal.toFixed(2) + ' ريال' });
+                                if (salaryWithdrawal > 0) additionalItems.push({ category: 'العمليات الإضافية', label: '💰 رواتب كاش', value: salaryWithdrawal.toFixed(2) + ' ريال', highlight: true });
                 summaryItems.push(...additionalItems);
             }
 
@@ -886,6 +1086,8 @@
                 expenses,
                 returns,
                 withdrawal,
+                                salaryWithdrawal: parseFloat(salaryWithdrawalInput?.value) || 0,
+                                salaryEmployeeId: employeeMonthlySalary?.employee_id || currentEmployee?.employee_id || null,
                 notes,
                 generalNotes,
                 financingNotes: document.getElementById('financingNotes').value || '-',
@@ -894,8 +1096,57 @@
 
             try {
                 console.log('Attempting to save to Supabase...', recordData);
-                await saveToSupabase(recordData);
+                const saveResult = await saveToSupabase(recordData);
                 console.log('Save successful!');
+                
+                                // حفظ سحب الراتب في جدول salary_cash_withdrawals إذا كان هناك سحب
+                                if (recordData.salaryWithdrawal > 0) {
+                                    try {
+                                        const fallbackMonth = (recordData.saleDate && String(recordData.saleDate).length >= 7)
+                                            ? String(recordData.saleDate).slice(0, 7)
+                                            : `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+                                        const fallbackYear = parseInt(fallbackMonth.split('-')[0], 10) || new Date().getFullYear();
+
+                                        const salarySource = employeeMonthlySalary || {
+                                            employee_id: currentEmployee.employee_id,
+                                            employee_name: currentEmployee.name,
+                                            salary_month: fallbackMonth,
+                                            salary_year: fallbackYear
+                                        };
+
+                                        const salaryMonth = salarySource.salary_month;
+                                        const salaryYear = salarySource.salary_year;
+                        
+                                        const salaryWithdrawalData = {
+                                            employee_id: salarySource.employee_id,
+                                            employee_name: salarySource.employee_name,
+                                            branch_name: recordData.branch,
+                                            withdrawal_amount: recordData.salaryWithdrawal,
+                                            withdrawal_date: recordData.saleDate,
+                                            salary_month: salaryMonth,
+                                            salary_year: salaryYear,
+                                            sales_id: saveResult?.salesId || null,
+                                            withdrawn_by: currentEmployee.employee_id,
+                                            withdrawn_by_name: currentEmployee.name,
+                                            notes: `سحب من الكاش اليومي - ${recordData.saleDate} - راتب شهر ${salaryMonth}`
+                                        };
+                        
+                                        const { error: salaryError } = await supabase
+                                            .from('salary_cash_withdrawals')
+                                            .insert([salaryWithdrawalData]);
+                        
+                                        if (salaryError) {
+                                            console.error('خطأ في حفظ سحب الراتب:', salaryError);
+                                            showCustomWarning('تم حفظ المبيعات لكن تعذر تسجيل سحب الراتب في جدول الرواتب. يرجى مراجعة صلاحيات/جدول salary_cash_withdrawals.');
+                                        } else {
+                                            console.log('✅ تم حفظ سحب الراتب بنجاح');
+                                            // إعادة تحميل راتب الموظف لتحديث المتبقي
+                                            await loadEmployeeMonthlySalary(currentEmployee.employee_id, currentEmployee.name);
+                                        }
+                                    } catch (salaryErr) {
+                                        console.error('خطأ في حفظ سحب الراتب:', salaryErr);
+                                    }
+                                }
                 
                 // إخفاء شاشة الانتظار
                 if (loadingOverlay) {
@@ -968,6 +1219,7 @@
         async function handleLogin() {
             const id = loginEmployeeId.value.trim();
             const pass = loginPassword.value.trim();
+
             if (!id || !pass) {
                 showCustomError('أدخل الرقم الوظيفي وكلمة المرور');
                 return;
@@ -1009,6 +1261,9 @@
                 setFormEnabled(true);
                 secureArea.style.display = 'block';
                 loginCard.style.display = 'none';
+                
+                // تحميل راتب الموظف للشهر الحالي
+                await loadEmployeeMonthlySalary(data.employee_id, data.name);
             } catch (err) {
                 console.error(err);
                 showCustomError('تعذر تسجيل الدخول. تحقق من الاتصال.', 'خطأ الاتصال');
@@ -1079,6 +1334,13 @@
         });
 
         btnLogin.addEventListener('click', handleLogin);
+
+        // إذا تم تعديل الراتب من صفحة أخرى أثناء فتح الصفحة، أعد تحميل بيانات الراتب عند الرجوع للنافذة
+        window.addEventListener('focus', async () => {
+            if (currentEmployee && currentEmployee.employee_id) {
+                await loadEmployeeMonthlySalary(currentEmployee.employee_id, currentEmployee.name);
+            }
+        });
         setFormEnabled(false);
 
         // ===== معالج رفع الصور إلى Supabase Storage =====

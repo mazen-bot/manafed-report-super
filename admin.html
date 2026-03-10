@@ -678,6 +678,10 @@
                 <span class="sidebar-item-icon">📧</span>
                 إدارة الإيميلات
             </a>
+            <a class="sidebar-item" data-section="monthlySalaries">
+                <span class="sidebar-item-icon">💵</span>
+                الرواتب الشهرية
+            </a>
             <a class="sidebar-item" data-section="credentials">
                 <span class="sidebar-item-icon">🔑</span>
                 الأرقام والأسرار
@@ -704,7 +708,11 @@
                         <input id="branchCode" type="text" placeholder="مثال: DMM01">
                     </div>
                     <button id="saveBranch">💾 حفظ الفرع</button>
-                    <div class="list" id="branchesList"></div>
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #f0f0f0;">
+                        <h3 style="margin-bottom: 15px;">📋 قائمة الفروع</h3>
+                        <input type="text" id="searchBranches" class="search-box" placeholder="🔍 ابحث عن فرع أو رمز..." style="width:100%;padding:10px;margin-bottom:15px;border:1px solid #ddd;border-radius:8px;">
+                        <div class="list" id="branchesList"></div>
+                    </div>
                 </div>
             </div>
 
@@ -790,7 +798,11 @@
                         </div>
                     </div>
                     <button id="saveEmployee">💾 حفظ الموظف</button>
-                    <div class="list" id="employeesList"></div>
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #f0f0f0;">
+                        <h3 style="margin-bottom: 15px;">📋 قائمة الموظفين</h3>
+                        <input type="text" id="searchEmployeesForm" class="search-box" placeholder="🔍 ابحث عن موظف أو رقم وظيفي..." style="width:100%;padding:10px;margin-bottom:15px;border:1px solid #ddd;border-radius:8px;">
+                        <div class="list" id="employeesList"></div>
+                    </div>
                 </div>
             </div>
 
@@ -845,7 +857,11 @@
                         <input id="ruleAnnualDays" type="number" min="0" placeholder="مثال: 30">
                     </div>
                     <button id="addEntitlementRule">➕ إضافة القاعدة</button>
-                    <div class="list" id="entitlementRulesList"></div>
+                    <div style="margin-top: 20px;">
+                        <h3 style="margin-bottom: 15px;">📋 قواعس الاستحقاق المسجلة</h3>
+                        <input type="text" id="searchEntitlementRules" class="search-box" placeholder="🔍 ابحث عن نوع توظيف أو مسمى..." style="width:100%;padding:10px;margin-bottom:15px;border:1px solid #ddd;border-radius:8px;">
+                        <div class="list" id="entitlementRulesList"></div>
+                    </div>
                 </div>
             </div>
 
@@ -866,11 +882,89 @@
                 </div>
             </div>
 
+            <!-- قسم الرواتب الشهرية -->
+            <div class="section" id="monthlySalaries">
+                <div class="card">
+                    <h2>💵 إدارة الرواتب الشهرية للموظفين</h2>
+                    <p style="margin-bottom:16px;color:#666;font-size:14px;">📝 حدد رواتب الموظفين شهرياً ليتم السماح بسحبها من الكاش اليومي</p>
+                    
+                    <div class="field">
+                        <label for="monthlySalaryEmployee">🔍 اختر الموظف</label>
+                        <select id="monthlySalaryEmployee">
+                            <option value="">-- اختر موظف --</option>
+                        </select>
+                    </div>
+                    
+                    <div class="field">
+                        <label for="monthlySalaryMonth">الشهر</label>
+                        <select id="monthlySalaryMonth">
+                            <option value="2026-01">يناير 2026</option>
+                            <option value="2026-02">فبراير 2026</option>
+                            <option value="2026-03" selected>مارس 2026</option>
+                            <option value="2026-04">أبريل 2026</option>
+                            <option value="2026-05">مايو 2026</option>
+                            <option value="2026-06">يونيو 2026</option>
+                            <option value="2026-07">يوليو 2026</option>
+                            <option value="2026-08">أغسطس 2026</option>
+                            <option value="2026-09">سبتمبر 2026</option>
+                            <option value="2026-10">أكتوبر 2026</option>
+                            <option value="2026-11">نوفمبر 2026</option>
+                            <option value="2026-12">ديسمبر 2026</option>
+                        </select>
+                    </div>
+                    
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:15px;">
+                        <div class="field">
+                            <label for="monthlySalaryBase">💰 الراتب الأساسي</label>
+                            <input id="monthlySalaryBase" type="number" step="0.01" min="0" placeholder="5000.00">
+                        </div>
+                        
+                        <div class="field">
+                            <label for="monthlySalaryAllowances">➕ البدلات</label>
+                            <input id="monthlySalaryAllowances" type="number" step="0.01" min="0" placeholder="500.00" value="0">
+                        </div>
+                        
+                        <div class="field">
+                            <label for="monthlySalaryDeductions">➖ الخصومات</label>
+                            <input id="monthlySalaryDeductions" type="number" step="0.01" min="0" placeholder="200.00" value="0">
+                        </div>
+                        
+                        <div class="field">
+                            <label for="monthlySalaryNet">✅ صافي الراتب</label>
+                            <input id="monthlySalaryNet" type="number" step="0.01" readonly style="background:#e8f5e9;font-weight:700;font-size:16px;color:#2e7d32;">
+                        </div>
+                    </div>
+                    
+                    <div class="field">
+                        <label for="monthlySalaryNotes">📝 ملاحظات (اختياري)</label>
+                        <textarea id="monthlySalaryNotes" rows="2" placeholder="أي ملاحظات..."></textarea>
+                    </div>
+                    
+                    <button id="saveMonthlySalary">💾 حفظ الراتب الشهري</button>
+                    
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #f0f0f0;">
+                        <h3 style="margin-bottom: 15px;">📊 الرواتب الشهرية المسجلة</h3>
+                        <input type="text" id="searchMonthlySalaries" class="search-box" placeholder="🔍 ابحث عن موظف أو فرع..." style="width:100%;padding:10px;margin-bottom:15px;border:1px solid #ddd;border-radius:8px;">
+                        <div class="field">
+                            <label for="filterMonthlySalaryMonth">تصفية حسب الشهر</label>
+                            <select id="filterMonthlySalaryMonth">
+                                <option value="">جميع الأشهر</option>
+                                <option value="2026-03" selected>مارس 2026</option>
+                                <option value="2026-02">فبراير 2026</option>
+                                <option value="2026-01">يناير 2026</option>
+                            </select>
+                        </div>
+                        <div class="list" id="monthlySalariesList"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- قسم الأرقام والأسرار -->
             <div class="section" id="credentials">
                 <div class="card">
                     <h2>🔑 الأرقام الوظيفية وكلمات المرور</h2>
                     <p style="margin-bottom:16px;color:#666;font-size:14px;">📋 قائمة كاملة بجميع الموظفين والأرقام الوظيفية وكلمات المرور</p>
+                    <input type="text" id="searchCredentials" class="search-box" placeholder="🔍 ابحث عن موظف أو فرع..." style="width:100%;padding:10px;margin-bottom:15px;border:1px solid #ddd;border-radius:8px;">
                     <div class="list" id="credentialsList"></div>
                 </div>
             </div>
@@ -1001,6 +1095,7 @@
             const branchCode = document.getElementById('branchCode');
             const saveBranchBtn = document.getElementById('saveBranch');
             const branchesList = document.getElementById('branchesList');
+            const searchBranches = document.getElementById('searchBranches');
             const empName = document.getElementById('empName');
             const empId = document.getElementById('empId');
             const empBranch = document.getElementById('empBranch');
@@ -1013,6 +1108,7 @@
             const empLeaveBalanceVisibility = document.getElementById('empLeaveBalanceVisibility');
             const saveEmployeeBtn = document.getElementById('saveEmployee');
             const employeesList = document.getElementById('employeesList');
+            const searchEmployeesForm = document.getElementById('searchEmployeesForm');
             const loginEmpId = document.getElementById('loginEmpId');
             const loginPassword = document.getElementById('loginPassword');
             const btnLogin = document.getElementById('btnLogin');
@@ -1028,6 +1124,8 @@
             const ruleAnnualDays = document.getElementById('ruleAnnualDays');
             const addEntitlementRule = document.getElementById('addEntitlementRule');
             const entitlementRulesList = document.getElementById('entitlementRulesList');
+            const searchEntitlementRules = document.getElementById('searchEntitlementRules');
+            const searchCredentials = document.getElementById('searchCredentials');
 
             let currentUser = null;
             let editingEmployeeId = null;
@@ -1035,6 +1133,7 @@
             let branchesCache = [];
             let hrSettingsCache = null;
             let entitlementRulesCache = [];
+            let credentialsCache = [];
 
             // ====== الصلاحيات ======
             const PERMISSIONS_DESCRIPTION = {
@@ -1154,6 +1253,10 @@
                     await loadHrSettings();
                     await loadEntitlementRules();
                     
+                    // تحميل بيانات الرواتب الشهرية
+                    await loadEmployeesForMonthlySalary();
+                    await loadMonthlySalaries();
+                    
                     // تحديث معلومات المستخدم في الـ header
                     document.getElementById('userDisplayName').textContent = currentUser.name;
                     document.getElementById('userDisplayDetails').textContent = `${currentUser.employee_id} - ${currentUser.branch_name}`;
@@ -1199,10 +1302,26 @@
                 }
             }
 
+            // البحث في الفروع
+            if (searchBranches) {
+                searchBranches.addEventListener('input', displayBranches);
+            }
+
             // ====== عرض الفروع ======
             function displayBranches() {
                 if (branchesCache.length === 0) {
                     branchesList.innerHTML = '<p style="padding:20px;text-align:center;color:#999;">لا توجد فروع بعد</p>';
+                    return;
+                }
+
+                const searchTerm = (searchBranches?.value || '').toLowerCase();
+                const filtered = branchesCache.filter(b => 
+                    b.name.toLowerCase().includes(searchTerm) || 
+                    (b.code && b.code.toLowerCase().includes(searchTerm))
+                );
+
+                if (filtered.length === 0) {
+                    branchesList.innerHTML = '<p style="padding:20px;text-align:center;color:#999;">لا توجد نتائج</p>';
                     return;
                 }
 
@@ -1216,7 +1335,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            ${branchesCache.map(b => `
+                            ${filtered.map(b => `
                                 <tr>
                                     <td>${b.name}</td>
                                     <td>${b.code || '-'}</td>
@@ -1297,6 +1416,11 @@
                 }
             }
 
+            // البحث في الموظفين
+            if (searchEmployeesForm) {
+                searchEmployeesForm.addEventListener('input', displayEmployees);
+            }
+
             async function loadHrSettings() {
                 try {
                     const { data, error } = await supabase
@@ -1350,9 +1474,25 @@
                 }
             }
 
+            // البحث في قواعد الاستحقاق
+            if (searchEntitlementRules) {
+                searchEntitlementRules.addEventListener('input', renderEntitlementRules);
+            }
+
             function renderEntitlementRules() {
                 if (entitlementRulesCache.length === 0) {
                     entitlementRulesList.innerHTML = '<p style="padding:20px;text-align:center;color:#999;">لا توجد قواعد بعد</p>';
+                    return;
+                }
+
+                const searchTerm = (searchEntitlementRules?.value || '').toLowerCase();
+                const filtered = entitlementRulesCache.filter(rule => 
+                    (rule.employment_type && rule.employment_type.toLowerCase().includes(searchTerm)) || 
+                    (rule.job_grade && rule.job_grade.toLowerCase().includes(searchTerm))
+                );
+
+                if (filtered.length === 0) {
+                    entitlementRulesList.innerHTML = '<p style="padding:20px;text-align:center;color:#999;">لا توجد نتائج</p>';
                     return;
                 }
 
@@ -1367,7 +1507,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            ${entitlementRulesCache.map(rule => `
+                            ${filtered.map(rule => `
                                 <tr>
                                     <td>${rule.employment_type || '-'}</td>
                                     <td>${rule.job_grade || '-'}</td>
@@ -1407,6 +1547,17 @@
                     return;
                 }
 
+                const searchTerm = (searchEmployeesForm?.value || '').toLowerCase();
+                const filtered = employeesCache.filter(e => 
+                    e.name.toLowerCase().includes(searchTerm) || 
+                    e.employee_id.toLowerCase().includes(searchTerm)
+                );
+
+                if (filtered.length === 0) {
+                    employeesList.innerHTML = '<p style="padding:20px;text-align:center;color:#999;">لا توجد نتائج</p>';
+                    return;
+                }
+
                 employeesList.innerHTML = `
                     <table>
                         <thead>
@@ -1421,7 +1572,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            ${employeesCache.map(e => `
+                            ${filtered.map(e => `
                                 <tr>
                                     <td>${e.name}</td>
                                     <td>${e.employee_id}</td>
@@ -1696,7 +1847,7 @@
                 const searchTerm = searchEmployee.value.toLowerCase();
                 const filtered = employeesCache.filter(e => 
                     e.name.toLowerCase().includes(searchTerm) || 
-                    e.emp_id.toLowerCase().includes(searchTerm)
+                    e.employee_id.toLowerCase().includes(searchTerm)
                 );
 
                 if (filtered.length === 0) {
@@ -1840,40 +1991,62 @@
                     const { data, error } = await supabase.from('employees').select('id, name, employee_id, password, branch_name');
                     if (error) throw error;
                     
-                    if (!data || data.length === 0) {
-                        document.getElementById('credentialsList').innerHTML = '<p style="padding:20px;text-align:center;color:#999;">لا توجد بيانات</p>';
-                        return;
-                    }
-
-                    const credentialsHtml = `
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>الاسم</th>
-                                    <th>الرقم الوظيفي</th>
-                                    <th>كلمة المرور</th>
-                                    <th>الفرع</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${data.map(emp => `
-                                    <tr>
-                                        <td>${emp.name}</td>
-                                        <td><strong style="user-select: all;">${emp.employee_id}</strong></td>
-                                        <td>
-                                            <code style="background:#f0f0f0;padding:4px 8px;border-radius:4px;user-select: all;">${emp.password}</code>
-                                        </td>
-                                        <td>${emp.branch_name || '-'}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    `;
-                    document.getElementById('credentialsList').innerHTML = credentialsHtml;
+                    credentialsCache = data || [];
+                    displayCredentials();
                 } catch (err) {
                     console.error('خطأ في تحميل البيانات:', err);
                     document.getElementById('credentialsList').innerHTML = '<p style="padding:20px;text-align:center;color:#dc3545;">❌ حدث خطأ في تحميل البيانات</p>';
                 }
+            }
+
+            function displayCredentials() {
+                if (!credentialsCache || credentialsCache.length === 0) {
+                    document.getElementById('credentialsList').innerHTML = '<p style="padding:20px;text-align:center;color:#999;">لا توجد بيانات</p>';
+                    return;
+                }
+
+                const searchTerm = (searchCredentials?.value || '').toLowerCase();
+                const filtered = credentialsCache.filter(emp =>
+                    emp.name.toLowerCase().includes(searchTerm) ||
+                    emp.employee_id.toLowerCase().includes(searchTerm) ||
+                    (emp.branch_name && emp.branch_name.toLowerCase().includes(searchTerm))
+                );
+
+                if (filtered.length === 0) {
+                    document.getElementById('credentialsList').innerHTML = '<p style="padding:20px;text-align:center;color:#999;">لا توجد نتائج</p>';
+                    return;
+                }
+
+                const credentialsHtml = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الاسم</th>
+                                <th>الرقم الوظيفي</th>
+                                <th>كلمة المرور</th>
+                                <th>الفرع</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${filtered.map(emp => `
+                                <tr>
+                                    <td>${emp.name}</td>
+                                    <td><strong style="user-select: all;">${emp.employee_id}</strong></td>
+                                    <td>
+                                        <code style="background:#f0f0f0;padding:4px 8px;border-radius:4px;user-select: all;">${emp.password}</code>
+                                    </td>
+                                    <td>${emp.branch_name || '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                document.getElementById('credentialsList').innerHTML = credentialsHtml;
+            }
+
+            // البحث في الأرقام والأسرار
+            if (searchCredentials) {
+                searchCredentials.addEventListener('input', displayCredentials);
             }
 
             // ====== تسجيل الخروج ======
@@ -2197,6 +2370,273 @@
                     showCustomError(errorMsg);
                 }
             };
+
+            // ====== إدارة الرواتب الشهرية ======
+            const monthlySalaryEmployee = document.getElementById('monthlySalaryEmployee');
+            const monthlySalaryMonth = document.getElementById('monthlySalaryMonth');
+            const monthlySalaryBase = document.getElementById('monthlySalaryBase');
+            const monthlySalaryAllowances = document.getElementById('monthlySalaryAllowances');
+            const monthlySalaryDeductions = document.getElementById('monthlySalaryDeductions');
+            const monthlySalaryNet = document.getElementById('monthlySalaryNet');
+            const monthlySalaryNotes = document.getElementById('monthlySalaryNotes');
+            const saveMonthlySalary = document.getElementById('saveMonthlySalary');
+            const monthlySalariesList = document.getElementById('monthlySalariesList');
+            const filterMonthlySalaryMonth = document.getElementById('filterMonthlySalaryMonth');
+            const searchMonthlySalaries = document.getElementById('searchMonthlySalaries');
+
+            let monthlySalariesCache = [];
+
+            // حساب صافي الراتب تلقائياً
+            function calculateNetSalary() {
+                const base = parseFloat(monthlySalaryBase.value) || 0;
+                const allowances = parseFloat(monthlySalaryAllowances.value) || 0;
+                const deductions = parseFloat(monthlySalaryDeductions.value) || 0;
+                const net = base + allowances - deductions;
+                monthlySalaryNet.value = net.toFixed(2);
+            }
+
+            if (monthlySalaryBase) monthlySalaryBase.addEventListener('input', calculateNetSalary);
+            if (monthlySalaryAllowances) monthlySalaryAllowances.addEventListener('input', calculateNetSalary);
+            if (monthlySalaryDeductions) monthlySalaryDeductions.addEventListener('input', calculateNetSalary);
+
+            // تحميل الموظفين في قائمة الرواتب الشهرية
+            async function loadEmployeesForMonthlySalary() {
+                if (employeesCache.length === 0) return;
+                
+                monthlySalaryEmployee.innerHTML = '<option value="">-- اختر موظف --</option>';
+                employeesCache.forEach(emp => {
+                    const option = document.createElement('option');
+                    option.value = emp.employee_id;
+                    option.textContent = `${emp.name} - ${emp.employee_id} (${resolveBranchName(emp)})`;
+                    option.dataset.employeeName = emp.name;
+                    option.dataset.branchName = resolveBranchName(emp);
+                    monthlySalaryEmployee.appendChild(option);
+                });
+            }
+
+            // حفظ الراتب الشهري
+            if (saveMonthlySalary) {
+                saveMonthlySalary.addEventListener('click', async () => {
+                    if (!currentUser) {
+                        showCustomError('⚠️ يجب تسجيل الدخول أولاً');
+                        return;
+                    }
+
+                    const selectedOption = monthlySalaryEmployee.options[monthlySalaryEmployee.selectedIndex];
+                    const employeeId = monthlySalaryEmployee.value;
+                    const employeeName = selectedOption?.dataset.employeeName || '';
+                    const branchName = selectedOption?.dataset.branchName || '';
+                    const month = monthlySalaryMonth.value;
+                    const baseSalary = parseFloat(monthlySalaryBase.value);
+                    const allowances = parseFloat(monthlySalaryAllowances.value) || 0;
+                    const deductions = parseFloat(monthlySalaryDeductions.value) || 0;
+                    const netSalary = parseFloat(monthlySalaryNet.value);
+                    const notes = monthlySalaryNotes.value.trim();
+
+                    if (!employeeId) {
+                        showCustomError('⚠️ الرجاء اختيار موظف');
+                        return;
+                    }
+
+                    if (!baseSalary || baseSalary <= 0) {
+                        showCustomError('⚠️ الرجاء إدخال الراتب الأساسي');
+                        return;
+                    }
+
+                    const year = parseInt(month.split('-')[0]);
+
+                    const salaryData = {
+                        employee_id: employeeId,
+                        employee_name: employeeName,
+                        branch_name: branchName,
+                        base_salary: baseSalary,
+                        allowances: allowances,
+                        deductions: deductions,
+                        net_salary: netSalary,
+                        salary_month: month,
+                        salary_year: year,
+                        payment_status: 'pending',
+                        payment_method: 'cash',
+                        notes: notes || null,
+                        created_by: currentUser.employee_id
+                    };
+
+                    try {
+                        const { data, error } = await supabase
+                            .from('monthly_salary_records')
+                            .upsert([salaryData], {
+                                onConflict: 'employee_id,salary_month,salary_year'
+                            })
+                            .select();
+
+                        if (error) throw error;
+
+                        showCustomSuccess(`✅ تم حفظ راتب ${employeeName} لشهر ${month} بنجاح`);
+                        
+                        // مسح النموذج
+                        monthlySalaryEmployee.value = '';
+                        monthlySalaryBase.value = '';
+                        monthlySalaryAllowances.value = '0';
+                        monthlySalaryDeductions.value = '0';
+                        monthlySalaryNet.value = '';
+                        monthlySalaryNotes.value = '';
+                        
+                        // إعادة تحميل القائمة
+                        await loadMonthlySalaries();
+                        
+                    } catch (err) {
+                        console.error('خطأ في حفظ الراتب الشهري:', err);
+                        
+                        if (err.message && err.message.includes('relation "monthly_salary_records" does not exist')) {
+                            showCustomError('❌ جدول monthly_salary_records غير موجود في قاعدة البيانات.\n\nيرجى تشغيل ملف create_salary_deliveries.sql في Supabase SQL Editor أولاً!');
+                        } else {
+                            showCustomError('❌ خطأ في حفظ الراتب الشهري: ' + (err.message || 'خطأ غير معروف'));
+                        }
+                    }
+                });
+            }
+
+            // تحميل سجلات الرواتب الشهرية
+            async function loadMonthlySalaries() {
+                try {
+                    const { data, error } = await supabase
+                        .from('monthly_salary_records')
+                        .select('*')
+                        .order('salary_year', { ascending: false })
+                        .order('salary_month', { ascending: false });
+
+                    if (error) throw error;
+
+                    monthlySalariesCache = data || [];
+                    displayMonthlySalaries();
+                    
+                } catch (err) {
+                    console.error('خطأ في تحميل الرواتب الشهرية:', err);
+                    monthlySalariesList.innerHTML = '<p style="padding:20px;text-align:center;color:#999;">⚠️ خطأ في تحميل البيانات</p>';
+                }
+            }
+
+            // عرض سجلات الرواتب الشهرية
+            function displayMonthlySalaries() {
+                const monthFilter = filterMonthlySalaryMonth?.value || '';
+                const searchTerm = (searchMonthlySalaries?.value || '').toLowerCase();
+
+                let filtered = monthlySalariesCache;
+
+                if (monthFilter) {
+                    filtered = filtered.filter(s => s.salary_month === monthFilter);
+                }
+
+                if (searchTerm) {
+                    filtered = filtered.filter(s => 
+                        s.employee_name.toLowerCase().includes(searchTerm) ||
+                        s.branch_name.toLowerCase().includes(searchTerm)
+                    );
+                }
+
+                if (filtered.length === 0) {
+                    monthlySalariesList.innerHTML = '<p style="padding:20px;text-align:center;color:#999;">لا توجد رواتب مسجلة</p>';
+                    return;
+                }
+
+                // حساب المجاميع
+                let totalWithdrawn = 0;
+                let totalRemaining = 0;
+                
+                filtered.forEach(s => {
+                    const withdrawn = parseFloat(s.total_cash_withdrawn || 0);
+                    const remaining = parseFloat(s.remaining_amount || s.net_salary);
+                    totalWithdrawn += withdrawn;
+                    totalRemaining += remaining;
+                });
+
+                monthlySalariesList.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>الموظف</th>
+                                <th>الفرع</th>
+                                <th>الشهر</th>
+                                <th>الراتب الأساسي</th>
+                                <th>البدلات</th>
+                                <th>الخصومات</th>
+                                <th>الصافي</th>
+                                <th>المسحوب</th>
+                                <th>المتبقي</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${filtered.map(s => {
+                                const withdrawn = parseFloat(s.total_cash_withdrawn || 0);
+                                const remaining = parseFloat(s.remaining_amount || s.net_salary);
+                                return `
+                                    <tr>
+                                        <td style="font-weight:600;">${s.employee_name}</td>
+                                        <td>${s.branch_name}</td>
+                                        <td>${s.salary_month}</td>
+                                        <td>${parseFloat(s.base_salary).toLocaleString('ar-SA', {minimumFractionDigits: 2})} ر.س</td>
+                                        <td>${parseFloat(s.allowances || 0).toLocaleString('ar-SA', {minimumFractionDigits: 2})} ر.س</td>
+                                        <td>${parseFloat(s.deductions || 0).toLocaleString('ar-SA', {minimumFractionDigits: 2})} ر.س</td>
+                                        <td style="font-weight:700;color:#28a745;">${parseFloat(s.net_salary).toLocaleString('ar-SA', {minimumFractionDigits: 2})} ر.س</td>
+                                        <td style="color:#ff9800;font-weight:600;">${withdrawn.toLocaleString('ar-SA', {minimumFractionDigits: 2})} ر.س</td>
+                                        <td style="color:#2196f3;font-weight:600;">${remaining.toLocaleString('ar-SA', {minimumFractionDigits: 2})} ر.س</td>
+                                        <td><span style="padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600;background:${s.payment_status === 'paid' ? '#d4edda' : '#fff3cd'};color:${s.payment_status === 'paid' ? '#155724' : '#856404'};">${s.payment_status === 'paid' ? 'مدفوع' : 'معلق'}</span></td>
+                                        <td>
+                                            <button class="btn-delete-monthly-salary btn-small btn-delete" data-id="${s.id}">🗑️ حذف</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                            <tr style="background:#f5f5f5;font-weight:700;border-top:2px solid #ddd;">
+                                <td colspan="7" style="text-align:center;color:#333;">المجموع الكلي</td>
+                                <td style="color:#ff9800;text-align:center;">${totalWithdrawn.toLocaleString('ar-SA', {minimumFractionDigits: 2})} ر.س</td>
+                                <td style="color:#2196f3;text-align:center;">${totalRemaining.toLocaleString('ar-SA', {minimumFractionDigits: 2})} ر.س</td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+
+                // إضافة أحداث الحذف
+                document.querySelectorAll('.btn-delete-monthly-salary').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        if (!hasAnyPermission('manageEmployees', 'manageCash')) {
+                            showNoPermissionMessage();
+                            return;
+                        }
+
+                        if (!confirm('هل أنت متأكد من حذف هذا السجل؟')) return;
+
+                        const id = btn.dataset.id;
+                        try {
+                            const { error } = await supabase
+                                .from('monthly_salary_records')
+                                .delete()
+                                .eq('id', id);
+
+                            if (error) throw error;
+
+                            showCustomSuccess('✅ تم الحذف بنجاح');
+                            await loadMonthlySalaries();
+                            
+                        } catch (err) {
+                            console.error('خطأ في الحذف:', err);
+                            showCustomError('❌ خطأ في الحذف');
+                        }
+                    });
+                });
+            }
+
+            // أحداث الفلاتر
+            if (filterMonthlySalaryMonth) {
+                filterMonthlySalaryMonth.addEventListener('change', displayMonthlySalaries);
+            }
+
+            if (searchMonthlySalaries) {
+                searchMonthlySalaries.addEventListener('input', displayMonthlySalaries);
+            }
 
             // ====== إدارة Telegram Chat ID ======
             window.editEmployeeTelegram = async function(employeeId, employeeName, currentChatId) {
