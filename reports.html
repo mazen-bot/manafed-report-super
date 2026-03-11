@@ -531,6 +531,36 @@
                             <tr><td colspan="7" style="padding:12px;text-align:center;color:#777;">اضغط "تحديث التسوية" لعرض النتائج</td></tr>
                         </tbody>
                     </table>
+
+                </div>
+            </div>
+
+            <div class="cash-reconciliation card" id="cashDeliveriesSummarySection" style="margin:20px 0;padding:16px;border-radius:10px;border:2px solid #bbdefb;background:#fff;">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 14px;">
+                    <h3 style="margin:0;color:#1565c0;">📋 التسليمات</h3>
+                    <button id="cashDeliveriesSummaryToggleBtn" type="button" onclick="toggleCashDeliveriesSummarySection()" style="padding:8px 14px;background:#1976d2;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;">▸ عرض القسم</button>
+                </div>
+
+                <div id="cashDeliveriesSummaryContent" style="display:none;">
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+                        <label for="deliveriesPeriodStartDate" style="font-weight:600;color:#0d47a1;">بداية تاريخ الفترة:</label>
+                        <input type="date" id="deliveriesPeriodStartDate" onchange="handleDeliveriesPeriodStartDateChange()" style="padding:8px;border:1px solid #90caf9;border-radius:6px;">
+                        <button type="button" onclick="exportCashDeliveriesSummaryExcel()" style="padding:8px 14px;background:#f39c12;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">📥 تصدير Excel</button>
+                        <span style="font-size:13px;color:#607d8b;">يستخدم لحساب عدد الأيام لأول تاريخ تسليم ظاهر في الجدول.</span>
+                    </div>
+
+                    <table id="cashDeliveriesSummaryTable" style="width:100%;border-collapse:collapse;">
+                        <thead>
+                            <tr style="background:#eef5ff;">
+                                <th style="padding:8px;border:1px solid #d6e4ff;">التاريخ</th>
+                                <th style="padding:8px;border:1px solid #d6e4ff;">عدد الايام</th>
+                                <th style="padding:8px;border:1px solid #d6e4ff;">المبلغ المسلم</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cashDeliveriesSummaryBody">
+                            <tr><td colspan="3" style="padding:12px;text-align:center;color:#777;">لا توجد بيانات تسليمات بعد</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -965,15 +995,20 @@
         let sidebarInitialized = false;
         let sidebarCollapsed = false;
         let withdrawalsData = [];
-        let cashDeliveries = JSON.parse(localStorage.getItem('cashDeliveries') || '[]');
+        let cashDeliveries = [];
         let cashEditHistory = JSON.parse(localStorage.getItem('cashEditHistory') || '[]');
         let cashTransfers = JSON.parse(localStorage.getItem('cashTransfers') || '[]');
         let cashTransferHistory = JSON.parse(localStorage.getItem('cashTransferHistory') || '[]');
         let currentEditingDelivery = null;
         let currentEditingTransferId = null;
         let currentDeliveriesBranch = null;
+        let isCashDeliveriesSummaryOpen = false;
         let isCashTransferMainOpen = false;
         let isCashTransferHistoryOpen = false;
+        const DELIVERIES_PERIOD_START_STORAGE_KEY = 'cashDeliveriesPeriodStartDate';
+
+        // اعتماد قاعدة البيانات فقط: حذف أي كاش محلي قديم للتسليمات.
+        localStorage.removeItem('cashDeliveries');
 
         // الأسباب المحتملة لعدم استجابة الزر: إضافة معالج مباشر بدلاً من addEventListener
         function setupLoginHandler() {
@@ -1875,8 +1910,8 @@
                         .order('created_at', { ascending: false });
 
                     if (!delErr && Array.isArray(deliveries)) {
-                        // دمج مع التسليمات المحلية وتخزينها
-                        const remote = deliveries.map(d => ({
+                        // اعتماد البيانات من قاعدة البيانات فقط بدون دمج محلي
+                        cashDeliveries = deliveries.map(d => ({
                             id: d.id || ('r_' + Date.parse(d.created_at || new Date())),
                             branch: d.branch,
                             recipient: d.recipient || d.delivered_to || '-',
@@ -1885,12 +1920,6 @@
                             proof: d.proof || d.proof_url || '',
                             createdAt: d.created_at || new Date().toISOString()
                         }));
-
-                        // إضافة العناصر الغير موجودة محليًا
-                        remote.forEach(rd => {
-                            if (!cashDeliveries.find(cd => String(cd.id) === String(rd.id))) cashDeliveries.push(rd);
-                        });
-                        localStorage.setItem('cashDeliveries', JSON.stringify(cashDeliveries));
                     }
                 } catch (err) {
                     console.warn('خطأ عند جلب تسليمات الكاش من Supabase:', err);
@@ -2574,8 +2603,6 @@
                 cashDeliveries.unshift(delivery);
             }
 
-            localStorage.setItem('cashDeliveries', JSON.stringify(cashDeliveries));
-
             if (currentView === 'deliveries' && typeof loadDeliveriesData === 'function') {
                 loadDeliveriesData();
             } else if (typeof populateDeliveriesBranchFilter === 'function') {
@@ -2703,6 +2730,23 @@
         function toggleCashTransferMain() {
             isCashTransferMainOpen = !isCashTransferMainOpen;
             applyCashTransferCollapseState();
+        }
+
+        function applyCashDeliveriesSummaryCollapseState() {
+            const content = document.getElementById('cashDeliveriesSummaryContent');
+            const toggleBtn = document.getElementById('cashDeliveriesSummaryToggleBtn');
+
+            if (content) {
+                content.style.display = isCashDeliveriesSummaryOpen ? 'block' : 'none';
+            }
+            if (toggleBtn) {
+                toggleBtn.textContent = isCashDeliveriesSummaryOpen ? '▾ إخفاء القسم' : '▸ عرض القسم';
+            }
+        }
+
+        function toggleCashDeliveriesSummarySection() {
+            isCashDeliveriesSummaryOpen = !isCashDeliveriesSummaryOpen;
+            applyCashDeliveriesSummaryCollapseState();
         }
 
         function toggleCashTransferHistory() {
@@ -2915,6 +2959,7 @@
         window.deleteCashTransfer = deleteCashTransfer;
         window.resetCashTransferForm = resetCashTransferForm;
         window.updateCashTransferAvailableInfo = updateCashTransferAvailableInfo;
+        window.toggleCashDeliveriesSummarySection = toggleCashDeliveriesSummarySection;
         window.toggleCashTransferMain = toggleCashTransferMain;
         window.toggleCashTransferHistory = toggleCashTransferHistory;
 
@@ -2985,31 +3030,10 @@
 
                     if (error) {
                         console.warn('[DELIVERY] ⚠️ خطأ Supabase:', error);
-                        
-                        // إذا فشل بسبب RLS، حاول حفظ محلي
-                        if (error.message.includes('row-level security')) {
-                            console.log('[DELIVERY] ⚠️ RLS مفعل، سيتم الحفظ محلياً');
-                            msg.style.color = '#ff9800';
-                            msg.textContent = '⚠️ تنبيه: سيتم الحفظ محلياً (RLS مفعل في النظام)';
-                            msg.style.display = 'block';
-                            
-                            // حفظ محلي
-                            const delivery = {
-                                id: 'local_' + Date.now(),
-                                branch,
-                                recipient,
-                                amount: parseFloat(amount.toFixed(2)),
-                                date,
-                                proof,
-                                createdAt: new Date().toISOString()
-                            };
-                            upsertCashDeliveryCache(delivery);
-                        } else {
-                            msg.style.color = '#d32f2f';
-                            msg.textContent = '❌ خطأ: ' + (error.message || 'حاول مرة أخرى');
-                            msg.style.display = 'block';
-                            return;
-                        }
+                        msg.style.color = '#d32f2f';
+                        msg.textContent = '❌ تعذر حفظ التسليم في قاعدة البيانات: ' + (error.message || 'حاول مرة أخرى');
+                        msg.style.display = 'block';
+                        return;
                     } else {
                         console.log('[DELIVERY] ✅ تم حفظ التسليم في Supabase:', data);
                         upsertCashDeliveryCache({
@@ -3046,23 +3070,10 @@
                     }, 1500);
                 } else {
                     console.warn('[DELIVERY] Supabase غير متاح');
-                    msg.style.color = '#ff9800';
-                    msg.textContent = '⚠️ Supabase غير متاح، سيتم الحفظ محلياً';
+                    msg.style.color = '#d32f2f';
+                    msg.textContent = '❌ لا يمكن حفظ التسليم بدون اتصال قاعدة البيانات';
                     msg.style.display = 'block';
-                    
-                    // حفظ محلي
-                    const delivery = {
-                        id: 'local_' + Date.now(),
-                        branch,
-                        recipient,
-                        amount: parseFloat(amount.toFixed(2)),
-                        date,
-                        proof,
-                        createdAt: new Date().toISOString()
-                    };
-                    upsertCashDeliveryCache(delivery);
-                    
-                    setTimeout(() => toggleAddDeliveryForm(), 1000);
+                    return;
                 }
 
             } catch (err) {
@@ -3161,16 +3172,6 @@
                     .filter(item => normalizeBranchKey(item.branch) === normalizedBranch)
                     .forEach(item => {
                         deliveriesMap.set(`db:${item.id}`, item);
-                    });
-
-                (Array.isArray(cashDeliveries) ? cashDeliveries : [])
-                    .map(item => normalizeBranchDeliveryAuditRecord(item, 'local'))
-                    .filter(item => normalizeBranchKey(item.branch) === normalizedBranch)
-                    .forEach(item => {
-                        const key = String(item.id).startsWith('local_') ? `local:${item.id}` : `db:${item.id}`;
-                        if (!deliveriesMap.has(key)) {
-                            deliveriesMap.set(key, item);
-                        }
                     });
 
                 const deliveries = Array.from(deliveriesMap.values()).sort((first, second) => {
@@ -3505,7 +3506,6 @@
             if (!approved) return;
 
             cashDeliveries = cashDeliveries.filter(item => String(item.id) !== String(deliveryId));
-            localStorage.setItem('cashDeliveries', JSON.stringify(cashDeliveries));
             if (currentDeliveriesBranch) {
                 loadBranchDeliveriesModal(currentDeliveriesBranch);
             }
@@ -3553,7 +3553,7 @@
         window.closeCashEditModal = closeCashEditModal;
 
         // حفظ التغييرات في الكاش المسلم
-        function saveCashChanges() {
+        async function saveCashChanges() {
             if (!currentEditingDelivery) return;
 
             if (!canManageCash()) {
@@ -3588,19 +3588,36 @@
                 return;
             }
 
-            // إضافة تسليم جديد يعكس الفرق
-            const delivery = {
-                id: Date.now(),
-                branch: currentEditingDelivery.branch,
-                date: new Date().toISOString().split('T')[0],
-                amount: Math.abs(difference),
-                recipient: difference > 0 ? 'تصحيح زيادة' : 'تصحيح انخفاض',
-                proof: notes || '-',
-                createdAt: new Date().toISOString()
-            };
+            if (!window.supabaseInstance || typeof window.supabaseInstance.from !== 'function') {
+                messageDiv.style.display = 'block';
+                messageDiv.style.background = '#ffebee';
+                messageDiv.style.color = '#c62828';
+                messageDiv.textContent = '❌ لا يمكن حفظ التعديل بدون اتصال قاعدة البيانات';
+                return;
+            }
 
-            cashDeliveries.push(delivery);
-            localStorage.setItem('cashDeliveries', JSON.stringify(cashDeliveries));
+            const correctionAmount = Math.abs(difference);
+            const correctionRecipient = difference > 0 ? 'تصحيح زيادة' : 'تصحيح انخفاض';
+            const correctionDate = new Date().toISOString().split('T')[0];
+
+            const { error: correctionError } = await window.supabaseInstance
+                .from('cash_deliveries')
+                .insert([{
+                    branch: currentEditingDelivery.branch,
+                    recipient: correctionRecipient,
+                    delivered_amount: parseFloat(correctionAmount.toFixed(2)),
+                    delivered_at: correctionDate,
+                    proof: notes || null,
+                    created_at: new Date().toISOString()
+                }]);
+
+            if (correctionError) {
+                messageDiv.style.display = 'block';
+                messageDiv.style.background = '#ffebee';
+                messageDiv.style.color = '#c62828';
+                messageDiv.textContent = '❌ فشل حفظ التعديل في قاعدة البيانات: ' + (correctionError.message || 'حاول مرة أخرى');
+                return;
+            }
 
             // تسجيل التعديل في السجل
             const editRecord = {
@@ -5896,7 +5913,32 @@
             renderDeliveriesPage();
         }
 
+        function initializeDeliveriesPeriodStartDate() {
+            const input = document.getElementById('deliveriesPeriodStartDate');
+            if (!input) return;
+
+            const savedDate = localStorage.getItem(DELIVERIES_PERIOD_START_STORAGE_KEY) || '';
+            if (savedDate) {
+                input.value = savedDate;
+            }
+        }
+
+        function handleDeliveriesPeriodStartDateChange() {
+            const input = document.getElementById('deliveriesPeriodStartDate');
+            if (!input) return;
+
+            const value = (input.value || '').trim();
+            if (value) {
+                localStorage.setItem(DELIVERIES_PERIOD_START_STORAGE_KEY, value);
+            } else {
+                localStorage.removeItem(DELIVERIES_PERIOD_START_STORAGE_KEY);
+            }
+
+            loadCashData();
+        }
+
         // تحديث البيانات والأزرار عند تحميل الصفحة
+        initializeDeliveriesPeriodStartDate();
         loadDeliveriesData();
         renderCashTransferTables();
         resetCashTransferForm();
@@ -5904,6 +5946,7 @@
         // ============= دوال تسويات الكاش (Cash Reconciliations) =============
         
         let cashReconciliations = []; // متغير لحفظ بيانات التسويات
+        let cashDeliveriesSummaryRows = []; // صفوف جدول قسم التسليمات
 
         // تحميل بيانات الكاش من Supabase
         async function loadCashData() {
@@ -5911,7 +5954,7 @@
             try {
                 // تحقق من وجود Supabase
                 if (!window.supabaseInstance || typeof window.supabaseInstance.from !== 'function') {
-                    console.warn('[CASH] ⚠️ Supabase غير متاح، سيتم عرض البيانات المحلية');
+                    console.warn('[CASH] ⚠️ Supabase غير متاح، لن يتم تحميل التسليمات');
                     displayCashReconciliation(null);
                     return;
                 }
@@ -5930,6 +5973,15 @@
                 }
 
                 console.log(`✅ عثر على ${deliveries?.length || 0} تسليم كاش`);
+                cashDeliveries = (Array.isArray(deliveries) ? deliveries : []).map(item => ({
+                    id: item.id,
+                    branch: item.branch,
+                    recipient: item.recipient || item.delivered_to || '-',
+                    amount: parseFloat(item.delivered_amount || 0),
+                    date: normalizeDateOnly(item.delivered_at),
+                    proof: item.proof || item.proof_url || '',
+                    createdAt: item.created_at || ''
+                }));
                 displayCashReconciliation(deliveries);
                 console.log('✅ تم تحميل بيانات الكاش بنجاح');
 
@@ -5944,6 +5996,8 @@
             const tbody = document.getElementById('reconciliationBody');
             if (!tbody) return;
 
+            applyCashDeliveriesSummaryCollapseState();
+
             const manageCash = canManageCash();
             const actionHeader = document.getElementById('reconActionHeader');
             if (actionHeader) actionHeader.style.display = manageCash ? 'table-cell' : 'none';
@@ -5956,12 +6010,13 @@
             const dateTo = document.getElementById('reconDateTo')?.value || '';
             const deliveriesSource = Array.isArray(deliveriesFromSupabase)
                 ? deliveriesFromSupabase
-                : cashDeliveries.map(item => ({
-                    branch: item.branch,
-                    delivered_amount: item.delivered_amount ?? item.amount,
-                    delivered_at: item.delivered_at || item.date,
-                    created_at: item.created_at || item.createdAt || item.delivered_at || item.date
-                }));
+                : [];
+
+            renderCashDeliveriesSummaryTable(deliveriesSource, {
+                selectedBranch,
+                dateFrom,
+                dateTo
+            });
 
             // حساب المتوقع (من المبيعات) والمسلم (من Supabase)
             const grouped = {};
@@ -6151,6 +6206,109 @@
             updateCashTransferAvailableInfo();
         }
 
+        function renderCashDeliveriesSummaryTable(deliveriesSource, filters = {}) {
+            const tbody = document.getElementById('cashDeliveriesSummaryBody');
+            if (!tbody) return;
+
+            const selectedBranch = filters.selectedBranch || '';
+            const dateFrom = filters.dateFrom || '';
+            const dateTo = filters.dateTo || '';
+            const periodStartDate = document.getElementById('deliveriesPeriodStartDate')?.value || '';
+
+            const groupedByDate = new Map();
+
+            (Array.isArray(deliveriesSource) ? deliveriesSource : []).forEach(item => {
+                const branch = item.branch || '';
+                if (selectedBranch && branch !== selectedBranch) return;
+
+                const deliveryDate = normalizeDateOnly(item.delivered_at || item.created_at);
+                if (!deliveryDate) return;
+                if (dateFrom && deliveryDate < dateFrom) return;
+                if (dateTo && deliveryDate > dateTo) return;
+
+                const currentAmount = groupedByDate.get(deliveryDate) || 0;
+                groupedByDate.set(deliveryDate, currentAmount + parseFloat(item.delivered_amount || 0));
+            });
+
+            const dates = Array.from(groupedByDate.keys()).sort((first, second) => new Date(first) - new Date(second));
+            cashDeliveriesSummaryRows = [];
+
+            tbody.innerHTML = '';
+            if (dates.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="padding:12px;text-align:center;color:#777;">لا توجد تسليمات ضمن الفلاتر الحالية</td></tr>';
+                return;
+            }
+
+            let previousDate = null;
+            dates.forEach(dateValue => {
+                const row = document.createElement('tr');
+                row.style.borderBottom = '1px solid #eceff1';
+
+                let daysDiffText = '-';
+                if (previousDate) {
+                    const diffMs = new Date(dateValue).getTime() - new Date(previousDate).getTime();
+                    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+                    const inclusiveDays = Math.max(diffDays + 1, 1);
+                    daysDiffText = `${inclusiveDays} يوم`;
+                } else if (periodStartDate) {
+                    const diffMs = new Date(dateValue).getTime() - new Date(periodStartDate).getTime();
+                    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+                    const inclusiveDays = Math.max(diffDays + 1, 1);
+                    daysDiffText = `${inclusiveDays} يوم`;
+                }
+
+                row.innerHTML = `
+                    <td style="padding:8px;text-align:center;font-weight:600;">${new Date(dateValue).toLocaleDateString('ar-EG')}</td>
+                    <td style="padding:8px;text-align:center;color:#374151;">${daysDiffText}</td>
+                    <td style="padding:8px;text-align:center;"><strong style="color:#2e7d32;">${(groupedByDate.get(dateValue) || 0).toFixed(2)} ريال</strong></td>
+                `;
+
+                tbody.appendChild(row);
+                cashDeliveriesSummaryRows.push({
+                    dateRaw: dateValue,
+                    dateLabel: new Date(dateValue).toLocaleDateString('ar-EG'),
+                    daysDiffText,
+                    deliveredAmount: parseFloat(groupedByDate.get(dateValue) || 0)
+                });
+                previousDate = dateValue;
+            });
+        }
+
+        function exportCashDeliveriesSummaryExcel() {
+            if (!Array.isArray(cashDeliveriesSummaryRows) || cashDeliveriesSummaryRows.length === 0) {
+                showCustomWarning('لا توجد بيانات تسليمات للتصدير');
+                return;
+            }
+
+            try {
+                if (!window.XLSX) {
+                    throw new Error('مكتبة التصدير غير متاحة');
+                }
+
+                const exportData = cashDeliveriesSummaryRows.map((item, index) => ({
+                    'الرقم': index + 1,
+                    'التاريخ': item.dateLabel,
+                    'عدد الايام': item.daysDiffText,
+                    'المبلغ المسلم': item.deliveredAmount.toFixed(2)
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                ws['!cols'] = [
+                    { wch: 8 },
+                    { wch: 18 },
+                    { wch: 14 },
+                    { wch: 18 }
+                ];
+
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'قسم التسليمات');
+                XLSX.writeFile(wb, `cash_deliveries_summary_${normalizeDateOnly(new Date())}.xlsx`);
+            } catch (err) {
+                console.error('خطأ في تصدير قسم التسليمات:', err);
+                showCustomError('❌ حدث خطأ أثناء تصدير قسم التسليمات: ' + (err.message || 'حاول مرة أخرى'));
+            }
+        }
+
         // حذف تسليم كاش
         async function deleteDelivery(id) {
             if (!canManageCash()) {
@@ -6180,6 +6338,8 @@
 
         window.loadCashData = loadCashData;
         window.deleteDelivery = deleteDelivery;
+        window.handleDeliveriesPeriodStartDateChange = handleDeliveriesPeriodStartDateChange;
+        window.exportCashDeliveriesSummaryExcel = exportCashDeliveriesSummaryExcel;
 
         // إنشاء موديل التسليمات عند التحميل
         createDeliveriesModal();
