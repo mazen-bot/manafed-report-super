@@ -305,8 +305,12 @@
         </div>
         </section>
 
-        <section id="deliveriesSection" class="section-screen">
-        <h2 class="deliveries-title">📦 تقرير تسليم العهدة</h2>
+        <section id="deliveriesSection" class="section-screen deliveries-modal" aria-hidden="true">
+        <div class="deliveries-modal-panel">
+        <div class="deliveries-modal-header">
+            <h2 class="deliveries-title">📦 تقرير تسليم العهدة</h2>
+            <button type="button" class="deliveries-modal-close" onclick="closeDeliveriesReportModal()" aria-label="إغلاق">✕</button>
+        </div>
         <div class="filters-section">
             <div class="search-box">
                 <input type="text" id="deliveriesSearchInput" placeholder="🔍 بحث في تسليمات العهدة...">
@@ -380,6 +384,7 @@
             <button id="deliveriesPrevPage" style="margin: 0 5px; padding: 8px 12px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">← السابق</button>
             <span id="deliveriesPageInfo" style="margin: 0 10px; font-weight: 600;">الصفحة 1</span>
             <button id="deliveriesNextPage" style="margin: 0 5px; padding: 8px 12px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">التالي →</button>
+        </div>
         </div>
         </section>
 
@@ -471,7 +476,7 @@
                     <button onclick="resetCashFilters()" style="padding:8px 14px;background:#9e9e9e;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">🔄 إعادة تعيين</button>
                     <button id="btnReconRefresh" onclick="computeReconciliations()" style="padding:8px 14px;background:#4caf50;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">🔄 تحديث البيانات</button>
                     <button id="btnReconAddDelivery" onclick="toggleAddDeliveryForm()" style="padding:8px 14px;background:#1976d2;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">➕ إضافة تسليم</button>
-                    <button id="btnReconExport" onclick="exportReconciliationsCSV()" style="padding:8px 14px;background:#f39c12;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">📥 تصدير CSV</button>
+                    <button id="btnReconExport" onclick="exportReconciliationsExcel()" style="padding:8px 14px;background:#f39c12;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">📥 تصدير Excel</button>
                 </div>
 
                 <div id="addDeliveryForm" style="display:none;margin-top:12px;border-top:1px dashed #ddd;padding-top:12px;">
@@ -490,15 +495,6 @@
                 </div>
 
                 <div style="margin-top:12px;overflow:auto;">
-                    <!-- تنبيهات الفروع المتأخرة -->
-                    <div id="lateDeliveriesAlert" style="display:none; background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border-right: 4px solid #ff9800; padding: 16px; margin-bottom: 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                            <span style="font-size: 24px;">⚠️</span>
-                            <h4 style="margin: 0; color: #e65100; font-size: 16px;">تنبيه: فروع لم تسلم الكاش بالكامل</h4>
-                        </div>
-                        <div id="lateDeliveriesList" style="color: #5d4037; font-size: 14px; line-height: 1.6;"></div>
-                    </div>
-                    
                     <!-- بطاقات إحصائيات الكاش -->
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px;">
                         <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border-radius:12px;padding:16px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
@@ -535,6 +531,95 @@
                             <tr><td colspan="7" style="padding:12px;text-align:center;color:#777;">اضغط "تحديث التسوية" لعرض النتائج</td></tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <div class="cash-reconciliation card" id="cashTransferSection" style="margin:20px 0;padding:16px;border-radius:10px;border:2px solid #d7ccc8;background:#fff;">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 14px;">
+                    <h3 style="margin:0;color:#6d4c41;">🔄 تحويل الكاش بين الفروع</h3>
+                    <button id="cashTransferMainToggleBtn" type="button" onclick="toggleCashTransferMain()" style="padding:8px 14px;background:#8d6e63;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;">▸ عرض القسم</button>
+                </div>
+
+                <div id="cashTransferMainContent" style="display:none;">
+                <p style="margin:0 0 14px;color:#6b7280;font-size:14px;line-height:1.7;">تحويل مبلغ من رصيد الكاش غير المسلم في فرع إلى فرع آخر، مع إمكانية التعديل والحذف والاحتفاظ بسجل كامل للحركات.</p>
+
+                <div id="cashTransferForm" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;align-items:end;">
+                    <div>
+                        <label for="transferSourceBranch" style="display:block;margin-bottom:6px;font-weight:600;color:#555;">من فرع</label>
+                        <select id="transferSourceBranch" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;">
+                            <option value="">اختر الفرع المصدر</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="transferTargetBranch" style="display:block;margin-bottom:6px;font-weight:600;color:#555;">إلى فرع</label>
+                        <select id="transferTargetBranch" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;">
+                            <option value="">اختر الفرع الهدف</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="transferAmount" style="display:block;margin-bottom:6px;font-weight:600;color:#555;">المبلغ</label>
+                        <input type="number" id="transferAmount" min="0.01" step="0.01" placeholder="0.00" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;">
+                    </div>
+                    <div>
+                        <label for="transferDate" style="display:block;margin-bottom:6px;font-weight:600;color:#555;">تاريخ التحويل</label>
+                        <input type="date" id="transferDate" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;">
+                    </div>
+                    <div style="grid-column:1 / -1;">
+                        <label for="transferNotes" style="display:block;margin-bottom:6px;font-weight:600;color:#555;">ملاحظات</label>
+                        <textarea id="transferNotes" placeholder="سبب التحويل أو أي ملاحظات إضافية" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;min-height:70px;resize:vertical;"></textarea>
+                    </div>
+                    <div style="grid-column:1 / -1;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                        <button id="btnSaveCashTransfer" type="button" onclick="saveCashTransfer()" style="padding:10px 16px;background:#8d6e63;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">💾 حفظ التحويل</button>
+                        <button id="btnCancelCashTransferEdit" type="button" onclick="resetCashTransferForm()" style="display:none;padding:10px 16px;background:#9e9e9e;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">إلغاء التعديل</button>
+                        <span id="cashTransferAvailableInfo" style="color:#455a64;font-weight:600;"></span>
+                    </div>
+                    <div id="cashTransferMessage" style="grid-column:1 / -1;display:none;padding:12px;border-radius:8px;font-weight:600;"></div>
+                </div>
+
+                <div style="margin-top:20px;overflow:auto;">
+                    <h4 style="margin:0 0 10px;color:#5d4037;">التحويلات الحالية</h4>
+                    <table style="width:100%;border-collapse:collapse;">
+                        <thead>
+                            <tr style="background:#f5f5f5;">
+                                <th style="padding:8px;border:1px solid #e6e6e6;">من فرع</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">إلى فرع</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">المبلغ</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">تاريخ التحويل</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">الملاحظات</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">آخر تحديث</th>
+                                <th id="cashTransferActionHeader" style="padding:8px;border:1px solid #e6e6e6;">إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cashTransfersBody">
+                            <tr><td colspan="7" style="padding:16px;text-align:center;color:#777;">لا توجد تحويلات مسجلة</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="margin-top:20px;overflow:auto;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px;">
+                        <h4 style="margin:0;color:#5d4037;">سجل التحويلات والتعديلات</h4>
+                        <button id="cashTransferHistoryToggleBtn" type="button" onclick="toggleCashTransferHistory()" style="padding:7px 12px;background:#6d4c41;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;">▸ عرض السجل</button>
+                    </div>
+                    <div id="cashTransferHistoryContent" style="display:none;">
+                    <table style="width:100%;border-collapse:collapse;">
+                        <thead>
+                            <tr style="background:#f5f5f5;">
+                                <th style="padding:8px;border:1px solid #e6e6e6;">وقت العملية</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">النوع</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">من فرع</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">إلى فرع</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">المبلغ</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">تاريخ التحويل</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">الملاحظات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cashTransferHistoryBody">
+                            <tr><td colspan="7" style="padding:16px;text-align:center;color:#777;">لا يوجد سجل تحويلات حتى الآن</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
                 </div>
             </div>
         </section>
@@ -882,6 +967,13 @@
         let withdrawalsData = [];
         let cashDeliveries = JSON.parse(localStorage.getItem('cashDeliveries') || '[]');
         let cashEditHistory = JSON.parse(localStorage.getItem('cashEditHistory') || '[]');
+        let cashTransfers = JSON.parse(localStorage.getItem('cashTransfers') || '[]');
+        let cashTransferHistory = JSON.parse(localStorage.getItem('cashTransferHistory') || '[]');
+        let currentEditingDelivery = null;
+        let currentEditingTransferId = null;
+        let currentDeliveriesBranch = null;
+        let isCashTransferMainOpen = false;
+        let isCashTransferHistoryOpen = false;
 
         // الأسباب المحتملة لعدم استجابة الزر: إضافة معالج مباشر بدلاً من addEventListener
         function setupLoginHandler() {
@@ -1317,8 +1409,31 @@
                 });
             });
 
+            const deliveriesSection = document.getElementById('deliveriesSection');
+            if (deliveriesSection) {
+                deliveriesSection.addEventListener('click', function(event) {
+                    if (event.target === deliveriesSection) {
+                        closeDeliveriesReportModal();
+                    }
+                });
+            }
+
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && currentView === 'deliveries') {
+                    closeDeliveriesReportModal();
+                }
+            });
+
             switchView(currentView);
         }
+
+        function closeDeliveriesReportModal() {
+            if (currentView === 'deliveries') {
+                switchView('reports');
+            }
+        }
+
+        window.closeDeliveriesReportModal = closeDeliveriesReportModal;
 
         function switchView(view) {
             const hasCashAccess = currentUser && (hasPermission('manageCash') || hasPermission('viewCash'));
@@ -1342,9 +1457,12 @@
             const deliveriesSection = document.getElementById('deliveriesSection');
             const missingReportsSection = document.getElementById('missingReportsSection');
             
-            if (reportsSection) reportsSection.classList.toggle('active', currentView !== 'cash' && currentView !== 'deliveries' && currentView !== 'missingReports');
+            if (reportsSection) reportsSection.classList.toggle('active', currentView !== 'cash' && currentView !== 'missingReports');
             if (cashSection) cashSection.classList.toggle('active', currentView === 'cash');
-            if (deliveriesSection) deliveriesSection.classList.toggle('active', currentView === 'deliveries');
+            if (deliveriesSection) {
+                deliveriesSection.classList.toggle('active', currentView === 'deliveries');
+                deliveriesSection.setAttribute('aria-hidden', currentView === 'deliveries' ? 'false' : 'true');
+            }
             if (missingReportsSection) missingReportsSection.classList.toggle('active', currentView === 'missingReports');
 
             const navButtons = document.querySelectorAll('.sidebar-link[data-view]');
@@ -1369,7 +1487,8 @@
             document.body.classList.toggle('finance-view', currentView === 'finance');
             document.body.classList.toggle('network-view', currentView === 'network');
             document.body.classList.toggle('withdrawals-view', currentView === 'withdrawals');
-            document.body.classList.toggle('deliveries-view', currentView === 'deliveries');
+            document.body.classList.toggle('deliveries-view', false);
+            document.body.classList.toggle('deliveries-modal-open', currentView === 'deliveries');
             document.body.classList.toggle('missing-reports-view', currentView === 'missingReports');
 
             if (currentView === 'network') {
@@ -1445,8 +1564,8 @@
         }
 
         function updateDeliveriesStats(data) {
-            const totalAmount = data.reduce((sum, record) => sum + parseFloat(record.deliveryAmount || 0), 0);
-            const uniqueEmployees = new Set(data.map(record => record.employeeId).filter(id => id));
+            const totalAmount = data.reduce((sum, record) => sum + parseFloat(record.amount || record.delivered_amount || record.deliveryAmount || 0), 0);
+            const uniqueEmployees = new Set(data.map(record => record.employeeId || record.recipient).filter(id => id));
             
             document.getElementById('deliveriesTotalCount').textContent = data.length;
             document.getElementById('deliveriesTotalAmount').textContent = totalAmount.toFixed(2) + ' ريال';
@@ -1459,9 +1578,10 @@
         }
 
         function updatePaginationInfo() {
-            const pageInfo = document.getElementById('pageInfo');
-            const prevBtn = document.getElementById('prevPage');
-            const nextBtn = document.getElementById('nextPage');
+            const isDeliveriesView = currentView === 'deliveries';
+            const pageInfo = document.getElementById(isDeliveriesView ? 'deliveriesPageInfo' : 'pageInfo');
+            const prevBtn = document.getElementById(isDeliveriesView ? 'deliveriesPrevPage' : 'prevPage');
+            const nextBtn = document.getElementById(isDeliveriesView ? 'deliveriesNextPage' : 'nextPage');
             const totalPages = getTotalPages();
 
             if (pageInfo) {
@@ -1670,6 +1790,13 @@
                 if (btnReconAddDelivery) btnReconAddDelivery.style.display = canManageCashLocal ? 'inline-block' : 'none';
                 if (btnReconExport) btnReconExport.style.display = canManageCashLocal ? 'inline-block' : 'none';
 
+                const cashTransferSection = document.getElementById('cashTransferSection');
+                const cashTransferForm = document.getElementById('cashTransferForm');
+                const cashTransferActionHeader = document.getElementById('cashTransferActionHeader');
+                if (cashTransferSection) cashTransferSection.style.display = canViewCash ? '' : 'none';
+                if (cashTransferForm) cashTransferForm.style.display = canManageCashLocal ? 'grid' : 'none';
+                if (cashTransferActionHeader) cashTransferActionHeader.style.display = canManageCashLocal ? 'table-cell' : 'none';
+
                 const addDeliveryForm = document.getElementById('addDeliveryForm');
                 if (addDeliveryForm && !canManageCashLocal) addDeliveryForm.style.display = 'none';
 
@@ -1754,7 +1881,7 @@
                             branch: d.branch,
                             recipient: d.recipient || d.delivered_to || '-',
                             amount: parseFloat(d.delivered_amount || 0),
-                            date: d.delivered_at ? (new Date(d.delivered_at)).toISOString().split('T')[0] : (d.delivered_at || ''),
+                            date: normalizeDateOnly(d.delivered_at),
                             proof: d.proof || d.proof_url || '',
                             createdAt: d.created_at || new Date().toISOString()
                         }));
@@ -2308,6 +2435,30 @@
             return `${dateStr}<br>${timeStr}`;
         }
 
+        function normalizeDateOnly(value) {
+            if (!value) return '';
+            if (typeof value === 'string') {
+                const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
+                if (match) return match[1];
+            }
+
+            const date = value instanceof Date ? value : new Date(value);
+            if (Number.isNaN(date.getTime())) return '';
+
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function formatDateOnly(value, locale = 'ar-EG') {
+            const normalized = normalizeDateOnly(value);
+            if (!normalized) return '-';
+
+            const [year, month, day] = normalized.split('-').map(Number);
+            return new Date(year, month - 1, day).toLocaleDateString(locale);
+        }
+
         function getAttachmentCell(record) {
             if (record.attachment && record.attachment !== '-' && record.attachment.startsWith('http')) {
                 return `<a href="${record.attachment}" target="_blank" style="color:#4caf50;text-decoration:none;font-weight:600;">🖼️ عرض</a>`;
@@ -2351,7 +2502,6 @@
             if (currentUser && !currentUser.permissions.includes('viewAllBranches')) {
                 const filterGroup = filterBranch.closest('.filter-group');
                 if (filterGroup) filterGroup.style.display = 'none';
-                return;
             }
 
             const branches = [...new Set(allData.map(record => record.branch))];
@@ -2366,6 +2516,8 @@
             // ملء قوائم الفروع في واجهة التسوية إذا كانت موجودة
             const reconBranch = document.getElementById('reconBranchFilter');
             const deliveryBranch = document.getElementById('deliveryBranch');
+            const transferSourceBranch = document.getElementById('transferSourceBranch');
+            const transferTargetBranch = document.getElementById('transferTargetBranch');
             if (reconBranch) {
                 reconBranch.innerHTML = '<option value="">جميع الفروع</option>';
                 branches.forEach(b => {
@@ -2380,11 +2532,391 @@
                     o.value = b; o.textContent = b; deliveryBranch.appendChild(o);
                 });
             }
+            if (transferSourceBranch) {
+                const selectedValue = transferSourceBranch.value;
+                transferSourceBranch.innerHTML = '<option value="">اختر الفرع المصدر</option>';
+                branches.forEach(b => {
+                    const o = document.createElement('option');
+                    o.value = b; o.textContent = b; transferSourceBranch.appendChild(o);
+                });
+                transferSourceBranch.value = branches.includes(selectedValue) ? selectedValue : '';
+            }
+            if (transferTargetBranch) {
+                const selectedValue = transferTargetBranch.value;
+                transferTargetBranch.innerHTML = '<option value="">اختر الفرع الهدف</option>';
+                branches.forEach(b => {
+                    const o = document.createElement('option');
+                    o.value = b; o.textContent = b; transferTargetBranch.appendChild(o);
+                });
+                transferTargetBranch.value = branches.includes(selectedValue) ? selectedValue : '';
+            }
         }
 
         document.getElementById('searchInput').addEventListener('input', function() {
             applyFilters();
         });
+
+        ['transferSourceBranch', 'transferTargetBranch', 'transferAmount'].forEach(elementId => {
+            const field = document.getElementById(elementId);
+            if (field) {
+                const eventName = elementId === 'transferAmount' ? 'input' : 'change';
+                field.addEventListener(eventName, updateCashTransferAvailableInfo);
+            }
+        });
+
+        function upsertCashDeliveryCache(delivery) {
+            if (!delivery || !delivery.id) return;
+
+            const existingIndex = cashDeliveries.findIndex(item => String(item.id) === String(delivery.id));
+            if (existingIndex >= 0) {
+                cashDeliveries[existingIndex] = { ...cashDeliveries[existingIndex], ...delivery };
+            } else {
+                cashDeliveries.unshift(delivery);
+            }
+
+            localStorage.setItem('cashDeliveries', JSON.stringify(cashDeliveries));
+
+            if (currentView === 'deliveries' && typeof loadDeliveriesData === 'function') {
+                loadDeliveriesData();
+            } else if (typeof populateDeliveriesBranchFilter === 'function') {
+                populateDeliveriesBranchFilter();
+            }
+        }
+
+        function normalizeCashTransferRecord(record) {
+            return {
+                id: record.id || ('transfer_' + Date.now()),
+                fromBranch: record.fromBranch || record.sourceBranch || '',
+                toBranch: record.toBranch || record.targetBranch || '',
+                amount: parseFloat(record.amount || 0),
+                date: normalizeDateOnly(record.date || record.transferDate || record.createdAt),
+                notes: record.notes || '-',
+                createdAt: record.createdAt || record.created_at || new Date().toISOString(),
+                updatedAt: record.updatedAt || record.updated_at || record.createdAt || record.created_at || new Date().toISOString()
+            };
+        }
+
+        function getActiveCashTransfers(options = {}) {
+            const excludedId = options.excludeTransferId ? String(options.excludeTransferId) : null;
+            return cashTransfers
+                .map(normalizeCashTransferRecord)
+                .filter(item => !excludedId || String(item.id) !== excludedId);
+        }
+
+        function persistCashTransferData() {
+            localStorage.setItem('cashTransfers', JSON.stringify(cashTransfers));
+            localStorage.setItem('cashTransferHistory', JSON.stringify(cashTransferHistory));
+        }
+
+        function logCashTransferHistory(action, transfer, details = '') {
+            const normalized = normalizeCashTransferRecord(transfer);
+            cashTransferHistory.unshift({
+                id: 'history_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+                transferId: normalized.id,
+                action,
+                fromBranch: normalized.fromBranch,
+                toBranch: normalized.toBranch,
+                amount: normalized.amount,
+                date: normalized.date,
+                notes: details || normalized.notes || '-',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        function getBranchUndeliveredCash(branch, options = {}) {
+            const expected = allData
+                .filter(record => record.branch === branch)
+                .reduce((sum, record) => sum + parseFloat(record.totalCash || 0), 0);
+
+            const delivered = cashDeliveries
+                .filter(record => record.branch === branch)
+                .reduce((sum, record) => sum + parseFloat(record.amount || record.delivered_amount || 0), 0);
+
+            const transfers = getActiveCashTransfers(options);
+            const incoming = transfers
+                .filter(record => record.toBranch === branch)
+                .reduce((sum, record) => sum + parseFloat(record.amount || 0), 0);
+            const outgoing = transfers
+                .filter(record => record.fromBranch === branch)
+                .reduce((sum, record) => sum + parseFloat(record.amount || 0), 0);
+
+            return expected + incoming - delivered - outgoing;
+        }
+
+        function setCashTransferMessage(message, type = 'info') {
+            const messageEl = document.getElementById('cashTransferMessage');
+            if (!messageEl) return;
+
+            const palette = {
+                success: { background: '#e8f5e9', color: '#2e7d32' },
+                error: { background: '#ffebee', color: '#c62828' },
+                warning: { background: '#fff8e1', color: '#ef6c00' },
+                info: { background: '#e3f2fd', color: '#1565c0' }
+            };
+
+            const colors = palette[type] || palette.info;
+            messageEl.style.display = message ? 'block' : 'none';
+            messageEl.style.background = colors.background;
+            messageEl.style.color = colors.color;
+            messageEl.textContent = message;
+        }
+
+        function updateCashTransferAvailableInfo() {
+            const infoEl = document.getElementById('cashTransferAvailableInfo');
+            const sourceBranch = document.getElementById('transferSourceBranch')?.value || '';
+            if (!infoEl) return;
+
+            if (!sourceBranch) {
+                infoEl.textContent = '';
+                return;
+            }
+
+            const available = getBranchUndeliveredCash(sourceBranch, { excludeTransferId: currentEditingTransferId });
+            infoEl.textContent = `الرصيد غير المسلم المتاح في ${sourceBranch}: ${available.toFixed(2)} ريال`;
+            infoEl.style.color = available >= 0 ? '#455a64' : '#c62828';
+        }
+
+        function applyCashTransferCollapseState() {
+            const mainContent = document.getElementById('cashTransferMainContent');
+            const mainToggleBtn = document.getElementById('cashTransferMainToggleBtn');
+            const historyContent = document.getElementById('cashTransferHistoryContent');
+            const historyToggleBtn = document.getElementById('cashTransferHistoryToggleBtn');
+
+            if (mainContent) {
+                mainContent.style.display = isCashTransferMainOpen ? 'block' : 'none';
+            }
+            if (mainToggleBtn) {
+                mainToggleBtn.textContent = isCashTransferMainOpen ? '▾ إخفاء القسم' : '▸ عرض القسم';
+            }
+
+            if (historyContent) {
+                historyContent.style.display = (isCashTransferMainOpen && isCashTransferHistoryOpen) ? 'block' : 'none';
+            }
+            if (historyToggleBtn) {
+                historyToggleBtn.textContent = isCashTransferHistoryOpen ? '▾ إخفاء السجل' : '▸ عرض السجل';
+                historyToggleBtn.disabled = !isCashTransferMainOpen;
+                historyToggleBtn.style.opacity = isCashTransferMainOpen ? '1' : '0.6';
+                historyToggleBtn.style.cursor = isCashTransferMainOpen ? 'pointer' : 'not-allowed';
+            }
+        }
+
+        function toggleCashTransferMain() {
+            isCashTransferMainOpen = !isCashTransferMainOpen;
+            applyCashTransferCollapseState();
+        }
+
+        function toggleCashTransferHistory() {
+            if (!isCashTransferMainOpen) return;
+            isCashTransferHistoryOpen = !isCashTransferHistoryOpen;
+            applyCashTransferCollapseState();
+        }
+
+        function resetCashTransferForm() {
+            currentEditingTransferId = null;
+            const sourceBranch = document.getElementById('transferSourceBranch');
+            const targetBranch = document.getElementById('transferTargetBranch');
+            const amountInput = document.getElementById('transferAmount');
+            const dateInput = document.getElementById('transferDate');
+            const notesInput = document.getElementById('transferNotes');
+            const saveBtn = document.getElementById('btnSaveCashTransfer');
+            const cancelBtn = document.getElementById('btnCancelCashTransferEdit');
+
+            if (sourceBranch) sourceBranch.value = '';
+            if (targetBranch) targetBranch.value = '';
+            if (amountInput) amountInput.value = '';
+            if (dateInput) dateInput.value = normalizeDateOnly(new Date());
+            if (notesInput) notesInput.value = '';
+            if (saveBtn) saveBtn.textContent = '💾 حفظ التحويل';
+            if (cancelBtn) cancelBtn.style.display = 'none';
+
+            setCashTransferMessage('');
+            updateCashTransferAvailableInfo();
+        }
+
+        function renderCashTransferTables() {
+            const transfersBody = document.getElementById('cashTransfersBody');
+            const historyBody = document.getElementById('cashTransferHistoryBody');
+            const section = document.getElementById('cashTransferSection');
+            const form = document.getElementById('cashTransferForm');
+            const actionHeader = document.getElementById('cashTransferActionHeader');
+            const canManage = canManageCash();
+
+            if (section) section.style.display = canViewCash() ? '' : 'none';
+            if (form) form.style.display = canManage ? 'grid' : 'none';
+            if (actionHeader) actionHeader.style.display = canManage ? 'table-cell' : 'none';
+            applyCashTransferCollapseState();
+
+            if (transfersBody) {
+                const activeTransfers = getActiveCashTransfers().sort((first, second) => new Date(second.updatedAt) - new Date(first.updatedAt));
+                transfersBody.innerHTML = '';
+
+                if (activeTransfers.length === 0) {
+                    transfersBody.innerHTML = `<tr><td colspan="7" style="padding:16px;text-align:center;color:#777;">لا توجد تحويلات مسجلة</td></tr>`;
+                } else {
+                    activeTransfers.forEach(transfer => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td style="padding:8px;border:1px solid #e6e6e6;">${transfer.fromBranch}</td>
+                            <td style="padding:8px;border:1px solid #e6e6e6;">${transfer.toBranch}</td>
+                            <td style="padding:8px;border:1px solid #e6e6e6;text-align:center;font-weight:700;color:#6d4c41;">${transfer.amount.toFixed(2)} ريال</td>
+                            <td style="padding:8px;border:1px solid #e6e6e6;text-align:center;">${formatDateOnly(transfer.date)}</td>
+                            <td style="padding:8px;border:1px solid #e6e6e6;">${transfer.notes || '-'}</td>
+                            <td style="padding:8px;border:1px solid #e6e6e6;text-align:center;">${formatDateTime(transfer.updatedAt)}</td>
+                            <td style="padding:8px;border:1px solid #e6e6e6;text-align:center;${canManage ? '' : 'display:none;'}">
+                                ${canManage ? `
+                                    <button type="button" onclick="editCashTransfer('${transfer.id}')" style="padding:6px 10px;background:#fb8c00;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:12px;margin-left:4px;">✏️ تعديل</button>
+                                    <button type="button" onclick="deleteCashTransfer('${transfer.id}')" style="padding:6px 10px;background:#d32f2f;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:12px;">🗑️ حذف</button>
+                                ` : '-'}
+                            </td>
+                        `;
+                        transfersBody.appendChild(row);
+                    });
+                }
+            }
+
+            if (historyBody) {
+                const historyRows = cashTransferHistory.slice().sort((first, second) => new Date(second.timestamp) - new Date(first.timestamp));
+                historyBody.innerHTML = '';
+
+                if (historyRows.length === 0) {
+                    historyBody.innerHTML = `<tr><td colspan="7" style="padding:16px;text-align:center;color:#777;">لا يوجد سجل تحويلات حتى الآن</td></tr>`;
+                } else {
+                    historyRows.forEach(entry => {
+                        const label = entry.action === 'create' ? 'إنشاء' : entry.action === 'update' ? 'تعديل' : 'حذف';
+                        const color = entry.action === 'create' ? '#2e7d32' : entry.action === 'update' ? '#ef6c00' : '#c62828';
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td style="padding:8px;border:1px solid #e6e6e6;text-align:center;">${formatDateTime(entry.timestamp)}</td>
+                            <td style="padding:8px;border:1px solid #e6e6e6;text-align:center;"><span style="background:${color};color:#fff;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;">${label}</span></td>
+                            <td style="padding:8px;border:1px solid #e6e6e6;">${entry.fromBranch || '-'}</td>
+                            <td style="padding:8px;border:1px solid #e6e6e6;">${entry.toBranch || '-'}</td>
+                            <td style="padding:8px;border:1px solid #e6e6e6;text-align:center;font-weight:700;">${parseFloat(entry.amount || 0).toFixed(2)} ريال</td>
+                            <td style="padding:8px;border:1px solid #e6e6e6;text-align:center;">${formatDateOnly(entry.date)}</td>
+                            <td style="padding:8px;border:1px solid #e6e6e6;">${entry.notes || '-'}</td>
+                        `;
+                        historyBody.appendChild(row);
+                    });
+                }
+            }
+        }
+
+        function editCashTransfer(transferId) {
+            if (!canManageCash()) {
+                showNoPermissionMessage('تعديل تحويل الكاش');
+                return;
+            }
+
+            const transfer = getActiveCashTransfers().find(item => String(item.id) === String(transferId));
+            if (!transfer) {
+                setCashTransferMessage('❌ لم يتم العثور على التحويل المطلوب', 'error');
+                return;
+            }
+
+            currentEditingTransferId = transfer.id;
+            document.getElementById('transferSourceBranch').value = transfer.fromBranch;
+            document.getElementById('transferTargetBranch').value = transfer.toBranch;
+            document.getElementById('transferAmount').value = transfer.amount.toFixed(2);
+            document.getElementById('transferDate').value = transfer.date;
+            document.getElementById('transferNotes').value = transfer.notes === '-' ? '' : transfer.notes;
+            document.getElementById('btnSaveCashTransfer').textContent = '💾 تحديث التحويل';
+            document.getElementById('btnCancelCashTransferEdit').style.display = 'inline-block';
+            updateCashTransferAvailableInfo();
+            setCashTransferMessage('ℹ️ أنت الآن في وضع تعديل التحويل', 'info');
+        }
+
+        async function deleteCashTransfer(transferId) {
+            if (!canManageCash()) {
+                showNoPermissionMessage('حذف تحويل الكاش');
+                return;
+            }
+
+            const transfer = getActiveCashTransfers().find(item => String(item.id) === String(transferId));
+            if (!transfer) {
+                setCashTransferMessage('❌ التحويل غير موجود', 'error');
+                return;
+            }
+
+            if (!confirm(`هل أنت متأكد من حذف تحويل ${transfer.amount.toFixed(2)} ريال من ${transfer.fromBranch} إلى ${transfer.toBranch}؟`)) {
+                return;
+            }
+
+            cashTransfers = cashTransfers.filter(item => String(item.id) !== String(transferId));
+            logCashTransferHistory('delete', transfer, transfer.notes || '-');
+            persistCashTransferData();
+            renderCashTransferTables();
+            resetCashTransferForm();
+            loadCashData();
+            setCashTransferMessage('✅ تم حذف التحويل بنجاح', 'success');
+        }
+
+        async function saveCashTransfer() {
+            if (!canManageCash()) {
+                showNoPermissionMessage('إدارة تحويل الكاش');
+                return;
+            }
+
+            const fromBranch = document.getElementById('transferSourceBranch')?.value || '';
+            const toBranch = document.getElementById('transferTargetBranch')?.value || '';
+            const amount = parseFloat(document.getElementById('transferAmount')?.value || '0');
+            const date = document.getElementById('transferDate')?.value || normalizeDateOnly(new Date());
+            const notes = (document.getElementById('transferNotes')?.value || '').trim();
+
+            if (!fromBranch || !toBranch || fromBranch === toBranch || Number.isNaN(amount) || amount <= 0) {
+                setCashTransferMessage('⚠️ الرجاء اختيار فرعين مختلفين وإدخال مبلغ صحيح', 'warning');
+                return;
+            }
+
+            const available = getBranchUndeliveredCash(fromBranch, { excludeTransferId: currentEditingTransferId });
+            if (amount - available > 0.009) {
+                setCashTransferMessage(`❌ المبلغ المطلوب أكبر من الرصيد غير المسلم المتاح (${available.toFixed(2)} ريال)`, 'error');
+                return;
+            }
+
+            const timestamp = new Date().toISOString();
+            const transferRecord = {
+                id: currentEditingTransferId || ('transfer_' + Date.now()),
+                fromBranch,
+                toBranch,
+                amount: parseFloat(amount.toFixed(2)),
+                date,
+                notes: notes || '-',
+                createdAt: timestamp,
+                updatedAt: timestamp
+            };
+
+            if (currentEditingTransferId) {
+                const existingIndex = cashTransfers.findIndex(item => String(item.id) === String(currentEditingTransferId));
+                if (existingIndex === -1) {
+                    setCashTransferMessage('❌ تعذر العثور على التحويل لتعديله', 'error');
+                    return;
+                }
+
+                transferRecord.createdAt = cashTransfers[existingIndex].createdAt || cashTransfers[existingIndex].created_at || timestamp;
+                cashTransfers[existingIndex] = transferRecord;
+                logCashTransferHistory('update', transferRecord, notes || '-');
+                setCashTransferMessage('✅ تم تحديث التحويل بنجاح', 'success');
+            } else {
+                cashTransfers.unshift(transferRecord);
+                logCashTransferHistory('create', transferRecord, notes || '-');
+                setCashTransferMessage('✅ تم تسجيل التحويل بنجاح', 'success');
+            }
+
+            persistCashTransferData();
+            renderCashTransferTables();
+            loadCashData();
+
+            setTimeout(() => {
+                resetCashTransferForm();
+            }, 800);
+        }
+
+        window.saveCashTransfer = saveCashTransfer;
+        window.editCashTransfer = editCashTransfer;
+        window.deleteCashTransfer = deleteCashTransfer;
+        window.resetCashTransferForm = resetCashTransferForm;
+        window.updateCashTransferAvailableInfo = updateCashTransferAvailableInfo;
+        window.toggleCashTransferMain = toggleCashTransferMain;
+        window.toggleCashTransferHistory = toggleCashTransferHistory;
 
         // ===== وظائف تسوية الكاش (محلي + محاولة إرسال إلى Supabase إن وجد جدول) =====
         function toggleAddDeliveryForm() {
@@ -2438,7 +2970,6 @@
                 if (window.supabaseInstance && typeof window.supabaseInstance.from === 'function') {
                     console.log('[DELIVERY] جاري حفظ التسليم في Supabase...');
                     
-                    // محاولة الإدراج بدون RLS (استخدام admin client)
                     const { data, error } = await window.supabaseInstance
                         .from('cash_deliveries')
                         .insert([{
@@ -2448,7 +2979,9 @@
                             delivered_at: date,
                             proof: proof || null,
                             created_at: new Date().toISOString()
-                        }], { count: 'exact' });
+                        }], { count: 'exact' })
+                        .select()
+                        .single();
 
                     if (error) {
                         console.warn('[DELIVERY] ⚠️ خطأ Supabase:', error);
@@ -2470,8 +3003,7 @@
                                 proof,
                                 createdAt: new Date().toISOString()
                             };
-                            cashDeliveries.push(delivery);
-                            localStorage.setItem('cashDeliveries', JSON.stringify(cashDeliveries));
+                            upsertCashDeliveryCache(delivery);
                         } else {
                             msg.style.color = '#d32f2f';
                             msg.textContent = '❌ خطأ: ' + (error.message || 'حاول مرة أخرى');
@@ -2480,6 +3012,15 @@
                         }
                     } else {
                         console.log('[DELIVERY] ✅ تم حفظ التسليم في Supabase:', data);
+                        upsertCashDeliveryCache({
+                            id: data.id,
+                            branch: data.branch,
+                            recipient: data.recipient || '-',
+                            amount: parseFloat(data.delivered_amount || 0),
+                            date: normalizeDateOnly(data.delivered_at) || date,
+                            proof: data.proof || '',
+                            createdAt: data.created_at || new Date().toISOString()
+                        });
                     }
 
                     msg.style.color = '#2e7d32'; 
@@ -2497,7 +3038,12 @@
                     }, 1000);
 
                     // تحديث البيانات
-                    setTimeout(() => loadCashData(), 1500);
+                    setTimeout(() => {
+                        loadCashData();
+                        if (currentView === 'deliveries') {
+                            loadDeliveriesData();
+                        }
+                    }, 1500);
                 } else {
                     console.warn('[DELIVERY] Supabase غير متاح');
                     msg.style.color = '#ff9800';
@@ -2514,8 +3060,7 @@
                         proof,
                         createdAt: new Date().toISOString()
                     };
-                    cashDeliveries.push(delivery);
-                    localStorage.setItem('cashDeliveries', JSON.stringify(cashDeliveries));
+                    upsertCashDeliveryCache(delivery);
                     
                     setTimeout(() => toggleAddDeliveryForm(), 1000);
                 }
@@ -2554,14 +3099,37 @@
 
         function showBranchDeliveries(branch) {
             console.log(`🔍 فتح التسليمات للفرع: ${branch}`);
-            // جلب التسليمات من Supabase
             loadBranchDeliveriesModal(branch);
+        }
+
+        function normalizeBranchKey(value) {
+            return String(value || '')
+                .trim()
+                .replace(/\s+/g, ' ')
+                .replace(/[أإآ]/g, 'ا')
+                .replace(/ى/g, 'ي');
+        }
+
+        function normalizeBranchDeliveryAuditRecord(record, source) {
+            return {
+                id: record.id || `${source}_${Date.now()}`,
+                source,
+                branch: record.branch || '-',
+                recipient: record.recipient || record.delivered_to || record.employeeName || '-',
+                amount: parseFloat(record.delivered_amount ?? record.amount ?? 0),
+                deliveredAt: normalizeDateOnly(record.delivered_at || record.date || record.saleDate || record.created_at || record.createdAt),
+                createdAt: record.created_at || record.createdAt || record.delivered_at || record.date || '',
+                proof: record.proof || record.proof_url || '',
+                notes: record.notes || '-',
+                canManageRemotely: source === 'supabase' && !String(record.id || '').startsWith('local_')
+            };
         }
 
         window.showBranchDeliveries = showBranchDeliveries;
         window.editDeliveryModal = editDeliveryModal;
         window.closeDeliveriesModal = closeDeliveriesModal;
         window.deleteDeliveryConfirm = deleteDeliveryConfirm;
+        window.deleteLocalDeliveryConfirm = deleteLocalDeliveryConfirm;
         window.closeEditDeliveryModal = closeEditDeliveryModal;
         window.saveEditedDelivery = saveEditedDelivery;
 
@@ -2569,23 +3137,49 @@
         async function loadBranchDeliveriesModal(branch) {
             try {
                 console.log(`📦 جاري تحميل التسليمات للفرع: ${branch}`);
-                if (!window.supabaseInstance) {
-                    showCustomError('Supabase غير متاح');
-                    return;
+                currentDeliveriesBranch = branch;
+                const normalizedBranch = normalizeBranchKey(branch);
+
+                let remoteDeliveries = [];
+                if (window.supabaseInstance) {
+                    const { data, error } = await window.supabaseInstance
+                        .from('cash_deliveries')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+
+                    if (error) {
+                        showCustomError('خطأ في جلب التسليمات: ' + error.message);
+                        return;
+                    }
+
+                    remoteDeliveries = Array.isArray(data) ? data : [];
                 }
 
-                const { data: deliveries, error } = await window.supabaseInstance
-                    .from('cash_deliveries')
-                    .select('*')
-                    .eq('branch', branch)
-                    .order('created_at', { ascending: false });
+                const deliveriesMap = new Map();
+                remoteDeliveries
+                    .map(item => normalizeBranchDeliveryAuditRecord(item, 'supabase'))
+                    .filter(item => normalizeBranchKey(item.branch) === normalizedBranch)
+                    .forEach(item => {
+                        deliveriesMap.set(`db:${item.id}`, item);
+                    });
 
-                if (error) {
-                    showCustomError('خطأ في جلب التسليمات: ' + error.message);
-                    return;
-                }
+                (Array.isArray(cashDeliveries) ? cashDeliveries : [])
+                    .map(item => normalizeBranchDeliveryAuditRecord(item, 'local'))
+                    .filter(item => normalizeBranchKey(item.branch) === normalizedBranch)
+                    .forEach(item => {
+                        const key = String(item.id).startsWith('local_') ? `local:${item.id}` : `db:${item.id}`;
+                        if (!deliveriesMap.has(key)) {
+                            deliveriesMap.set(key, item);
+                        }
+                    });
 
-                displayDeliveriesModal(branch, deliveries || []);
+                const deliveries = Array.from(deliveriesMap.values()).sort((first, second) => {
+                    const firstTime = new Date(first.createdAt || first.deliveredAt || 0).getTime();
+                    const secondTime = new Date(second.createdAt || second.deliveredAt || 0).getTime();
+                    return secondTime - firstTime;
+                });
+
+                displayDeliveriesModal(branch, deliveries);
             } catch (err) {
                 alert('❌ خطأ: ' + err.message);
             }
@@ -2603,33 +3197,54 @@
             }
 
             const manageCash = canManageCash();
+            const totalAmount = (deliveries || []).reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
 
             const title = modal.querySelector('h2');
-            if (title) title.textContent = `📦 تسليمات فرع: ${branch}`;
+            if (title) title.textContent = `📦 جميع تسليمات فرع: ${branch}`;
+
+            const summary = modal.querySelector('#deliveriesModalSummary');
+            if (summary) {
+                summary.innerHTML = `عدد التسليمات: <strong>${deliveries.length}</strong> | إجمالي المبالغ: <strong>${totalAmount.toFixed(2)} ريال</strong>`;
+            }
 
             const tbody = modal.querySelector('tbody');
             if (!tbody) return;
 
             tbody.innerHTML = '';
             if (deliveries.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:#999;">لا توجد تسليمات</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="11" style="padding:20px;text-align:center;color:#999;">لا توجد تسليمات</td></tr>';
             } else {
-                deliveries.forEach(d => {
-                    const dateStr = new Date(d.created_at || d.delivered_at).toLocaleDateString('ar-EG');
+                deliveries.forEach((d, index) => {
+                    const dateStr = formatDateOnly(d.deliveredAt || d.createdAt);
+                    const createdAtStr = d.createdAt ? formatDateTime(d.createdAt) : '-';
+                    const sourceLabel = d.source === 'supabase'
+                        ? '<span style="display:inline-block;padding:4px 8px;border-radius:999px;background:#e3f2fd;color:#1565c0;font-weight:700;font-size:12px;">قاعدة البيانات</span>'
+                        : '<span style="display:inline-block;padding:4px 8px;border-radius:999px;background:#fff8e1;color:#ef6c00;font-weight:700;font-size:12px;">محلي</span>';
+                    const canEditRecord = manageCash && d.canManageRemotely;
+                    const canDeleteRemote = manageCash && d.canManageRemotely;
+                    const canDeleteLocal = manageCash && d.source === 'local';
                     const row = document.createElement('tr');
                     row.innerHTML = `
+                        <td style="padding:12px;text-align:center;font-weight:700;">${index + 1}</td>
+                        <td style="padding:12px;text-align:center;font-family:monospace;font-size:12px;">${d.id}</td>
+                        <td style="padding:12px;text-align:center;">${sourceLabel}</td>
                         <td style="padding:12px;text-align:right;">${d.branch}</td>
                         <td style="padding:12px;text-align:right;">${d.recipient}</td>
                         <td style="padding:12px;text-align:center;">
-                            <strong style="color:#4caf50;">${parseFloat(d.delivered_amount || 0).toFixed(2)}</strong>
+                            <strong style="color:#4caf50;">${parseFloat(d.amount || 0).toFixed(2)}</strong>
                         </td>
                         <td style="padding:12px;text-align:center;">${dateStr}</td>
+                        <td style="padding:12px;text-align:center;font-size:12px;color:#666;">${createdAtStr}</td>
                         <td style="padding:12px;text-align:center;color:#666;font-size:13px;">${d.proof ? '✅' : '❌'}</td>
                         <td style="padding:12px;text-align:center;">
-                            ${manageCash ? `<button onclick="editDeliveryModal('${d.id}')" style="padding:6px 10px;background:#3498db;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;">✏️ تعديل</button>` : '<span style="color:#999;">-</span>'}
+                            ${canEditRecord ? `<button onclick="editDeliveryModal('${d.id}')" style="padding:6px 10px;background:#3498db;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;">✏️ تعديل</button>` : '<span style="color:#999;">-</span>'}
                         </td>
                         <td style="padding:12px;text-align:center;">
-                            ${manageCash ? `<button onclick="deleteDeliveryConfirm('${d.id}')" style="padding:6px 10px;background:#f44336;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;">🗑️ حذف</button>` : '<span style="color:#999;">-</span>'}
+                            ${canDeleteRemote
+                                ? `<button onclick="deleteDeliveryConfirm('${d.id}')" style="padding:6px 10px;background:#f44336;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;">🗑️ حذف</button>`
+                                : (canDeleteLocal
+                                    ? `<button onclick="deleteLocalDeliveryConfirm('${d.id}')" style="padding:6px 10px;background:#ef6c00;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:700;font-size:12px;">🗑️ حذف محلي</button>`
+                                    : '<span style="color:#999;">-</span>')}
                         </td>
                     `;
                     tbody.appendChild(row);
@@ -2645,16 +3260,21 @@
         function createDeliveriesModal() {
             const html = `
                 <div id="deliveriesListModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:3000;align-items:center;justify-content:center;">
-                    <div style="background:white;border-radius:12px;padding:20px;max-width:900px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.3);max-height:80vh;overflow-y:auto;">
+                    <div style="background:white;border-radius:12px;padding:20px;max-width:1200px;width:95%;box-shadow:0 10px 40px rgba(0,0,0,0.3);max-height:85vh;overflow-y:auto;">
                         <h2 style="margin:0 0 20px;color:#333;">📦 تسليمات الفرع</h2>
+                        <div id="deliveriesModalSummary" style="margin-bottom:16px;padding:12px 14px;border-radius:10px;background:#f5f7fb;color:#334155;font-weight:600;"></div>
                         <div style="overflow-x:auto;">
                             <table style="width:100%;border-collapse:collapse;">
                                 <thead>
                                     <tr style="background:#f5f5f5;border-bottom:2px solid #ddd;">
+                                        <th style="padding:12px;text-align:center;">#</th>
+                                        <th style="padding:12px;text-align:center;">المعرف</th>
+                                        <th style="padding:12px;text-align:center;">المصدر</th>
                                         <th style="padding:12px;text-align:right;">الفرع</th>
                                         <th style="padding:12px;text-align:right;">المستلم</th>
                                         <th style="padding:12px;text-align:center;">المبلغ</th>
-                                        <th style="padding:12px;text-align:center;">التاريخ</th>
+                                        <th style="padding:12px;text-align:center;">تاريخ التسليم</th>
+                                        <th style="padding:12px;text-align:center;">وقت الإضافة</th>
                                         <th style="padding:12px;text-align:center;">إثبات</th>
                                         <th style="padding:12px;text-align:center;">تعديل</th>
                                         <th style="padding:12px;text-align:center;">حذف</th>
@@ -2675,6 +3295,7 @@
         function closeDeliveriesModal() {
             const modal = document.getElementById('deliveriesListModal');
             if (modal) modal.style.display = 'none';
+            currentDeliveriesBranch = null;
         }
 
         // تعديل التسليم
@@ -2820,8 +3441,10 @@
 
                 setTimeout(() => {
                     closeEditDeliveryModal();
-                    closeDeliveriesModal();
                     loadCashData();
+                    if (currentDeliveriesBranch) {
+                        loadBranchDeliveriesModal(currentDeliveriesBranch);
+                    }
                 }, 1500);
 
             } catch (err) {
@@ -2856,17 +3479,41 @@
                 }
 
                 alert('✅ تم الحذف بنجاح');
-                closeDeliveriesModal();
                 loadCashData();
+                if (currentDeliveriesBranch) {
+                    loadBranchDeliveriesModal(currentDeliveriesBranch);
+                }
 
             } catch (err) {
                 alert('❌ خطأ: ' + err.message);
             }
         }
 
-        // متغير لتخزين بيانات التعديل الحالية
-        let currentEditingDelivery = null;
+        async function deleteLocalDeliveryConfirm(deliveryId) {
+            if (!canManageCash()) {
+                showNoPermissionMessage('حذف تسليم محلي');
+                return;
+            }
 
+            const target = cashDeliveries.find(item => String(item.id) === String(deliveryId));
+            if (!target) {
+                showCustomError('لم يتم العثور على التسليم المحلي');
+                return;
+            }
+
+            const approved = await confirm(`هل تريد حذف التسليم المحلي رقم ${deliveryId} بقيمة ${parseFloat(target.amount || target.delivered_amount || 0).toFixed(2)} ريال؟`);
+            if (!approved) return;
+
+            cashDeliveries = cashDeliveries.filter(item => String(item.id) !== String(deliveryId));
+            localStorage.setItem('cashDeliveries', JSON.stringify(cashDeliveries));
+            if (currentDeliveriesBranch) {
+                loadBranchDeliveriesModal(currentDeliveriesBranch);
+            }
+            loadCashData();
+            showCustomSuccess('تم حذف التسليم المحلي بنجاح', 'تم الحذف');
+        }
+
+        // متغير لتخزين بيانات التعديل الحالية
         // فتح موديل تعديل الكاش المسلم
         function openCashEditModal(branch) {
             if (!canManageCash()) {
@@ -3067,30 +3714,55 @@
             }
         });
 
-        function exportReconciliationsCSV() {
+        function exportReconciliationsExcel() {
             if (!canManageCash()) {
                 showNoPermissionMessage('تصدير تسويات الكاش');
                 return;
             }
-            const reconData = [];
-            const reconBody = document.getElementById('reconciliationBody');
-            for (const row of reconBody.querySelectorAll('tr')) {
-                const cols = row.querySelectorAll('td');
-                if (cols.length < 4) continue;
-                reconData.push({branch: cols[0].textContent.trim(), expected: cols[1].textContent.trim(), delivered: cols[2].textContent.trim(), remaining: cols[3].textContent.trim(), lastUpdate: cols[4].textContent.trim()});
-            }
-            if (reconData.length === 0) {
+            if (!Array.isArray(cashReconciliations) || cashReconciliations.length === 0) {
                 showCustomWarning('لا توجد بيانات للتصدير');
                 return;
             }
-            let csv = '\uFEFF';
-            csv += 'الفرع,المتوقع,المسلّم,المتبقّي,آخر تحديث\n';
-            reconData.forEach(r => { csv += `${r.branch},${r.expected},${r.delivered},${r.remaining},${r.lastUpdate}\n`; });
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `reconciliations_${new Date().toISOString().split('T')[0]}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+
+            try {
+                const exportData = cashReconciliations.map((item, index) => ({
+                    'الرقم': index + 1,
+                    'الفرع': item.branch,
+                    'المتوقع': parseFloat(item.expected || 0).toFixed(2),
+                    'تحويل وارد': parseFloat(item.incoming || 0).toFixed(2),
+                    'تحويل صادر': parseFloat(item.outgoing || 0).toFixed(2),
+                    'المسلّم': parseFloat(item.delivered || 0).toFixed(2),
+                    'المتبقّي': parseFloat(item.remaining || 0).toFixed(2),
+                    'نسبة التسليم': `${parseFloat(item.deliveryPercentage || 0).toFixed(1)}%`,
+                    'آخر تحديث': item.lastUpdate || '-',
+                    'تواريخ الاستلامات': item.deliveryDatesText || '-'
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                ws['!cols'] = [
+                    { wch: 8 },
+                    { wch: 20 },
+                    { wch: 16 },
+                    { wch: 16 },
+                    { wch: 16 },
+                    { wch: 16 },
+                    { wch: 16 },
+                    { wch: 14 },
+                    { wch: 16 },
+                    { wch: 40 }
+                ];
+
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'تسويات الكاش');
+                XLSX.writeFile(wb, `reconciliations_${normalizeDateOnly(new Date())}.xlsx`);
+            } catch (err) {
+                console.error('خطأ في تصدير تسويات الكاش:', err);
+                showCustomError('❌ حدث خطأ في تصدير تسويات الكاش: ' + err.message);
+            }
         }
 
-        window.exportReconciliationsCSV = exportReconciliationsCSV;
+        window.exportReconciliationsExcel = exportReconciliationsExcel;
+        window.exportReconciliationsCSV = exportReconciliationsExcel;
 
         const filterBranchEl = document.getElementById('filterBranch');
         if (filterBranchEl) filterBranchEl.addEventListener('change', function() {
@@ -3241,9 +3913,9 @@
                 return;
             }
 
-            let csv = 'التاريخ,الفرع,اسم الموظف,رقم الموظف,إجمالي المبيعات,إجمالي الكاش,إجمالي البطاقات\n';
+            let csv = 'التاريخ,الفرع,المستلم,رقم الموظف,المبلغ,الملاحظات,رابط الإثبات\n';
             currentDisplayData.forEach(record => {
-                csv += `"${record.date}","${record.branch}","${record.employeeName}","${record.employeeId}","${parseFloat(record.totalSales || 0).toFixed(2)}","${parseFloat(record.totalCash || 0).toFixed(2)}","${parseFloat(record.totalCard || 0).toFixed(2)}"\n`;
+                csv += `"${record.date || ''}","${record.branch || ''}","${record.recipient || ''}","${record.employeeId || ''}","${parseFloat(record.amount || 0).toFixed(2)}","${record.notes || ''}","${record.proof || ''}"\n`;
             });
 
             const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -3878,6 +4550,8 @@
                     salesData: allData,
                     cashDeliveries: cashDeliveries,
                     cashEditHistory: cashEditHistory,
+                    cashTransfers: cashTransfers,
+                    cashTransferHistory: cashTransferHistory,
                     version: '1.0',
                     backupAuthor: currentUser.name,
                     backupAuthorId: currentUser.employee_id
@@ -3939,12 +4613,16 @@
                         allData = backupData.salesData || [];
                         cashDeliveries = backupData.cashDeliveries || [];
                         cashEditHistory = backupData.cashEditHistory || [];
+                        cashTransfers = backupData.cashTransfers || [];
+                        cashTransferHistory = backupData.cashTransferHistory || [];
 
                         // حفظ البيانات في localStorage للتخزين الدائم
                         try {
                             localStorage.setItem('allData', JSON.stringify(allData));
                             localStorage.setItem('cashDeliveries', JSON.stringify(cashDeliveries));
                             localStorage.setItem('cashEditHistory', JSON.stringify(cashEditHistory));
+                            localStorage.setItem('cashTransfers', JSON.stringify(cashTransfers));
+                            localStorage.setItem('cashTransferHistory', JSON.stringify(cashTransferHistory));
                             localStorage.setItem('lastBackupRestoreDate', new Date().toISOString());
                         } catch (storageErr) {
                             console.error('خطأ في حفظ البيانات في localStorage:', storageErr);
@@ -4124,6 +4802,86 @@
 
         window.exportToExcel = exportToExcel;
 
+        function ensureHandoverReportModal() {
+            let modal = document.getElementById('handoverReportModal');
+            if (modal) return modal;
+
+            const modalHtml = `
+                <div id="handoverReportModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:3200;padding:24px;overflow:auto;" aria-hidden="true">
+                    <div style="width:min(1100px,100%);margin:0 auto;background:#fff;border-radius:20px;box-shadow:0 24px 80px rgba(15,23,42,0.28);overflow:hidden;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;background:linear-gradient(135deg,#6b2d87 0%,#8b3dab 100%);color:#fff;">
+                            <strong style="font-size:18px;">🖨️ تقرير تسليم العهدة</strong>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <button type="button" id="handoverReportPrintBtn" style="padding:8px 14px;background:#fff;color:#6b2d87;border:none;border-radius:8px;cursor:pointer;font-weight:700;">طباعة</button>
+                                <button type="button" id="handoverReportCloseBtn" style="width:38px;height:38px;border:none;border-radius:50%;background:rgba(255,255,255,0.18);color:#fff;cursor:pointer;font-size:20px;font-weight:700;">✕</button>
+                            </div>
+                        </div>
+                        <iframe id="handoverReportFrame" title="تقرير تسليم العهدة" style="width:100%;height:min(80vh,900px);border:none;background:#fff;"></iframe>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            modal = document.getElementById('handoverReportModal');
+            const closeBtn = document.getElementById('handoverReportCloseBtn');
+            const printBtn = document.getElementById('handoverReportPrintBtn');
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeHandoverReportModal);
+            }
+
+            if (printBtn) {
+                printBtn.addEventListener('click', function() {
+                    const frame = document.getElementById('handoverReportFrame');
+                    if (frame && frame.contentWindow) {
+                        frame.contentWindow.focus();
+                        frame.contentWindow.print();
+                    }
+                });
+            }
+
+            modal.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    closeHandoverReportModal();
+                }
+            });
+
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    const activeModal = document.getElementById('handoverReportModal');
+                    if (activeModal && activeModal.style.display !== 'none') {
+                        closeHandoverReportModal();
+                    }
+                }
+            });
+
+            return modal;
+        }
+
+        function showHandoverReportModal(htmlContent) {
+            const modal = ensureHandoverReportModal();
+            const frame = document.getElementById('handoverReportFrame');
+            if (!modal || !frame) return;
+
+            frame.srcdoc = htmlContent;
+            modal.style.display = 'block';
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeHandoverReportModal() {
+            const modal = document.getElementById('handoverReportModal');
+            const frame = document.getElementById('handoverReportFrame');
+            if (frame) frame.srcdoc = '';
+            if (modal) {
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+            }
+            document.body.style.overflow = '';
+        }
+
+        window.closeHandoverReportModal = closeHandoverReportModal;
+
         async function generateHandoverReport() {
             // الحصول على البيانات المعروضة حالياً (بعد التطبيق الفلاتر)
             const tableBody = document.getElementById('tableBody');
@@ -4132,7 +4890,7 @@
                 return;
             }
 
-            // جمع بيانات الفروع من البيانات المعروضة
+            // جمع بيانات الفروع بالقيم المعتمدة بعد التحديثات والتحويلات
             const branchesMap = new Map();
             
             // الحصول على قيم الفلاتر مرة واحدة
@@ -4141,48 +4899,29 @@
             const filterDateTo = document.getElementById('filterDateTo').value;
             
             allData.forEach(record => {
-                // التحقق مما إذا كان السجل مطابقاً للفلاتر المطبقة
                 let isFiltered = true;
-                
+
                 if (filterBranch && record.branch !== filterBranch) isFiltered = false;
                 if (filterDateFrom && record.saleDate < filterDateFrom) isFiltered = false;
                 if (filterDateTo && record.saleDate > filterDateTo) isFiltered = false;
-                
-                if (!isFiltered) return;
-                
-                const key = record.branch || 'غير محدد';
 
+                if (!isFiltered) return;
+
+                const key = record.branch || 'غير محدد';
                 if (!branchesMap.has(key)) {
                     branchesMap.set(key, {
                         branch: key,
-                        totalCash: 0,
-                        totalExpenses: 0,
-                        recordCount: 0
+                        expectedCash: 0,
+                        deliveredCash: 0,
+                        incomingTransfers: 0,
+                        outgoingTransfers: 0
                     });
                 }
 
                 const branchData = branchesMap.get(key);
-                branchData.totalCash += parseFloat(record.totalCash || 0);
-                branchData.totalExpenses += parseFloat(record.expenses || 0);
-                branchData.recordCount += 1;
+                branchData.expectedCash += parseFloat(record.totalCash || 0);
             });
             
-            // فتح نافذة الطباعة مباشرة لتجنب حظر pop-up في بعض أجهزة الهاتف
-            const printWindow = window.open('', '_blank');
-            if (!printWindow) {
-                alert('⚠️ تعذر فتح نافذة التقرير. الرجاء السماح بالنوافذ المنبثقة ثم إعادة المحاولة.');
-                return;
-            }
-
-            printWindow.document.write(`
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>جاري تجهيز التقرير</title></head>
-<body style="font-family: Arial, sans-serif; direction: rtl; padding: 20px;">⏳ جاري تجهيز تقرير تسليم العهدة...</body>
-</html>
-            `);
-            printWindow.document.close();
-
             // جلب بيانات التسليمات من Supabase
             let deliveriesData = [];
             try {
@@ -4198,27 +4937,130 @@
             } catch (err) {
                 console.warn('تعذر جلب بيانات التسليمات:', err);
             }
-            
-            // حساب الكاش المسلم لكل فرع (مع الأخذ في الاعتبار فلتر التاريخ)
-            const branchDeliveries = {};
-            deliveriesData.forEach(d => {
-                const branch = d.branch;
-                const deliveryDate = (d.delivered_at || d.created_at || '').split('T')[0];
-                
-                // تطبيق فلتر التاريخ على التسليمات أيضاً
+
+            // دمج التسليمات من قاعدة البيانات + المحلي ثم تطبيقها على الفروع
+            const deliveriesMap = new Map();
+            (Array.isArray(deliveriesData) ? deliveriesData : []).forEach(item => {
+                const id = String(item.id || `db_${item.created_at || Date.now()}`);
+                deliveriesMap.set(`db:${id}`, {
+                    id,
+                    branch: item.branch || 'غير محدد',
+                    amount: parseFloat(item.delivered_amount || 0),
+                    deliveredAt: normalizeDateOnly(item.delivered_at || item.created_at),
+                    createdAt: item.created_at || item.delivered_at || ''
+                });
+            });
+
+            (Array.isArray(cashDeliveries) ? cashDeliveries : []).forEach(item => {
+                const id = String(item.id || `local_${item.createdAt || Date.now()}`);
+                const key = id.startsWith('local_') ? `local:${id}` : `db:${id}`;
+                if (!deliveriesMap.has(key)) {
+                    deliveriesMap.set(key, {
+                        id,
+                        branch: item.branch || 'غير محدد',
+                        amount: parseFloat(item.delivered_amount ?? item.amount ?? 0),
+                        deliveredAt: normalizeDateOnly(item.delivered_at || item.date || item.created_at || item.createdAt),
+                        createdAt: item.created_at || item.createdAt || item.delivered_at || item.date || ''
+                    });
+                }
+            });
+
+            Array.from(deliveriesMap.values()).forEach(delivery => {
+                const branch = delivery.branch || 'غير محدد';
+                const deliveryDate = normalizeDateOnly(delivery.deliveredAt || delivery.createdAt);
+
+                if (filterBranch && branch !== filterBranch) return;
                 if (filterDateFrom && deliveryDate < filterDateFrom) return;
                 if (filterDateTo && deliveryDate > filterDateTo) return;
-                
-                if (!branchDeliveries[branch]) {
-                    branchDeliveries[branch] = 0;
+
+                if (!branchesMap.has(branch)) {
+                    branchesMap.set(branch, {
+                        branch,
+                        expectedCash: 0,
+                        deliveredCash: 0,
+                        incomingTransfers: 0,
+                        outgoingTransfers: 0
+                    });
                 }
-                branchDeliveries[branch] += parseFloat(d.delivered_amount || 0);
+
+                branchesMap.get(branch).deliveredCash += parseFloat(delivery.amount || 0);
+            });
+
+            // تطبيق تحويلات الكاش على الرصيد المعتمد
+            getActiveCashTransfers().forEach(transfer => {
+                const transferDate = normalizeDateOnly(transfer.date || transfer.updatedAt || transfer.createdAt);
+                if (filterDateFrom && transferDate < filterDateFrom) return;
+                if (filterDateTo && transferDate > filterDateTo) return;
+                if (filterBranch && transfer.fromBranch !== filterBranch && transfer.toBranch !== filterBranch) return;
+
+                // عند اختيار فرع محدد: لا نعرض/نضيف بيانات الفرع المقابل، ونطبق الأثر على الفرع المحدد فقط
+                if (filterBranch) {
+                    if (!branchesMap.has(filterBranch)) {
+                        branchesMap.set(filterBranch, {
+                            branch: filterBranch,
+                            expectedCash: 0,
+                            deliveredCash: 0,
+                            incomingTransfers: 0,
+                            outgoingTransfers: 0
+                        });
+                    }
+
+                    const amount = parseFloat(transfer.amount || 0);
+                    if (transfer.toBranch === filterBranch) {
+                        branchesMap.get(filterBranch).incomingTransfers += amount;
+                    }
+                    if (transfer.fromBranch === filterBranch) {
+                        branchesMap.get(filterBranch).outgoingTransfers += amount;
+                    }
+                    return;
+                }
+
+                if (!branchesMap.has(transfer.fromBranch)) {
+                    branchesMap.set(transfer.fromBranch, {
+                        branch: transfer.fromBranch,
+                        expectedCash: 0,
+                        deliveredCash: 0,
+                        incomingTransfers: 0,
+                        outgoingTransfers: 0
+                    });
+                }
+
+                if (!branchesMap.has(transfer.toBranch)) {
+                    branchesMap.set(transfer.toBranch, {
+                        branch: transfer.toBranch,
+                        expectedCash: 0,
+                        deliveredCash: 0,
+                        incomingTransfers: 0,
+                        outgoingTransfers: 0
+                    });
+                }
+
+                const amount = parseFloat(transfer.amount || 0);
+                branchesMap.get(transfer.fromBranch).outgoingTransfers += amount;
+                branchesMap.get(transfer.toBranch).incomingTransfers += amount;
             });
 
             if (branchesMap.size === 0) {
                 alert('⚠️ لا توجد بيانات مطابقة للفلاتر المحددة');
                 return;
             }
+
+            const branchRows = Array.from(branchesMap.values())
+                .map(item => {
+                    const transferNet = item.incomingTransfers - item.outgoingTransfers;
+                    const adjustedCash = item.expectedCash + transferNet;
+                    const settledCash = item.deliveredCash;
+                    const remainingCustody = adjustedCash - settledCash;
+                    return {
+                        branch: item.branch,
+                        approvedUndeliveredCash: remainingCustody,
+                        transferNet,
+                        adjustedCash,
+                        settledCash,
+                        remainingCustody
+                    };
+                })
+                .sort((a, b) => a.branch.localeCompare(b.branch, 'ar'));
 
             const reportDate = new Date().toLocaleDateString('ar-EG');
             const reportTime = new Date().toLocaleTimeString('ar-EG');
@@ -4362,8 +5204,6 @@
     <\/style>
 <\/head>
 <body>
-    <button class="print-btn no-print" onclick="window.print()">🖨️ طباعة</button>
-    
     <div class="report-header">
         <h1>تقرير تسليم العهدة</h1>
         <div class="info">التاريخ من: ${dateFromFormatted}</div>
@@ -4377,8 +5217,8 @@
             <tr>
                 <th>#</th>
                 <th>الفرع</th>
-                <th>إجمالي كاش الفرع</th>
-                <th>إجمالي الكاش المسلم</th>
+                <th>الكاش غير المسلم المتاح (معتمد)</th>
+                <th>المسدد (تسليم فعلي)</th>
                 <th>صافي العهدة المتبقية</th>
             </tr>
         </thead>
@@ -4390,12 +5230,13 @@
             let totalRemaining = 0;
             let count = 0;
 
-            branchesMap.forEach((branchData) => {
+            branchRows.forEach((branchData) => {
                 count++;
-                const delivered = branchDeliveries[branchData.branch] || 0;
-                const remaining = branchData.totalCash - delivered;
+                const delivered = branchData.settledCash;
+                const remaining = branchData.remainingCustody;
+                const approved = branchData.approvedUndeliveredCash;
                 
-                totalCash += branchData.totalCash;
+                totalCash += approved;
                 totalDelivered += delivered;
                 totalRemaining += remaining;
                 
@@ -4403,7 +5244,7 @@
             <tr>
                 <td>${count}</td>
                 <td class="label">${branchData.branch}</td>
-                <td>${branchData.totalCash.toFixed(2)}</td>
+                <td>${approved.toFixed(2)}</td>
                 <td style="color: #4caf50; font-weight: 600;">${delivered.toFixed(2)}</td>
                 <td style="color: ${remaining > 0 ? '#d32f2f' : '#4caf50'}; font-weight: 700;">${remaining.toFixed(2)}</td>
             </tr>
@@ -4423,11 +5264,11 @@
     <div class="report-footer">
         <div style="border: 2px solid #333; padding: 10px; margin: 10px 0; background: #f9f9f9; border-radius: 5px;">
             <div style="margin: 5px 0; font-size: 12px;">
-                <strong>إجمالي الكاش:</strong> 
+                <strong>إجمالي الكاش غير المسلم المعتمد:</strong> 
                 <span style="color: #667eea; font-weight: bold;">${totalCash.toFixed(2)} ريال</span>
             </div>
             <div style="margin: 5px 0; font-size: 12px;">
-                <strong>المسلّم:</strong> 
+                <strong>المسدد (تسليم فعلي):</strong> 
                 <span style="color: #4caf50; font-weight: bold;">${totalDelivered.toFixed(2)} ريال</span>
             </div>
             <div style="margin: 5px 0; font-size: 13px; padding-top: 5px; border-top: 1px dashed #666;">
@@ -4451,9 +5292,7 @@
 <\/html>
             `;
 
-            printWindow.document.open();
-            printWindow.document.write(htmlContent);
-            printWindow.document.close();
+            showHandoverReportModal(htmlContent);
         }
 
         window.generateHandoverReport = generateHandoverReport;
@@ -4910,8 +5749,7 @@
             deliveriesPrevBtn.addEventListener('click', function() {
                 if (currentPage > 1) {
                     currentPage--;
-                    displayData(currentDisplayData);
-                    updatePaginationInfo();
+                    renderDeliveriesPage();
                 }
             });
         }
@@ -4920,23 +5758,56 @@
             deliveriesNextBtn.addEventListener('click', function() {
                 if (currentPage < getTotalPages()) {
                     currentPage++;
-                    displayData(currentDisplayData);
-                    updatePaginationInfo();
+                    renderDeliveriesPage();
                 }
+            });
+        }
+
+        function normalizeDeliveryRecord(record) {
+            const createdAt = record.createdAt || record.created_at || '';
+            const fallbackDate = normalizeDateOnly(createdAt);
+
+            return {
+                id: record.id || ('local_' + Date.now()),
+                branch: record.branch || '-',
+                recipient: record.recipient || record.delivered_to || record.employeeName || '-',
+                employeeId: record.employeeId || record.employee_id || '-',
+                amount: parseFloat(record.amount || record.delivered_amount || record.deliveryAmount || 0),
+                date: normalizeDateOnly(record.date || record.saleDate || record.delivered_at || fallbackDate),
+                notes: record.notes || record.proof || record.proof_url || '-',
+                proof: record.proof || record.proof_url || '',
+                createdAt
+            };
+        }
+
+        function getDeliveriesReportData() {
+            let deliveries = cashDeliveries.map(normalizeDeliveryRecord);
+
+            if (currentUser && !currentUser.permissions.includes('viewAllBranches')) {
+                deliveries = deliveries.filter(record => record.branch === currentUser.branch_name);
+            }
+
+            return deliveries.sort((first, second) => {
+                const firstDate = new Date(first.createdAt || first.date || 0).getTime();
+                const secondDate = new Date(second.createdAt || second.date || 0).getTime();
+                return secondDate - firstDate;
             });
         }
 
         // تعبئة branch filter في section deliveries
         function populateDeliveriesBranchFilter() {
-            const branches = [...new Set(allData.map(record => record.branch).filter(b => b))];
+            const branches = [...new Set(getDeliveriesReportData().map(record => record.branch).filter(branch => branch && branch !== '-'))];
             const branchFilter = document.getElementById('deliveriesFilterBranch');
             if (branchFilter) {
+                const currentValue = branchFilter.value;
+                branchFilter.innerHTML = '<option value="">جميع الفروع</option>';
                 branches.forEach(branch => {
                     const option = document.createElement('option');
                     option.value = branch;
                     option.textContent = branch;
                     branchFilter.appendChild(option);
                 });
+                branchFilter.value = branches.includes(currentValue) ? currentValue : '';
             }
         }
 
@@ -4954,13 +5825,13 @@
             data.forEach(record => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td style="padding:12px;border:1px solid #e0e0e0;">${record.saleDate || '-'}</td>
+                    <td style="padding:12px;border:1px solid #e0e0e0;">${record.date || '-'}</td>
                     <td style="padding:12px;border:1px solid #e0e0e0;">${record.branch || '-'}</td>
-                    <td style="padding:12px;border:1px solid #e0e0e0;">${record.employeeName || '-'}</td>
+                    <td style="padding:12px;border:1px solid #e0e0e0;">${record.recipient || '-'}</td>
                     <td style="padding:12px;border:1px solid #e0e0e0;">${record.employeeId || '-'}</td>
-                    <td style="padding:12px;border:1px solid #e0e0e0;">${parseFloat(record.totalCash || 0).toFixed(2)}</td>
+                    <td style="padding:12px;border:1px solid #e0e0e0;">${parseFloat(record.amount || 0).toFixed(2)}</td>
                     <td style="padding:12px;border:1px solid #e0e0e0;">${record.notes || '-'}</td>
-                    <td style="padding:12px;border:1px solid #e0e0e0;"><button onclick="editRecord('${record.id}')" style="padding:6px 12px;background:#3498db;color:white;border:none;border-radius:5px;cursor:pointer;font-size:12px;">تحرير</button></td>
+                    <td style="padding:12px;border:1px solid #e0e0e0;">${record.proof ? `<a href="${record.proof}" target="_blank" rel="noopener noreferrer" style="padding:6px 12px;background:#3498db;color:white;border-radius:5px;cursor:pointer;font-size:12px;text-decoration:none;display:inline-block;">فتح الإثبات</a>` : '<span style="color:#999;">-</span>'}</td>
                 `;
                 tbody.appendChild(row);
             });
@@ -4987,13 +5858,14 @@
                 const dateFromValue = document.getElementById('deliveriesFilterDateFrom')?.value || '';
                 const dateToValue = document.getElementById('deliveriesFilterDateTo')?.value || '';
 
-                let filtered = getViewBaseData(allData);
+                let filtered = getDeliveriesReportData();
 
                 if (searchValue) {
                     filtered = filtered.filter(record =>
-                        (record.employeeName || '').toLowerCase().includes(searchValue) ||
+                        (record.recipient || '').toLowerCase().includes(searchValue) ||
                         (record.employeeId || '').toLowerCase().includes(searchValue) ||
-                        (record.branch || '').toLowerCase().includes(searchValue)
+                        (record.branch || '').toLowerCase().includes(searchValue) ||
+                        (record.notes || '').toLowerCase().includes(searchValue)
                     );
                 }
 
@@ -5002,11 +5874,11 @@
                 }
 
                 if (dateFromValue) {
-                    filtered = filtered.filter(record => (record.saleDate || '') >= dateFromValue);
+                    filtered = filtered.filter(record => (record.date || '') >= dateFromValue);
                 }
 
                 if (dateToValue) {
-                    filtered = filtered.filter(record => (record.saleDate || '') <= dateToValue);
+                    filtered = filtered.filter(record => (record.date || '') <= dateToValue);
                 }
 
                 currentDisplayData = filtered;
@@ -5020,12 +5892,14 @@
         // استدعاء populateDeliveriesBranchFilter عند تحميل البيانات
         function loadDeliveriesData() {
             populateDeliveriesBranchFilter();
-            currentDisplayData = getViewBaseData(allData);
+            currentDisplayData = getDeliveriesReportData();
             renderDeliveriesPage();
         }
 
         // تحديث البيانات والأزرار عند تحميل الصفحة
         loadDeliveriesData();
+        renderCashTransferTables();
+        resetCashTransferForm();
 
         // ============= دوال تسويات الكاش (Cash Reconciliations) =============
         
@@ -5080,6 +5954,14 @@
             const selectedBranch = document.getElementById('reconBranchFilter')?.value || '';
             const dateFrom = document.getElementById('reconDateFrom')?.value || '';
             const dateTo = document.getElementById('reconDateTo')?.value || '';
+            const deliveriesSource = Array.isArray(deliveriesFromSupabase)
+                ? deliveriesFromSupabase
+                : cashDeliveries.map(item => ({
+                    branch: item.branch,
+                    delivered_amount: item.delivered_amount ?? item.amount,
+                    delivered_at: item.delivered_at || item.date,
+                    created_at: item.created_at || item.createdAt || item.delivered_at || item.date
+                }));
 
             // حساب المتوقع (من المبيعات) والمسلم (من Supabase)
             const grouped = {};
@@ -5092,61 +5974,94 @@
                     if (selectedBranch && branch !== selectedBranch) return;
                     
                     if (!grouped[branch]) {
-                        grouped[branch] = { expected: 0, delivered: 0, lastUpdate: null, deliveryCount: 0 };
+                        grouped[branch] = { expected: 0, delivered: 0, incoming: 0, outgoing: 0, lastUpdate: null, deliveryCount: 0, deliveryDates: [] };
                     }
                     grouped[branch].expected += parseFloat(r.totalCash || 0);
                 });
             }
 
             // 2. حساب المسلم من التسليمات
-            if (Array.isArray(deliveriesFromSupabase)) {
-                deliveriesFromSupabase.forEach(d => {
+            if (Array.isArray(deliveriesSource)) {
+                deliveriesSource.forEach(d => {
                     const branch = d.branch;
                     // تطبيق فلتر الفرع
                     if (selectedBranch && branch !== selectedBranch) return;
                     
                     // تطبيق فلتر التاريخ
-                    const deliveryDate = d.delivered_at || d.created_at;
+                    const deliveryDate = normalizeDateOnly(d.delivered_at || d.created_at);
                     if (dateFrom && deliveryDate < dateFrom) return;
                     if (dateTo && deliveryDate > dateTo) return;
                     
                     if (!grouped[branch]) {
-                        grouped[branch] = { expected: 0, delivered: 0, lastUpdate: null, deliveryCount: 0 };
+                        grouped[branch] = { expected: 0, delivered: 0, incoming: 0, outgoing: 0, lastUpdate: null, deliveryCount: 0, deliveryDates: [] };
                     }
                     grouped[branch].delivered += parseFloat(d.delivered_amount || 0);
                     grouped[branch].deliveryCount++;
-                    if (!grouped[branch].lastUpdate || new Date(d.created_at) > new Date(grouped[branch].lastUpdate)) {
-                        grouped[branch].lastUpdate = d.created_at;
+                    if (deliveryDate && !grouped[branch].deliveryDates.includes(deliveryDate)) {
+                        grouped[branch].deliveryDates.push(deliveryDate);
+                    }
+                    const updateDate = d.created_at || d.delivered_at;
+                    if (!grouped[branch].lastUpdate || new Date(updateDate) > new Date(grouped[branch].lastUpdate)) {
+                        grouped[branch].lastUpdate = updateDate;
                     }
                 });
             }
 
+            getActiveCashTransfers().forEach(transfer => {
+                const transferDate = normalizeDateOnly(transfer.date || transfer.updatedAt || transfer.createdAt);
+                if (dateFrom && transferDate < dateFrom) return;
+                if (dateTo && transferDate > dateTo) return;
+                if (selectedBranch && transfer.fromBranch !== selectedBranch && transfer.toBranch !== selectedBranch) return;
+
+                if (!grouped[transfer.fromBranch]) {
+                    grouped[transfer.fromBranch] = { expected: 0, delivered: 0, incoming: 0, outgoing: 0, lastUpdate: null, deliveryCount: 0, deliveryDates: [] };
+                }
+                if (!grouped[transfer.toBranch]) {
+                    grouped[transfer.toBranch] = { expected: 0, delivered: 0, incoming: 0, outgoing: 0, lastUpdate: null, deliveryCount: 0, deliveryDates: [] };
+                }
+
+                grouped[transfer.fromBranch].outgoing += transfer.amount;
+                grouped[transfer.toBranch].incoming += transfer.amount;
+
+                const transferUpdate = transfer.updatedAt || transfer.createdAt || transfer.date;
+                if (!grouped[transfer.fromBranch].lastUpdate || new Date(transferUpdate) > new Date(grouped[transfer.fromBranch].lastUpdate)) {
+                    grouped[transfer.fromBranch].lastUpdate = transferUpdate;
+                }
+                if (!grouped[transfer.toBranch].lastUpdate || new Date(transferUpdate) > new Date(grouped[transfer.toBranch].lastUpdate)) {
+                    grouped[transfer.toBranch].lastUpdate = transferUpdate;
+                }
+            });
+
             const branches = Object.keys(grouped);
             if (branches.length === 0) {
+                cashReconciliations = [];
                 tbody.innerHTML = '<tr><td colspan="7" style="padding:30px;text-align:center;color:#999;">لا توجد بيانات</td></tr>';
-                
-                // إخفاء التنبيهات عند عدم وجود بيانات
-                const lateDeliveriesAlert = document.getElementById('lateDeliveriesAlert');
-                if (lateDeliveriesAlert) lateDeliveriesAlert.style.display = 'none';
-                
+                renderCashTransferTables();
+                updateCashTransferAvailableInfo();
                 return;
             }
 
             let totalExpected = 0, totalDelivered = 0, totalRemaining = 0;
+            cashReconciliations = [];
 
             branches.forEach(branch => {
                 const data = grouped[branch];
                 const expected = data.expected;
                 const delivered = data.delivered;
-                const remaining = expected - delivered;
+                const incoming = data.incoming || 0;
+                const outgoing = data.outgoing || 0;
+                const adjustedExpected = expected + incoming;
+                const settledAmount = delivered + outgoing;
+                const remaining = adjustedExpected - settledAmount;
                 const lastUpdate = data.lastUpdate ? new Date(data.lastUpdate).toLocaleDateString('ar-EG') : '-';
+                const deliveryDates = (data.deliveryDates || []).slice().sort();
                 
                 totalExpected += expected;
                 totalDelivered += delivered;
                 totalRemaining += remaining;
 
                 // حساب نسبة التسليم
-                const deliveryPercentage = expected > 0 ? ((delivered / expected) * 100) : 0;
+                const deliveryPercentage = adjustedExpected > 0 ? ((settledAmount / adjustedExpected) * 100) : 0;
                 
                 // تحديد حالة التسليم والأيقونة
                 let statusIcon = '';
@@ -5211,6 +6126,20 @@
                     </td>
                 `;
                 tbody.appendChild(row);
+
+                cashReconciliations.push({
+                    branch,
+                    expected,
+                    delivered,
+                    incoming,
+                    outgoing,
+                    adjustedExpected,
+                    remaining,
+                    deliveryPercentage,
+                    lastUpdate,
+                    deliveryDates,
+                    deliveryDatesText: deliveryDates.length ? deliveryDates.join(' | ') : '-'
+                });
             });
 
             // تحديث الإحصائيات
@@ -5218,53 +6147,8 @@
             document.getElementById('reconcileDeliveredTotal').textContent = totalDelivered.toFixed(2) + ' ر.س';
             document.getElementById('reconcileRemainingTotal').textContent = totalRemaining.toFixed(2) + ' ر.س';
             document.getElementById('reconcileBranchCount').textContent = branches.length;
-            
-            // تحديث التنبيهات للفروع المتأخرة
-            const lateDeliveriesAlert = document.getElementById('lateDeliveriesAlert');
-            const lateDeliveriesList = document.getElementById('lateDeliveriesList');
-            
-            if (lateDeliveriesAlert && lateDeliveriesList) {
-                const lateBranches = [];
-                
-                branches.forEach(branch => {
-                    const data = grouped[branch];
-                    const expected = data.expected;
-                    const delivered = data.delivered;
-                    const remaining = expected - delivered;
-                    const deliveryPercentage = expected > 0 ? ((delivered / expected) * 100) : 0;
-                    
-                    if (remaining > 0 && deliveryPercentage < 100) {
-                        lateBranches.push({
-                            name: branch,
-                            remaining: remaining,
-                            percentage: deliveryPercentage
-                        });
-                    }
-                });
-                
-                if (lateBranches.length > 0) {
-                    // ترتيب حسب المتبقي (الأكبر أولاً)
-                    lateBranches.sort((a, b) => b.remaining - a.remaining);
-                    
-                    let alertHTML = '<ul style="margin: 0; padding-right: 20px;">';
-                    lateBranches.forEach(branch => {
-                        const urgencyIcon = branch.percentage < 40 ? '🚨' : branch.percentage < 70 ? '⚠️' : '⚡';
-                        const urgencyText = branch.percentage < 40 ? 'عاجل جداً' : branch.percentage < 70 ? 'مطلوب التسليم' : 'قريب من الاكتمال';
-                        alertHTML += `<li style="margin-bottom: 8px;">
-                            <strong>${urgencyIcon} ${branch.name}</strong> - 
-                            متبقي: <strong style="color: #d32f2f;">${branch.remaining.toFixed(2)} ريال</strong> - 
-                            نسبة التسليم: <strong style="color: ${branch.percentage >= 70 ? '#ff9800' : '#d32f2f'};">${branch.percentage.toFixed(1)}%</strong> - 
-                            <span style="background: ${branch.percentage < 40 ? '#d32f2f' : '#ff9800'}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">${urgencyText}</span>
-                        </li>`;
-                    });
-                    alertHTML += '</ul>';
-                    
-                    lateDeliveriesList.innerHTML = alertHTML;
-                    lateDeliveriesAlert.style.display = 'block';
-                } else {
-                    lateDeliveriesAlert.style.display = 'none';
-                }
-            }
+            renderCashTransferTables();
+            updateCashTransferAvailableInfo();
         }
 
         // حذف تسليم كاش
