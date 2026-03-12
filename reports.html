@@ -658,6 +658,128 @@
             </div>
         </section>
 
+        <!-- قسم تفاصيل السحب والعجز -->
+        <section id="withdrawalDetailsSection" class="section-screen">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+                <h2 style="color:#16a085;margin:0;display:flex;align-items:center;gap:10px;">
+                    <span>💰</span>
+                    <span>تفاصيل السحب والعجز</span>
+                </h2>
+                <button onclick="exportWithdrawalDetailsToExcel()" style="padding:10px 18px;background:linear-gradient(135deg,#27ae60,#229954);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">📥 تصدير Excel</button>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <label style="font-weight:600;color:#555;">الفرع:</label>
+                    <select id="withdrawalDetailsFilterBranch" onchange="loadWithdrawalDetailsData()" style="padding:8px;border:2px solid #16a085;border-radius:8px;">
+                        <option value="">جميع الفروع</option>
+                    </select>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <label style="font-weight:600;color:#555;">من تاريخ:</label>
+                    <input type="date" id="withdrawalDetailsFilterDateFrom" onchange="loadWithdrawalDetailsData()" style="padding:8px;border:2px solid #16a085;border-radius:8px;">
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <label style="font-weight:600;color:#555;">إلى تاريخ:</label>
+                    <input type="date" id="withdrawalDetailsFilterDateTo" onchange="loadWithdrawalDetailsData()" style="padding:8px;border:2px solid #16a085;border-radius:8px;">
+                </div>
+                <button onclick="resetWithdrawalDetailsFilters()" style="padding:8px 14px;background:#9e9e9e;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">🔄 إعادة تعيين</button>
+            </div>
+
+            <!-- بطاقات إجمالي السحب والعجز -->
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+                <div style="background:linear-gradient(135deg,#16a085 0%,#117a65 100%);color:white;border-radius:12px;padding:16px 24px;min-width:180px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                    <div style="font-size:13px;opacity:0.9;margin-bottom:6px;font-weight:600;">إجمالي السحب والعجز</div>
+                    <div style="font-size:24px;font-weight:700;" id="withdrawalDetailsTotalAmount">0 ريال</div>
+                </div>
+                <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border-radius:12px;padding:16px 24px;min-width:180px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                    <div style="font-size:13px;opacity:0.9;margin-bottom:6px;font-weight:600;">عدد السجلات</div>
+                    <div style="font-size:24px;font-weight:700;" id="withdrawalDetailsTotalCount">0</div>
+                </div>
+            </div>
+
+            <div style="overflow-x:auto;">
+                <table id="withdrawalDetailsTable" style="width:100%;border-collapse:collapse;min-width:650px;">
+                    <thead>
+                        <tr style="background:linear-gradient(135deg,#16a085 0%,#117a65 100%);color:white;">
+                            <th style="padding:12px 10px;text-align:center;border:1px solid rgba(255,255,255,0.2);min-width:50px;">#</th>
+                            <th style="padding:12px 10px;text-align:right;border:1px solid rgba(255,255,255,0.2);">التاريخ</th>
+                            <th style="padding:12px 10px;text-align:right;border:1px solid rgba(255,255,255,0.2);">اسم الموظف</th>
+                            <th style="padding:12px 10px;text-align:right;border:1px solid rgba(255,255,255,0.2);">الفرع</th>
+                            <th style="padding:12px 10px;text-align:right;border:1px solid rgba(255,255,255,0.2);">قيمة السحب/العجز</th>
+                            <th style="padding:12px 10px;text-align:right;border:1px solid rgba(255,255,255,0.2);">الملاحظات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="withdrawalDetailsBody">
+                        <tr>
+                            <td colspan="6" style="text-align:center;padding:30px;color:#999;">جاري التحميل...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- قسم تفاصيل المصروفات -->
+        <section id="expensesDetailsSection" class="section-screen">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+                <h2 style="color:#e74c3c;margin:0;display:flex;align-items:center;gap:10px;">
+                    <span>💸</span>
+                    <span>تفاصيل المصروفات</span>
+                </h2>
+                <button onclick="exportExpensesDetailsToExcel()" style="padding:10px 18px;background:linear-gradient(135deg,#27ae60,#229954);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">📥 تصدير Excel</button>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <label style="font-weight:600;color:#555;">الفرع:</label>
+                    <select id="expensesFilterBranch" onchange="loadExpensesDetailsData()" style="padding:8px;border:2px solid #e74c3c;border-radius:8px;">
+                        <option value="">جميع الفروع</option>
+                    </select>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <label style="font-weight:600;color:#555;">من تاريخ:</label>
+                    <input type="date" id="expensesFilterDateFrom" onchange="loadExpensesDetailsData()" style="padding:8px;border:2px solid #e74c3c;border-radius:8px;">
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <label style="font-weight:600;color:#555;">إلى تاريخ:</label>
+                    <input type="date" id="expensesFilterDateTo" onchange="loadExpensesDetailsData()" style="padding:8px;border:2px solid #e74c3c;border-radius:8px;">
+                </div>
+                <button onclick="resetExpensesFilters()" style="padding:8px 14px;background:#9e9e9e;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">🔄 إعادة تعيين</button>
+            </div>
+
+            <!-- بطاقة إجمالي المصروفات -->
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+                <div style="background:linear-gradient(135deg,#e74c3c 0%,#c0392b 100%);color:white;border-radius:12px;padding:16px 24px;min-width:180px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                    <div style="font-size:13px;opacity:0.9;margin-bottom:6px;font-weight:600;">إجمالي المصروفات</div>
+                    <div style="font-size:24px;font-weight:700;" id="expensesDetailsTotalAmount">0 ريال</div>
+                </div>
+                <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border-radius:12px;padding:16px 24px;min-width:180px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                    <div style="font-size:13px;opacity:0.9;margin-bottom:6px;font-weight:600;">عدد السجلات</div>
+                    <div style="font-size:24px;font-weight:700;" id="expensesDetailsTotalCount">0</div>
+                </div>
+            </div>
+
+            <div style="overflow-x:auto;">
+                <table id="expensesDetailsTable" style="width:100%;border-collapse:collapse;min-width:650px;">
+                    <thead>
+                        <tr style="background:linear-gradient(135deg,#e74c3c 0%,#c0392b 100%);color:white;">
+                            <th style="padding:12px 10px;text-align:center;border:1px solid rgba(255,255,255,0.2);min-width:50px;">#</th>
+                            <th style="padding:12px 10px;text-align:right;border:1px solid rgba(255,255,255,0.2);">التاريخ</th>
+                            <th style="padding:12px 10px;text-align:right;border:1px solid rgba(255,255,255,0.2);">اسم الموظف</th>
+                            <th style="padding:12px 10px;text-align:right;border:1px solid rgba(255,255,255,0.2);">الفرع</th>
+                            <th style="padding:12px 10px;text-align:right;border:1px solid rgba(255,255,255,0.2);">قيمة المصروف</th>
+                            <th style="padding:12px 10px;text-align:right;border:1px solid rgba(255,255,255,0.2);">الملاحظات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expensesDetailsBody">
+                        <tr>
+                            <td colspan="6" style="text-align:center;padding:30px;color:#999;">جاري التحميل...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <!-- موديل تعديل بيانات التقرير -->
         <div id="editReportModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:2000;align-items:center;justify-content:center;flex-direction:column;">
             <div style="background:white;border-radius:16px;padding:24px;max-width:500px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
@@ -775,6 +897,8 @@
                     <button type="button" class="sidebar-link" data-view="network">تقرير تفاصيل الشبكة</button>
                     <button type="button" class="sidebar-link" id="sidebarWithdrawalsLink" data-view="withdrawals">تقرير السحوبات والعجز</button>
                     <button type="button" class="sidebar-link" id="sidebarCashLink" data-view="cash">تفاصيل الكاش</button>
+                    <button type="button" class="sidebar-link" data-view="withdrawalDetails">💰 تفاصيل السحب والعجز</button>
+                    <button type="button" class="sidebar-link" data-view="expensesDetails">💸 تفاصيل المصروفات</button>
                     <button type="button" class="sidebar-link" id="sidebarMissingReportsLink" data-view="missingReports" style="position: relative;">
                         <span>⚠️ فروع لم ترسل التقرير</span>
                         <span id="missingBranchesCount" style="position: absolute; top: 4px; left: 4px; background: rgba(255,255,255,0.9); color: #ff6b6b; padding: 2px 6px; border-radius: 10px; font-size: 11px; font-weight: 700;">0</span>
@@ -1499,14 +1623,18 @@
             const cashSection = document.getElementById('cashSection');
             const deliveriesSection = document.getElementById('deliveriesSection');
             const missingReportsSection = document.getElementById('missingReportsSection');
+            const expensesDetailsSection = document.getElementById('expensesDetailsSection');
+            const withdrawalDetailsSection = document.getElementById('withdrawalDetailsSection');
             
-            if (reportsSection) reportsSection.classList.toggle('active', currentView !== 'cash' && currentView !== 'missingReports');
+            if (reportsSection) reportsSection.classList.toggle('active', currentView !== 'cash' && currentView !== 'missingReports' && currentView !== 'expensesDetails' && currentView !== 'withdrawalDetails');
             if (cashSection) cashSection.classList.toggle('active', currentView === 'cash');
             if (deliveriesSection) {
                 deliveriesSection.classList.toggle('active', currentView === 'deliveries');
                 deliveriesSection.setAttribute('aria-hidden', currentView === 'deliveries' ? 'false' : 'true');
             }
             if (missingReportsSection) missingReportsSection.classList.toggle('active', currentView === 'missingReports');
+            if (expensesDetailsSection) expensesDetailsSection.classList.toggle('active', currentView === 'expensesDetails');
+            if (withdrawalDetailsSection) withdrawalDetailsSection.classList.toggle('active', currentView === 'withdrawalDetails');
 
             const navButtons = document.querySelectorAll('.sidebar-link[data-view]');
             navButtons.forEach(btn => {
@@ -1521,6 +1649,16 @@
             // تحميل تقرير الفروع المفقودة
             if (currentView === 'missingReports') {
                 updateMissingReportsView();
+            }
+
+            // تحميل تفاصيل المصروفات
+            if (currentView === 'expensesDetails') {
+                loadExpensesDetailsData();
+            }
+
+            // تحميل تفاصيل السحب والعجز
+            if (currentView === 'withdrawalDetails') {
+                loadWithdrawalDetailsData();
             }
 
             applyFilters();
@@ -2586,6 +2724,30 @@
                     o.value = b; o.textContent = b; transferTargetBranch.appendChild(o);
                 });
                 transferTargetBranch.value = branches.includes(selectedValue) ? selectedValue : '';
+            }
+
+            // ملء قائمة الفروع في تفاصيل المصروفات
+            const expensesBranchFilter = document.getElementById('expensesFilterBranch');
+            if (expensesBranchFilter) {
+                const currentVal = expensesBranchFilter.value;
+                expensesBranchFilter.innerHTML = '<option value="">جميع الفروع</option>';
+                branches.forEach(b => {
+                    const o = document.createElement('option');
+                    o.value = b; o.textContent = b; expensesBranchFilter.appendChild(o);
+                });
+                expensesBranchFilter.value = branches.includes(currentVal) ? currentVal : '';
+            }
+
+            // ملء قائمة الفروع في تفاصيل السحب والعجز
+            const withdrawalBranchFilter = document.getElementById('withdrawalDetailsFilterBranch');
+            if (withdrawalBranchFilter) {
+                const currentVal = withdrawalBranchFilter.value;
+                withdrawalBranchFilter.innerHTML = '<option value="">جميع الفروع</option>';
+                branches.forEach(b => {
+                    const o = document.createElement('option');
+                    o.value = b; o.textContent = b; withdrawalBranchFilter.appendChild(o);
+                });
+                withdrawalBranchFilter.value = branches.includes(currentVal) ? currentVal : '';
             }
         }
 
@@ -3974,6 +4136,222 @@
         }
 
         window.filterByExpenses = filterByExpenses;
+
+        // استخراج ملاحظات المصروفات من حقل الملاحظات
+        function extractExpenseNotes(notes) {
+            if (!notes || notes === '-') return '-';
+            const match = notes.match(/مصروفات:\s*([^|]+)/);
+            return match ? match[1].trim() : '-';
+        }
+
+        // تحميل وعرض تفاصيل المصروفات
+        function loadExpensesDetailsData() {
+            if (!allData || allData.length === 0) return;
+
+            const branchFilter = (document.getElementById('expensesFilterBranch') || {}).value || '';
+            const dateFrom = (document.getElementById('expensesFilterDateFrom') || {}).value || '';
+            const dateTo = (document.getElementById('expensesFilterDateTo') || {}).value || '';
+
+            // ملء قائمة الفروع إذا كانت فارغة
+            const branchSelect = document.getElementById('expensesFilterBranch');
+            if (branchSelect && branchSelect.options.length <= 1) {
+                const branches = [...new Set(allData.map(r => r.branch).filter(Boolean))].sort();
+                branches.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b;
+                    opt.textContent = b;
+                    branchSelect.appendChild(opt);
+                });
+            }
+
+            let filtered = allData.filter(record => parseFloat(record.expenses || 0) > 0);
+
+            if (branchFilter) filtered = filtered.filter(r => r.branch === branchFilter);
+            if (dateFrom) filtered = filtered.filter(r => (r.saleDate || '') >= dateFrom);
+            if (dateTo) filtered = filtered.filter(r => (r.saleDate || '') <= dateTo);
+
+            // ترتيب حسب التاريخ تصاعدياً
+            filtered.sort((a, b) => (a.saleDate || '').localeCompare(b.saleDate || ''));
+
+            const tbody = document.getElementById('expensesDetailsBody');
+            if (!tbody) return;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#999;">لا توجد مصروفات مسجلة</td></tr>';
+                document.getElementById('expensesDetailsTotalAmount').textContent = '0 ريال';
+                document.getElementById('expensesDetailsTotalCount').textContent = '0';
+                return;
+            }
+
+            const totalAmount = filtered.reduce((sum, r) => sum + parseFloat(r.expenses || 0), 0);
+            document.getElementById('expensesDetailsTotalAmount').textContent = totalAmount.toFixed(2) + ' ريال';
+            document.getElementById('expensesDetailsTotalCount').textContent = filtered.length;
+
+            tbody.innerHTML = filtered.map((record, index) => {
+                const expenseNotes = extractExpenseNotes(record.notes);
+                const rowBg = index % 2 === 0 ? '#fff' : '#fef9f9';
+                return `<tr style="background:${rowBg};">
+                    <td style="padding:10px;border:1px solid #e0e0e0;text-align:center;font-weight:700;color:#e74c3c;">${index + 1}</td>
+                    <td style="padding:10px;border:1px solid #e0e0e0;">${record.saleDate || '-'}</td>
+                    <td style="padding:10px;border:1px solid #e0e0e0;">${record.employeeName || record.employeeId || '-'}</td>
+                    <td style="padding:10px;border:1px solid #e0e0e0;">${record.branch || '-'}</td>
+                    <td style="padding:10px;border:1px solid #e0e0e0;font-weight:700;color:#c0392b;">${parseFloat(record.expenses || 0).toFixed(2)} ريال</td>
+                    <td style="padding:10px;border:1px solid #e0e0e0;color:#555;">${expenseNotes}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function resetExpensesFilters() {
+            const branchEl = document.getElementById('expensesFilterBranch');
+            const dateFromEl = document.getElementById('expensesFilterDateFrom');
+            const dateToEl = document.getElementById('expensesFilterDateTo');
+            if (branchEl) branchEl.value = '';
+            if (dateFromEl) dateFromEl.value = '';
+            if (dateToEl) dateToEl.value = '';
+            loadExpensesDetailsData();
+        }
+
+        function exportExpensesDetailsToExcel() {
+            const tbody = document.getElementById('expensesDetailsBody');
+            if (!tbody || tbody.querySelectorAll('tr td[colspan]').length > 0) {
+                alert('⚠️ لا توجد بيانات لتصديرها');
+                return;
+            }
+
+            const branchFilter = (document.getElementById('expensesFilterBranch') || {}).value || '';
+            const dateFrom = (document.getElementById('expensesFilterDateFrom') || {}).value || '';
+            const dateTo = (document.getElementById('expensesFilterDateTo') || {}).value || '';
+
+            let filtered = allData.filter(record => parseFloat(record.expenses || 0) > 0);
+            if (branchFilter) filtered = filtered.filter(r => r.branch === branchFilter);
+            if (dateFrom) filtered = filtered.filter(r => (r.saleDate || '') >= dateFrom);
+            if (dateTo) filtered = filtered.filter(r => (r.saleDate || '') <= dateTo);
+            filtered.sort((a, b) => (a.saleDate || '').localeCompare(b.saleDate || ''));
+
+            let csv = '#,التاريخ,اسم الموظف,الفرع,قيمة المصروف,الملاحظات\n';
+            filtered.forEach((record, index) => {
+                const expenseNotes = extractExpenseNotes(record.notes);
+                csv += `${index + 1},"${record.saleDate || ''}","${record.employeeName || record.employeeId || ''}","${record.branch || ''}","${parseFloat(record.expenses || 0).toFixed(2)}","${expenseNotes}"\n`;
+            });
+
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `تفاصيل_المصروفات_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        window.loadExpensesDetailsData = loadExpensesDetailsData;
+        window.resetExpensesFilters = resetExpensesFilters;
+        window.exportExpensesDetailsToExcel = exportExpensesDetailsToExcel;
+
+        // استخراج ملاحظات السحب/العجز من حقل الملاحظات
+        function extractWithdrawalNotes(notes) {
+            if (!notes || notes === '-') return '-';
+            const match = notes.match(/سحب\/عجز:\s*([^|]+)/);
+            return match ? match[1].trim() : '-';
+        }
+
+        // تحميل وعرض تفاصيل السحب والعجز
+        function loadWithdrawalDetailsData() {
+            if (!allData || allData.length === 0) return;
+
+            const branchFilter = (document.getElementById('withdrawalDetailsFilterBranch') || {}).value || '';
+            const dateFrom = (document.getElementById('withdrawalDetailsFilterDateFrom') || {}).value || '';
+            const dateTo = (document.getElementById('withdrawalDetailsFilterDateTo') || {}).value || '';
+
+            // ملء قائمة الفروع إذا كانت فارغة
+            const branchSelect = document.getElementById('withdrawalDetailsFilterBranch');
+            if (branchSelect && branchSelect.options.length <= 1) {
+                const branches = [...new Set(allData.map(r => r.branch).filter(Boolean))].sort();
+                branches.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b;
+                    opt.textContent = b;
+                    branchSelect.appendChild(opt);
+                });
+            }
+
+            let filtered = allData.filter(record => parseFloat(record.withdrawal || 0) > 0);
+
+            if (branchFilter) filtered = filtered.filter(r => r.branch === branchFilter);
+            if (dateFrom) filtered = filtered.filter(r => (r.saleDate || '') >= dateFrom);
+            if (dateTo) filtered = filtered.filter(r => (r.saleDate || '') <= dateTo);
+
+            // ترتيب حسب التاريخ تصاعدياً
+            filtered.sort((a, b) => (a.saleDate || '').localeCompare(b.saleDate || ''));
+
+            const tbody = document.getElementById('withdrawalDetailsBody');
+            if (!tbody) return;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:#999;">لا توجد سحوبات أو عجز مسجلة</td></tr>';
+                document.getElementById('withdrawalDetailsTotalAmount').textContent = '0 ريال';
+                document.getElementById('withdrawalDetailsTotalCount').textContent = '0';
+                return;
+            }
+
+            const totalAmount = filtered.reduce((sum, r) => sum + parseFloat(r.withdrawal || 0), 0);
+            document.getElementById('withdrawalDetailsTotalAmount').textContent = totalAmount.toFixed(2) + ' ريال';
+            document.getElementById('withdrawalDetailsTotalCount').textContent = filtered.length;
+
+            tbody.innerHTML = filtered.map((record, index) => {
+                const withdrawalNotes = extractWithdrawalNotes(record.notes);
+                const rowBg = index % 2 === 0 ? '#fff' : '#f0faf8';
+                return `<tr style="background:${rowBg};">
+                    <td style="padding:10px;border:1px solid #e0e0e0;text-align:center;font-weight:700;color:#16a085;">${index + 1}</td>
+                    <td style="padding:10px;border:1px solid #e0e0e0;">${record.saleDate || '-'}</td>
+                    <td style="padding:10px;border:1px solid #e0e0e0;">${record.employeeName || record.employeeId || '-'}</td>
+                    <td style="padding:10px;border:1px solid #e0e0e0;">${record.branch || '-'}</td>
+                    <td style="padding:10px;border:1px solid #e0e0e0;font-weight:700;color:#117a65;">${parseFloat(record.withdrawal || 0).toFixed(2)} ريال</td>
+                    <td style="padding:10px;border:1px solid #e0e0e0;color:#555;">${withdrawalNotes}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function resetWithdrawalDetailsFilters() {
+            const branchEl = document.getElementById('withdrawalDetailsFilterBranch');
+            const dateFromEl = document.getElementById('withdrawalDetailsFilterDateFrom');
+            const dateToEl = document.getElementById('withdrawalDetailsFilterDateTo');
+            if (branchEl) branchEl.value = '';
+            if (dateFromEl) dateFromEl.value = '';
+            if (dateToEl) dateToEl.value = '';
+            loadWithdrawalDetailsData();
+        }
+
+        function exportWithdrawalDetailsToExcel() {
+            const tbody = document.getElementById('withdrawalDetailsBody');
+            if (!tbody || tbody.querySelectorAll('tr td[colspan]').length > 0) {
+                alert('⚠️ لا توجد بيانات لتصديرها');
+                return;
+            }
+
+            const branchFilter = (document.getElementById('withdrawalDetailsFilterBranch') || {}).value || '';
+            const dateFrom = (document.getElementById('withdrawalDetailsFilterDateFrom') || {}).value || '';
+            const dateTo = (document.getElementById('withdrawalDetailsFilterDateTo') || {}).value || '';
+
+            let filtered = allData.filter(record => parseFloat(record.withdrawal || 0) > 0);
+            if (branchFilter) filtered = filtered.filter(r => r.branch === branchFilter);
+            if (dateFrom) filtered = filtered.filter(r => (r.saleDate || '') >= dateFrom);
+            if (dateTo) filtered = filtered.filter(r => (r.saleDate || '') <= dateTo);
+            filtered.sort((a, b) => (a.saleDate || '').localeCompare(b.saleDate || ''));
+
+            let csv = '#,التاريخ,اسم الموظف,الفرع,قيمة السحب/العجز,الملاحظات\n';
+            filtered.forEach((record, index) => {
+                const wNotes = extractWithdrawalNotes(record.notes);
+                csv += `${index + 1},"${record.saleDate || ''}","${record.employeeName || record.employeeId || ''}","${record.branch || ''}","${parseFloat(record.withdrawal || 0).toFixed(2)}","${wNotes}"\n`;
+            });
+
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `تفاصيل_السحب_والعجز_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        window.loadWithdrawalDetailsData = loadWithdrawalDetailsData;
+        window.resetWithdrawalDetailsFilters = resetWithdrawalDetailsFilters;
+        window.exportWithdrawalDetailsToExcel = exportWithdrawalDetailsToExcel;
 
         // فلترة البيانات للعمليات التي تحتوي على مدفوعات شبكة
         function filterByTotalCard() {
