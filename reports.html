@@ -188,6 +188,10 @@
                 <button class="btn-filter-special" onclick="generateHandoverReport()" style="background:linear-gradient(135deg, #f39c12 0%, #e67e22 100%);color:white;padding:10px 20px;border:none;border-radius:10px;font-weight:700;cursor:pointer;transition:transform 0.2s;box-shadow:0 4px 6px rgba(0,0,0,0.1);" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                     🖨️ تقرير تسليم العهدة
                 </button>
+                <label id="handoverDetailsToggleWrap" style="display:none;align-items:center;gap:8px;padding:8px 12px;background:#fff3cd;border:1px solid #ffe69c;border-radius:10px;color:#7a4b00;font-weight:700;">
+                    <input type="checkbox" id="handoverIncludeDetails" style="width:16px;height:16px;accent-color:#f39c12;" checked>
+                    <span>إظهار تفاصيل التسليمات حسب التاريخ</span>
+                </label>
                 <button class="btn-filter-special" id="btnShowAll" onclick="showAllRecords()" style="background:linear-gradient(135deg, #27ae60 0%, #229954 100%);color:white;padding:10px 20px;border:none;border-radius:10px;font-weight:700;cursor:pointer;transition:transform 0.2s;box-shadow:0 4px 6px rgba(0,0,0,0.1);display:none;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                     📊 عرض جميع السجلات
                 </button>
@@ -769,7 +773,6 @@
                     <button type="button" class="sidebar-link active" data-view="reports">التقارير</button>
                     <button type="button" class="sidebar-link" data-view="finance">تفاصيل التمويل</button>
                     <button type="button" class="sidebar-link" data-view="network">تقرير تفاصيل الشبكة</button>
-                    <button type="button" class="sidebar-link" data-view="deliveries">تقرير تسليم العهدة</button>
                     <button type="button" class="sidebar-link" id="sidebarWithdrawalsLink" data-view="withdrawals">تقرير السحوبات والعجز</button>
                     <button type="button" class="sidebar-link" id="sidebarCashLink" data-view="cash">تفاصيل الكاش</button>
                     <button type="button" class="sidebar-link" id="sidebarMissingReportsLink" data-view="missingReports" style="position: relative;">
@@ -983,6 +986,11 @@
             const sidebarMissingReports = document.getElementById('sidebarMissingReportsLink');
             if (sidebarMissingReports) {
                 sidebarMissingReports.style.display = hasPermission('manageEmployees') ? 'inline-flex' : 'none';
+            }
+
+            const handoverDetailsToggleWrap = document.getElementById('handoverDetailsToggleWrap');
+            if (handoverDetailsToggleWrap) {
+                handoverDetailsToggleWrap.style.display = hasPermission('manageEmployees') ? 'inline-flex' : 'none';
             }
         }
         let currentDisplayData = [];
@@ -4911,7 +4919,18 @@
             const branchesMap = new Map();
             
             // الحصول على قيم الفلاتر مرة واحدة
-            const filterBranch = document.getElementById('filterBranch').value;
+            const selectedBranchFilter = document.getElementById('filterBranch')?.value || '';
+            const restrictedToUserBranch = currentUser && !hasPermission('viewAllBranches');
+            const isManager = hasPermission('manageEmployees');
+            const userBranch = (currentUser?.branch_name || '').trim();
+            if (restrictedToUserBranch && !userBranch) {
+                alert('⚠️ لا يمكن توليد التقرير: لا يوجد فرع مرتبط بحسابك');
+                return;
+            }
+            const filterBranch = restrictedToUserBranch ? userBranch : selectedBranchFilter;
+            const includeDetailsByDate = isManager
+                ? (document.getElementById('handoverIncludeDetails')?.checked !== false)
+                : true;
             const filterDateFrom = document.getElementById('filterDateFrom').value;
             const filterDateTo = document.getElementById('filterDateTo').value;
             
@@ -4943,9 +4962,15 @@
             let deliveriesData = [];
             try {
                 if (window.supabaseInstance && typeof window.supabaseInstance.from === 'function') {
-                    const { data: deliveries, error } = await window.supabaseInstance
+                    let deliveriesQuery = window.supabaseInstance
                         .from('cash_deliveries')
                         .select('*');
+
+                    if (filterBranch) {
+                        deliveriesQuery = deliveriesQuery.eq('branch', filterBranch);
+                    }
+
+                    const { data: deliveries, error } = await deliveriesQuery;
                     
                     if (!error && deliveries) {
                         deliveriesData = deliveries;
@@ -4957,11 +4982,13 @@
 
             // دمج التسليمات من قاعدة البيانات + المحلي ثم تطبيقها على الفروع
             const deliveriesMap = new Map();
+            const deliveryDetails = [];
             (Array.isArray(deliveriesData) ? deliveriesData : []).forEach(item => {
                 const id = String(item.id || `db_${item.created_at || Date.now()}`);
                 deliveriesMap.set(`db:${id}`, {
                     id,
                     branch: item.branch || 'غير محدد',
+                    recipient: item.recipient || item.delivered_to || '-',
                     amount: parseFloat(item.delivered_amount || 0),
                     deliveredAt: normalizeDateOnly(item.delivered_at || item.created_at),
                     createdAt: item.created_at || item.delivered_at || ''
@@ -4975,6 +5002,7 @@
                     deliveriesMap.set(key, {
                         id,
                         branch: item.branch || 'غير محدد',
+                        recipient: item.recipient || item.delivered_to || '-',
                         amount: parseFloat(item.delivered_amount ?? item.amount ?? 0),
                         deliveredAt: normalizeDateOnly(item.delivered_at || item.date || item.created_at || item.createdAt),
                         createdAt: item.created_at || item.createdAt || item.delivered_at || item.date || ''
@@ -4989,6 +5017,13 @@
                 if (filterBranch && branch !== filterBranch) return;
                 if (filterDateFrom && deliveryDate < filterDateFrom) return;
                 if (filterDateTo && deliveryDate > filterDateTo) return;
+
+                deliveryDetails.push({
+                    date: deliveryDate || '-',
+                    branch,
+                    recipient: delivery.recipient || '-',
+                    amount: parseFloat(delivery.amount || 0)
+                });
 
                 if (!branchesMap.has(branch)) {
                     branchesMap.set(branch, {
@@ -5078,6 +5113,13 @@
                     };
                 })
                 .sort((a, b) => a.branch.localeCompare(b.branch, 'ar'));
+
+            const sortedDeliveryDetails = deliveryDetails.sort((first, second) => {
+                if (first.date === second.date) {
+                    return first.branch.localeCompare(second.branch, 'ar');
+                }
+                return second.date.localeCompare(first.date);
+            });
 
             const reportDate = new Date().toLocaleDateString('ar-EG');
             const reportTime = new Date().toLocaleTimeString('ar-EG');
@@ -5277,6 +5319,41 @@
             </tr>
         </tbody>
     </table>
+`;
+
+            if (includeDetailsByDate && sortedDeliveryDetails.length > 0) {
+                htmlContent += `
+    <div style="margin-top: 14px; font-size: 12px; font-weight: 700; text-align: center; border-top: 1px dashed #666; padding-top: 8px;">تفاصيل التسليمات حسب التاريخ</div>
+    <table class="report-table" style="margin-top:8px;">
+        <thead>
+            <tr>
+                <th>التاريخ</th>
+                <th>الفرع</th>
+                <th>المستلم</th>
+                <th>المبلغ</th>
+            </tr>
+        </thead>
+        <tbody>
+`;
+
+                sortedDeliveryDetails.forEach(detail => {
+                    htmlContent += `
+            <tr>
+                <td>${detail.date || '-'}</td>
+                <td class="label">${detail.branch || '-'}</td>
+                <td>${detail.recipient || '-'}</td>
+                <td style="font-weight:600;color:#4caf50;">${detail.amount.toFixed(2)}</td>
+            </tr>
+`;
+                });
+
+                htmlContent += `
+        </tbody>
+    </table>
+`;
+            }
+
+            htmlContent += `
     
     <div class="report-footer">
         <div style="border: 2px solid #333; padding: 10px; margin: 10px 0; background: #f9f9f9; border-radius: 5px;">
@@ -5801,7 +5878,8 @@
             let deliveries = cashDeliveries.map(normalizeDeliveryRecord);
 
             if (currentUser && !currentUser.permissions.includes('viewAllBranches')) {
-                deliveries = deliveries.filter(record => record.branch === currentUser.branch_name);
+                const userBranch = String(currentUser.branch_name || '').trim();
+                deliveries = deliveries.filter(record => String(record.branch || '').trim() === userBranch);
             }
 
             return deliveries.sort((first, second) => {
