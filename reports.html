@@ -620,12 +620,13 @@
                                 <th style="padding:8px;border:1px solid #e6e6e6;">المبلغ</th>
                                 <th style="padding:8px;border:1px solid #e6e6e6;">تاريخ التحويل</th>
                                 <th style="padding:8px;border:1px solid #e6e6e6;">الملاحظات</th>
+                                <th style="padding:8px;border:1px solid #e6e6e6;">المصدر</th>
                                 <th style="padding:8px;border:1px solid #e6e6e6;">آخر تحديث</th>
                                 <th id="cashTransferActionHeader" style="padding:8px;border:1px solid #e6e6e6;">إجراء</th>
                             </tr>
                         </thead>
                         <tbody id="cashTransfersBody">
-                            <tr><td colspan="7" style="padding:16px;text-align:center;color:#777;">لا توجد تحويلات مسجلة</td></tr>
+                            <tr><td colspan="8" style="padding:16px;text-align:center;color:#777;">لا توجد تحويلات مسجلة</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1131,6 +1132,8 @@
         let cashEditHistory = JSON.parse(localStorage.getItem('cashEditHistory') || '[]');
         let cashTransfers = JSON.parse(localStorage.getItem('cashTransfers') || '[]');
         let cashTransferHistory = JSON.parse(localStorage.getItem('cashTransferHistory') || '[]');
+        let cashTransfersStorageMode = 'local';
+        let cashTransfersSupabaseAvailable = false;
         let currentEditingDelivery = null;
         let currentEditingTransferId = null;
         let currentDeliveriesBranch = null;
@@ -2071,6 +2074,12 @@
                     console.warn('خطأ عند جلب تسليمات الكاش من Supabase:', err);
                 }
 
+                // جلب تحويلات الكاش من Supabase إن وجد الجدول، وإلا fallback محلي.
+                await loadCashTransfersData({ silent: true });
+                purgeLocalCashTransfers();
+                renderCashTransferTables();
+                updateCashTransferAvailableInfo();
+
                 // تصفية البيانات حسب فرع الموظف
                 if (currentUser && !currentUser.permissions.includes('viewAllBranches')) {
                     // الموظفون بدون صلاحية عرض جميع الفروع يرون فقط تقارير فرعهم
@@ -2788,9 +2797,79 @@
                 amount: parseFloat(record.amount || 0),
                 date: normalizeDateOnly(record.date || record.transferDate || record.createdAt),
                 notes: record.notes || '-',
+                source: record.source || record.storageSource || (cashTransfersStorageMode === 'supabase' ? 'database' : 'local'),
                 createdAt: record.createdAt || record.created_at || new Date().toISOString(),
                 updatedAt: record.updatedAt || record.updated_at || record.createdAt || record.created_at || new Date().toISOString()
             };
+        }
+
+        function getCashTransfersClient() {
+            return (window.supabaseInstance && typeof window.supabaseInstance.from === 'function')
+                ? window.supabaseInstance
+                : null;
+        }
+
+        function mapCashTransferFromSupabase(record) {
+            return normalizeCashTransferRecord({
+                id: record.id,
+                fromBranch: record.from_branch,
+                toBranch: record.to_branch,
+                amount: record.amount,
+                date: normalizeDateOnly(record.transfer_date || record.created_at),
+                notes: record.notes || '-',
+                source: 'database',
+                createdAt: record.created_at,
+                updatedAt: record.updated_at || record.created_at
+            });
+        }
+
+        function buildCashTransferSupabasePayload(transferRecord) {
+            return {
+                id: transferRecord.id,
+                from_branch: transferRecord.fromBranch,
+                to_branch: transferRecord.toBranch,
+                amount: parseFloat(transferRecord.amount || 0),
+                transfer_date: normalizeDateOnly(transferRecord.date || new Date()),
+                notes: transferRecord.notes || '-',
+                created_at: transferRecord.createdAt || new Date().toISOString(),
+                updated_at: transferRecord.updatedAt || new Date().toISOString()
+            };
+        }
+
+        async function loadCashTransfersData(options = {}) {
+            const client = getCashTransfersClient();
+            if (!client) {
+                cashTransfersStorageMode = 'local';
+                cashTransfersSupabaseAvailable = false;
+                cashTransfers = JSON.parse(localStorage.getItem('cashTransfers') || '[]');
+                return { source: 'local', loaded: false };
+            }
+
+            try {
+                const { data, error } = await client
+                    .from('cash_transfers')
+                    .select('*')
+                    .order('updated_at', { ascending: false });
+
+                if (error) throw error;
+
+                cashTransfers = Array.isArray(data)
+                    ? data.map(mapCashTransferFromSupabase)
+                    : [];
+                cashTransfersStorageMode = 'supabase';
+                cashTransfersSupabaseAvailable = true;
+                localStorage.setItem('cashTransfers', JSON.stringify(cashTransfers));
+
+                return { source: 'supabase', loaded: true };
+            } catch (err) {
+                cashTransfersStorageMode = 'local';
+                cashTransfersSupabaseAvailable = false;
+                cashTransfers = JSON.parse(localStorage.getItem('cashTransfers') || '[]');
+                if (!options.silent) {
+                    console.warn('[CASH_TRANSFER] تعذر تحميل التحويلات من Supabase، سيتم استخدام النسخة المحلية:', err);
+                }
+                return { source: 'local', loaded: false, error: err };
+            }
         }
 
         function getActiveCashTransfers(options = {}) {
@@ -2803,6 +2882,26 @@
         function persistCashTransferData() {
             localStorage.setItem('cashTransfers', JSON.stringify(cashTransfers));
             localStorage.setItem('cashTransferHistory', JSON.stringify(cashTransferHistory));
+        }
+
+        function purgeLocalCashTransfers() {
+            const normalizedTransfers = cashTransfers.map(normalizeCashTransferRecord);
+            const dbTransfers = normalizedTransfers.filter(item => String(item.source || '').toLowerCase() === 'database');
+            const removedCount = normalizedTransfers.length - dbTransfers.length;
+
+            if (removedCount <= 0) {
+                return 0;
+            }
+
+            cashTransfers = dbTransfers;
+            persistCashTransferData();
+
+            if (currentEditingTransferId && !cashTransfers.some(item => String(item.id) === String(currentEditingTransferId))) {
+                currentEditingTransferId = null;
+            }
+
+            console.log(`[CASH_TRANSFER] تم حذف ${removedCount} تحويل(ات) محلية من التحويلات الحالية.`);
+            return removedCount;
         }
 
         function logCashTransferHistory(action, transfer, details = '') {
@@ -2965,9 +3064,12 @@
                 transfersBody.innerHTML = '';
 
                 if (activeTransfers.length === 0) {
-                    transfersBody.innerHTML = `<tr><td colspan="7" style="padding:16px;text-align:center;color:#777;">لا توجد تحويلات مسجلة</td></tr>`;
+                    transfersBody.innerHTML = `<tr><td colspan="8" style="padding:16px;text-align:center;color:#777;">لا توجد تحويلات مسجلة</td></tr>`;
                 } else {
                     activeTransfers.forEach(transfer => {
+                        const sourceValue = String(transfer.source || '').toLowerCase() === 'database' ? 'database' : 'local';
+                        const sourceLabel = sourceValue === 'database' ? 'قاعدة البيانات' : 'محلي';
+                        const sourceColor = sourceValue === 'database' ? '#2e7d32' : '#ef6c00';
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td style="padding:8px;border:1px solid #e6e6e6;">${transfer.fromBranch}</td>
@@ -2975,6 +3077,7 @@
                             <td style="padding:8px;border:1px solid #e6e6e6;text-align:center;font-weight:700;color:#6d4c41;">${transfer.amount.toFixed(2)} ريال</td>
                             <td style="padding:8px;border:1px solid #e6e6e6;text-align:center;">${formatDateOnly(transfer.date)}</td>
                             <td style="padding:8px;border:1px solid #e6e6e6;">${transfer.notes || '-'}</td>
+                            <td style="padding:8px;border:1px solid #e6e6e6;text-align:center;"><span style="background:${sourceColor};color:#fff;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;">${sourceLabel}</span></td>
                             <td style="padding:8px;border:1px solid #e6e6e6;text-align:center;">${formatDateTime(transfer.updatedAt)}</td>
                             <td style="padding:8px;border:1px solid #e6e6e6;text-align:center;${canManage ? '' : 'display:none;'}">
                                 ${canManage ? `
@@ -3054,6 +3157,19 @@
                 return;
             }
 
+            const client = getCashTransfersClient();
+            if (client && cashTransfersSupabaseAvailable) {
+                const { error } = await client
+                    .from('cash_transfers')
+                    .delete()
+                    .eq('id', transfer.id);
+
+                if (error) {
+                    setCashTransferMessage(`❌ تعذر حذف التحويل من قاعدة البيانات: ${error.message || ''}`, 'error');
+                    return;
+                }
+            }
+
             cashTransfers = cashTransfers.filter(item => String(item.id) !== String(transferId));
             logCashTransferHistory('delete', transfer, transfer.notes || '-');
             persistCashTransferData();
@@ -3094,6 +3210,7 @@
                 amount: parseFloat(amount.toFixed(2)),
                 date,
                 notes: notes || '-',
+                source: 'local',
                 createdAt: timestamp,
                 updatedAt: timestamp
             };
@@ -3113,6 +3230,25 @@
                 cashTransfers.unshift(transferRecord);
                 logCashTransferHistory('create', transferRecord, notes || '-');
                 setCashTransferMessage('✅ تم تسجيل التحويل بنجاح', 'success');
+            }
+
+            const client = getCashTransfersClient();
+            if (client) {
+                const payload = buildCashTransferSupabasePayload(transferRecord);
+                const { error } = await client
+                    .from('cash_transfers')
+                    .upsert(payload, { onConflict: 'id' });
+
+                if (error) {
+                    cashTransfersSupabaseAvailable = false;
+                    cashTransfersStorageMode = 'local';
+                    transferRecord.source = 'local';
+                    console.warn('[CASH_TRANSFER] تعذر حفظ التحويل في Supabase، سيتم الحفظ محليًا:', error);
+                } else {
+                    cashTransfersSupabaseAvailable = true;
+                    cashTransfersStorageMode = 'supabase';
+                    transferRecord.source = 'database';
+                }
             }
 
             persistCashTransferData();
@@ -6414,6 +6550,9 @@
                     displayCashReconciliation(null);
                     return;
                 }
+
+                await loadCashTransfersData({ silent: true });
+                purgeLocalCashTransfers();
 
                 // جلب بيانات التسليمات
                 console.log('📦 جاري جلب بيانات التسليمات...');
