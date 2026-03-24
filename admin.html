@@ -940,7 +940,10 @@
                         <textarea id="monthlySalaryNotes" rows="2" placeholder="أي ملاحظات..."></textarea>
                     </div>
                     
-                    <button id="saveMonthlySalary">💾 حفظ الراتب الشهري</button>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <button id="saveMonthlySalary">💾 حفظ الراتب الشهري</button>
+                        <button id="cancelMonthlySalaryEdit" type="button" style="display:none;background:#6c757d;">✖️ إلغاء التعديل</button>
+                    </div>
                     
                     <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #f0f0f0;">
                         <h3 style="margin-bottom: 15px;">📊 الرواتب الشهرية المسجلة</h3>
@@ -2380,11 +2383,72 @@
             const monthlySalaryNet = document.getElementById('monthlySalaryNet');
             const monthlySalaryNotes = document.getElementById('monthlySalaryNotes');
             const saveMonthlySalary = document.getElementById('saveMonthlySalary');
+            const cancelMonthlySalaryEdit = document.getElementById('cancelMonthlySalaryEdit');
             const monthlySalariesList = document.getElementById('monthlySalariesList');
             const filterMonthlySalaryMonth = document.getElementById('filterMonthlySalaryMonth');
             const searchMonthlySalaries = document.getElementById('searchMonthlySalaries');
 
             let monthlySalariesCache = [];
+            let editingMonthlySalaryId = null;
+
+            function getNumericValue(value, fallback = 0) {
+                const parsed = parseFloat(value);
+                return Number.isFinite(parsed) ? parsed : fallback;
+            }
+
+            function getSalaryWithdrawn(record) {
+                const net = getNumericValue(record?.net_salary, 0);
+                const withdrawn = getNumericValue(record?.total_cash_withdrawn, 0);
+                return Math.max(0, Math.min(net, parseFloat(withdrawn.toFixed(2))));
+            }
+
+            function getSalaryRemaining(record) {
+                const net = getNumericValue(record?.net_salary, 0);
+                const hasStoredRemaining = record?.remaining_amount !== undefined && record?.remaining_amount !== null;
+                const rawRemaining = hasStoredRemaining
+                    ? getNumericValue(record.remaining_amount, net)
+                    : net - getSalaryWithdrawn(record);
+                const normalized = Math.max(0, Math.min(net, rawRemaining));
+                return normalized <= 0.005 ? 0 : parseFloat(normalized.toFixed(2));
+            }
+
+            function getMonthlyPaymentStatus(record) {
+                return getSalaryRemaining(record) <= 0 ? 'paid' : 'pending';
+            }
+
+            function resetMonthlySalaryForm() {
+                monthlySalaryEmployee.value = '';
+                monthlySalaryBase.value = '';
+                monthlySalaryAllowances.value = '0';
+                monthlySalaryDeductions.value = '0';
+                monthlySalaryNet.value = '';
+                monthlySalaryNotes.value = '';
+            }
+
+            function stopMonthlySalaryEditing() {
+                editingMonthlySalaryId = null;
+                if (saveMonthlySalary) saveMonthlySalary.textContent = '💾 حفظ الراتب الشهري';
+                if (cancelMonthlySalaryEdit) cancelMonthlySalaryEdit.style.display = 'none';
+                resetMonthlySalaryForm();
+            }
+
+            function startMonthlySalaryEditing(record) {
+                if (!record) return;
+
+                editingMonthlySalaryId = record.id;
+                monthlySalaryEmployee.value = record.employee_id || '';
+                monthlySalaryMonth.value = record.salary_month || monthlySalaryMonth.value;
+                monthlySalaryBase.value = getNumericValue(record.base_salary, 0).toFixed(2);
+                monthlySalaryAllowances.value = getNumericValue(record.allowances, 0).toFixed(2);
+                monthlySalaryDeductions.value = getNumericValue(record.deductions, 0).toFixed(2);
+                monthlySalaryNet.value = getNumericValue(record.net_salary, 0).toFixed(2);
+                monthlySalaryNotes.value = record.notes || '';
+
+                if (saveMonthlySalary) saveMonthlySalary.textContent = '💾 حفظ التعديل';
+                if (cancelMonthlySalaryEdit) cancelMonthlySalaryEdit.style.display = 'inline-block';
+
+                monthlySalaryEmployee.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
 
             // حساب صافي الراتب تلقائياً
             function calculateNetSalary() {
@@ -2462,24 +2526,50 @@
                     };
 
                     try {
-                        const { data, error } = await supabase
-                            .from('monthly_salary_records')
-                            .upsert([salaryData], {
-                                onConflict: 'employee_id,salary_month,salary_year'
-                            })
-                            .select();
+                        if (editingMonthlySalaryId) {
+                            const existingRecord = monthlySalariesCache.find(s => String(s.id) === String(editingMonthlySalaryId));
+                            const withdrawn = getSalaryWithdrawn(existingRecord);
+                            const normalizedWithdrawn = Math.max(0, Math.min(netSalary, withdrawn));
+                            const remainingAmount = Math.max(0, parseFloat((netSalary - normalizedWithdrawn).toFixed(2)));
+                            const paymentStatus = remainingAmount <= 0 ? 'paid' : 'pending';
 
-                        if (error) throw error;
+                            const updatePayload = {
+                                ...salaryData,
+                                total_cash_withdrawn: parseFloat(normalizedWithdrawn.toFixed(2)),
+                                remaining_amount: remainingAmount,
+                                payment_status: paymentStatus
+                            };
 
-                        showCustomSuccess(`✅ تم حفظ راتب ${employeeName} لشهر ${month} بنجاح`);
-                        
-                        // مسح النموذج
-                        monthlySalaryEmployee.value = '';
-                        monthlySalaryBase.value = '';
-                        monthlySalaryAllowances.value = '0';
-                        monthlySalaryDeductions.value = '0';
-                        monthlySalaryNet.value = '';
-                        monthlySalaryNotes.value = '';
+                            const { error } = await supabase
+                                .from('monthly_salary_records')
+                                .update(updatePayload)
+                                .eq('id', editingMonthlySalaryId);
+
+                            if (error) throw error;
+                        } else {
+                            const { error } = await supabase
+                                .from('monthly_salary_records')
+                                .upsert([
+                                    {
+                                        ...salaryData,
+                                        total_cash_withdrawn: 0,
+                                        remaining_amount: parseFloat(netSalary.toFixed(2)),
+                                        payment_status: 'pending'
+                                    }
+                                ], {
+                                    onConflict: 'employee_id,salary_month,salary_year'
+                                })
+                                .select();
+
+                            if (error) throw error;
+                        }
+
+                        showCustomSuccess(editingMonthlySalaryId
+                            ? `✅ تم تعديل راتب ${employeeName} لشهر ${month} بنجاح`
+                            : `✅ تم حفظ راتب ${employeeName} لشهر ${month} بنجاح`
+                        );
+
+                        stopMonthlySalaryEditing();
                         
                         // إعادة تحميل القائمة
                         await loadMonthlySalaries();
@@ -2493,6 +2583,12 @@
                             showCustomError('❌ خطأ في حفظ الراتب الشهري: ' + (err.message || 'خطأ غير معروف'));
                         }
                     }
+                });
+            }
+
+            if (cancelMonthlySalaryEdit) {
+                cancelMonthlySalaryEdit.addEventListener('click', () => {
+                    stopMonthlySalaryEditing();
                 });
             }
 
@@ -2544,8 +2640,8 @@
                 let totalRemaining = 0;
                 
                 filtered.forEach(s => {
-                    const withdrawn = parseFloat(s.total_cash_withdrawn || 0);
-                    const remaining = parseFloat(s.remaining_amount || s.net_salary);
+                    const withdrawn = getSalaryWithdrawn(s);
+                    const remaining = getSalaryRemaining(s);
                     totalWithdrawn += withdrawn;
                     totalRemaining += remaining;
                 });
@@ -2569,8 +2665,9 @@
                         </thead>
                         <tbody>
                             ${filtered.map(s => {
-                                const withdrawn = parseFloat(s.total_cash_withdrawn || 0);
-                                const remaining = parseFloat(s.remaining_amount || s.net_salary);
+                                const withdrawn = getSalaryWithdrawn(s);
+                                const remaining = getSalaryRemaining(s);
+                                const paymentStatus = getMonthlyPaymentStatus(s);
                                 return `
                                     <tr>
                                         <td style="font-weight:600;">${s.employee_name}</td>
@@ -2582,8 +2679,9 @@
                                         <td style="font-weight:700;color:#28a745;">${parseFloat(s.net_salary).toLocaleString('ar-SA', {minimumFractionDigits: 2})} ر.س</td>
                                         <td style="color:#ff9800;font-weight:600;">${withdrawn.toLocaleString('ar-SA', {minimumFractionDigits: 2})} ر.س</td>
                                         <td style="color:#2196f3;font-weight:600;">${remaining.toLocaleString('ar-SA', {minimumFractionDigits: 2})} ر.س</td>
-                                        <td><span style="padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600;background:${s.payment_status === 'paid' ? '#d4edda' : '#fff3cd'};color:${s.payment_status === 'paid' ? '#155724' : '#856404'};">${s.payment_status === 'paid' ? 'مدفوع' : 'معلق'}</span></td>
+                                        <td><span style="padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600;background:${paymentStatus === 'paid' ? '#d4edda' : '#fff3cd'};color:${paymentStatus === 'paid' ? '#155724' : '#856404'};">${paymentStatus === 'paid' ? 'تم الاستلام' : 'معلق'}</span></td>
                                         <td>
+                                            <button class="btn-edit-monthly-salary btn-small" data-id="${s.id}" style="background:#1976d2;color:#fff;">✏️ تعديل</button>
                                             <button class="btn-delete-monthly-salary btn-small btn-delete" data-id="${s.id}">🗑️ حذف</button>
                                         </td>
                                     </tr>
@@ -2625,6 +2723,17 @@
                             console.error('خطأ في الحذف:', err);
                             showCustomError('❌ خطأ في الحذف');
                         }
+                    });
+                });
+
+                document.querySelectorAll('.btn-edit-monthly-salary').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const record = monthlySalariesCache.find(s => String(s.id) === String(btn.dataset.id));
+                        if (!record) {
+                            showCustomError('❌ تعذر تحميل بيانات السجل للتعديل');
+                            return;
+                        }
+                        startMonthlySalaryEditing(record);
                     });
                 });
             }

@@ -1989,6 +1989,7 @@
                     if (btnExportEl) btnExportEl.style.display = 'none';
                 }
 
+            applyDefaultDateRangesToAllFilters();
             await loadData();
             } catch (err) {
                 console.error('[INIT] خطأ في initializeReports:', err);
@@ -2633,6 +2634,33 @@
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
+        }
+
+        function getDefaultFilterDateRange() {
+            const today = new Date();
+            const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+            return {
+                from: normalizeDateOnly(monthStart),
+                to: normalizeDateOnly(today)
+            };
+        }
+
+        function setDefaultDateRangeForInputs(fromInputId, toInputId) {
+            const fromInput = document.getElementById(fromInputId);
+            const toInput = document.getElementById(toInputId);
+            const defaultRange = getDefaultFilterDateRange();
+
+            if (fromInput) fromInput.value = defaultRange.from;
+            if (toInput) toInput.value = defaultRange.to;
+        }
+
+        function applyDefaultDateRangesToAllFilters() {
+            setDefaultDateRangeForInputs('filterDateFrom', 'filterDateTo');
+            setDefaultDateRangeForInputs('deliveriesFilterDateFrom', 'deliveriesFilterDateTo');
+            setDefaultDateRangeForInputs('reconDateFrom', 'reconDateTo');
+            setDefaultDateRangeForInputs('expensesFilterDateFrom', 'expensesFilterDateTo');
+            setDefaultDateRangeForInputs('withdrawalDetailsFilterDateFrom', 'withdrawalDetailsFilterDateTo');
         }
 
         function formatDateOnly(value, locale = 'ar-EG') {
@@ -3404,10 +3432,11 @@
             const branchFilter = document.getElementById('reconBranchFilter');
             const dateFrom = document.getElementById('reconDateFrom');
             const dateTo = document.getElementById('reconDateTo');
+            const defaultRange = getDefaultFilterDateRange();
             
             if (branchFilter) branchFilter.value = '';
-            if (dateFrom) dateFrom.value = '';
-            if (dateTo) dateTo.value = '';
+            if (dateFrom) dateFrom.value = defaultRange.from;
+            if (dateTo) dateTo.value = defaultRange.to;
             
             loadCashData();
         }
@@ -4157,11 +4186,12 @@
             const filterBranchEl = document.getElementById('filterBranch');
             const filterDateFromEl = document.getElementById('filterDateFrom');
             const filterDateToEl = document.getElementById('filterDateTo');
+            const defaultRange = getDefaultFilterDateRange();
             
             if (searchInputEl) searchInputEl.value = '';
             if (filterBranchEl) filterBranchEl.value = '';
-            if (filterDateFromEl) filterDateFromEl.value = '';
-            if (filterDateToEl) filterDateToEl.value = '';
+            if (filterDateFromEl) filterDateFromEl.value = defaultRange.from;
+            if (filterDateToEl) filterDateToEl.value = defaultRange.to;
 
             applyFilters();
         }
@@ -4222,8 +4252,7 @@
         function resetDeliveriesFilters() {
             document.getElementById('deliveriesSearchInput').value = '';
             document.getElementById('deliveriesFilterBranch').value = '';
-            document.getElementById('deliveriesFilterDateFrom').value = '';
-            document.getElementById('deliveriesFilterDateTo').value = '';
+            setDefaultDateRangeForInputs('deliveriesFilterDateFrom', 'deliveriesFilterDateTo');
 
             applyFilters();
         }
@@ -4341,9 +4370,10 @@
             const branchEl = document.getElementById('expensesFilterBranch');
             const dateFromEl = document.getElementById('expensesFilterDateFrom');
             const dateToEl = document.getElementById('expensesFilterDateTo');
+            const defaultRange = getDefaultFilterDateRange();
             if (branchEl) branchEl.value = '';
-            if (dateFromEl) dateFromEl.value = '';
-            if (dateToEl) dateToEl.value = '';
+            if (dateFromEl) dateFromEl.value = defaultRange.from;
+            if (dateToEl) dateToEl.value = defaultRange.to;
             loadExpensesDetailsData();
         }
 
@@ -4449,9 +4479,10 @@
             const branchEl = document.getElementById('withdrawalDetailsFilterBranch');
             const dateFromEl = document.getElementById('withdrawalDetailsFilterDateFrom');
             const dateToEl = document.getElementById('withdrawalDetailsFilterDateTo');
+            const defaultRange = getDefaultFilterDateRange();
             if (branchEl) branchEl.value = '';
-            if (dateFromEl) dateFromEl.value = '';
-            if (dateToEl) dateToEl.value = '';
+            if (dateFromEl) dateFromEl.value = defaultRange.from;
+            if (dateToEl) dateToEl.value = defaultRange.to;
             loadWithdrawalDetailsData();
         }
 

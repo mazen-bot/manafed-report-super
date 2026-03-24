@@ -470,6 +470,23 @@
             const salaryAvailableValue = document.getElementById('salaryAvailableValue');
         
             let employeeMonthlySalary = null; // بيانات راتب الموظف الشهري
+
+        function parseAmount(value, fallback = 0) {
+            const parsed = parseFloat(value);
+            return Number.isFinite(parsed) ? parsed : fallback;
+        }
+
+        function getRemainingSalaryAmount(record) {
+            if (!record) return 0;
+            const net = parseAmount(record.net_salary, 0);
+            const hasStoredRemaining = record.remaining_amount !== undefined && record.remaining_amount !== null;
+            const rawRemaining = hasStoredRemaining
+                ? parseAmount(record.remaining_amount, net)
+                : net;
+            const normalized = Math.max(0, Math.min(net, rawRemaining));
+            return normalized <= 0.005 ? 0 : parseFloat(normalized.toFixed(2));
+        }
+
         const returnsInput = document.getElementById('returns');
         const withdrawalInput = document.getElementById('withdrawal');
         const totalCashInput = document.getElementById('totalCash');
@@ -544,7 +561,7 @@
                 calculateCash();
                 const salaryValue = parseFloat(this.value) || 0;
                 if (salaryValue > 0 && employeeMonthlySalary) {
-                    const remaining = employeeMonthlySalary.remaining_amount || employeeMonthlySalary.net_salary;
+                    const remaining = getRemainingSalaryAmount(employeeMonthlySalary);
                     if (salaryValue > remaining) {
                         showCustomWarning(`المبلغ المدخل (${salaryValue.toFixed(2)} ر.س) أكبر من المتاح (${remaining.toFixed(2)} ر.س)`);
                     }
@@ -578,6 +595,57 @@
                 financingNotesGroup.style.display = 'none';
                 financingNotesInput.removeAttribute('required');
                 financingNotesInput.value = '';
+            }
+        }
+
+        async function updateMonthlySalaryBalanceAfterWithdrawal(salarySource, withdrawalAmount) {
+            if (!salarySource?.employee_id || !salarySource?.salary_month || !salarySource?.salary_year) {
+                return;
+            }
+
+            const withdrawal = parseAmount(withdrawalAmount, 0);
+            if (withdrawal <= 0) return;
+
+            try {
+                const { data: salaryRecord, error: salaryFetchError } = await supabase
+                    .from('monthly_salary_records')
+                    .select('id, net_salary, total_cash_withdrawn, remaining_amount, payment_status')
+                    .eq('employee_id', salarySource.employee_id)
+                    .eq('salary_month', salarySource.salary_month)
+                    .eq('salary_year', salarySource.salary_year)
+                    .neq('payment_status', 'cancelled')
+                    .order('updated_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (salaryFetchError || !salaryRecord) {
+                    if (salaryFetchError) {
+                        console.error('خطأ في جلب سجل الراتب للتحديث:', salaryFetchError);
+                    }
+                    return;
+                }
+
+                const netSalary = parseAmount(salaryRecord.net_salary, 0);
+                const currentWithdrawn = parseAmount(salaryRecord.total_cash_withdrawn, 0);
+                const effectiveWithdrawal = Math.min(withdrawal, Math.max(0, netSalary - currentWithdrawn));
+                const updatedWithdrawn = Math.max(0, Math.min(netSalary, parseFloat((currentWithdrawn + effectiveWithdrawal).toFixed(2))));
+                const updatedRemaining = Math.max(0, parseFloat((netSalary - updatedWithdrawn).toFixed(2)));
+                const updatedStatus = updatedRemaining <= 0 ? 'paid' : 'pending';
+
+                const { error: updateError } = await supabase
+                    .from('monthly_salary_records')
+                    .update({
+                        total_cash_withdrawn: updatedWithdrawn,
+                        remaining_amount: updatedRemaining,
+                        payment_status: updatedStatus
+                    })
+                    .eq('id', salaryRecord.id);
+
+                if (updateError) {
+                    console.error('خطأ في تحديث رصيد الراتب الشهري:', updateError);
+                }
+            } catch (err) {
+                console.error('خطأ غير متوقع في تحديث رصيد الراتب:', err);
             }
         }
 
@@ -1140,6 +1208,7 @@
                                             showCustomWarning('تم حفظ المبيعات لكن تعذر تسجيل سحب الراتب في جدول الرواتب. يرجى مراجعة صلاحيات/جدول salary_cash_withdrawals.');
                                         } else {
                                             console.log('✅ تم حفظ سحب الراتب بنجاح');
+                                            await updateMonthlySalaryBalanceAfterWithdrawal(salarySource, recordData.salaryWithdrawal);
                                             // إعادة تحميل راتب الموظف لتحديث المتبقي
                                             await loadEmployeeMonthlySalary(currentEmployee.employee_id, currentEmployee.name);
                                         }

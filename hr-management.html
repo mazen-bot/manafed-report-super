@@ -1416,6 +1416,32 @@
             });
         }
 
+        function toDateInputValue(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function getDefaultFilterDateRange() {
+            const today = new Date();
+            const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+            return {
+                from: toDateInputValue(monthStart),
+                to: toDateInputValue(today)
+            };
+        }
+
+        function setDefaultReportDateFilters() {
+            const reportFromEl = document.getElementById('reportFrom');
+            const reportToEl = document.getElementById('reportTo');
+            const defaultRange = getDefaultFilterDateRange();
+
+            if (reportFromEl) reportFromEl.value = defaultRange.from;
+            if (reportToEl) reportToEl.value = defaultRange.to;
+        }
+
         function initializeApp() {
             const supabase = window.supabaseInstance;
             setupResponsiveTablesObserver();
@@ -1645,6 +1671,8 @@
             } else {
                 reportEmployeeGroup.style.display = 'block';
             }
+
+            setDefaultReportDateFilters();
 
             document.querySelectorAll('.manager-only').forEach(element => {
                 element.style.display = isManager ? '' : 'none';
