@@ -246,12 +246,12 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="withdrawal">السحب او عجز</label>
-                    <input type="number" id="withdrawal" name="withdrawal" step="0.01" placeholder="أدخل السحب" value="">
+                    <label for="withdrawal">سلفة او عجز</label>
+                    <input type="number" id="withdrawal" name="withdrawal" step="0.01" placeholder="أدخل السلفة او العجز" value="">
                 </div>
 
                 <div class="form-group" id="withdrawalNotesGroup" style="display: none;">
-                    <label for="withdrawalNotes">ملاحظات السحب/العجز <span style="color: red;">*</span></label>
+                    <label for="withdrawalNotes">ملاحظات سلفة/العجز <span style="color: red;">*</span></label>
                     <textarea id="withdrawalNotes" name="withdrawalNotes" rows="3" placeholder="اكتب سبب السحب أو العجز..."></textarea>
                 </div>
             </div>
@@ -296,8 +296,8 @@
             </div>
 
             <div class="form-group">
-                <label for="generalNotes">ملاحظات عامة</label>
-                <textarea id="generalNotes" name="generalNotes" rows="3" placeholder="اكتب أي ملاحظات عامة عن اليوم..."></textarea>
+                <label for="generalNotes">ملاحظات عامة <span style="color:red;">*</span></label>
+                <textarea id="generalNotes" name="generalNotes" rows="3" placeholder="اكتب اليوزرات المستخدمة خلال اليوم -تفعيلات من والي فروع اخرى ..." required></textarea>
             </div>
            
             <div class="form-group">
@@ -1040,7 +1040,12 @@
             if (returns > 0) notesParts.push(`مردود: ${returnsNotes}`);
             if (withdrawal > 0) notesParts.push(`سحب/عجز: ${withdrawalNotes}`);
             const notes = notesParts.length ? notesParts.join(' | ') : '-';
-            const generalNotes = document.getElementById('generalNotes').value.trim() || '-';
+            const generalNotes = document.getElementById('generalNotes').value.trim();
+            if (!generalNotes) {
+                await showCustomAlert('يرجى كتابة الملاحظات العامة قبل الحفظ.', '⚠️ ملاحظات عامة مطلوبة', 'warning');
+                document.getElementById('generalNotes').focus();
+                return;
+            }
             const attachment = '';
 
             const total = totalCash + totalCard;
@@ -1413,6 +1418,15 @@
         setFormEnabled(false);
 
         // ===== معالج رفع الصور إلى Supabase Storage =====
+        // تنبيه عند الضغط على حقل الصورة
+        imageUploadInput.addEventListener('click', function() {
+            showCustomAlert(
+                '⚠️ تأكد من أن الصورة المرفقة هي موازنة وليست حسبة لحظية.\n\nالموازنة هي الإجمالي الكامل للنظام وليست مجرد قراءة آنية.',
+                'تنبيه مهم',
+                'warning'
+            );
+        });
+
         // عند اختيار صورة
         imageUploadInput.addEventListener('change', function(e) {
             const file = e.target.files[0];

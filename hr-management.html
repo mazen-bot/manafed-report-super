@@ -1365,6 +1365,7 @@
             medical_upload_deadline_days: 3
         };
         let leaveEntitlementRules = [];
+        let isSubmittingLeaveRequest = false;
 
         // === وظائف مساعدة للصلاحيات ===
         // التحقق من صلاحية إدارة الموارد البشرية
@@ -1553,11 +1554,12 @@
             document.getElementById('permissionMode').addEventListener('change', updatePermissionModeUI);
             document.getElementById('requestTimeFrom').addEventListener('change', calculateHours);
             document.getElementById('requestTimeTo').addEventListener('change', calculateHours);
-            // إرسال طلب إجازة
-            document.getElementById('leaveRequestForm').addEventListener('submit', async function(e) {
+            // إرسال طلب إجازة (ربط وحيد لمنع تكرار المستمعات)
+            const leaveRequestForm = document.getElementById('leaveRequestForm');
+            leaveRequestForm.onsubmit = async function(e) {
                 e.preventDefault();
                 await submitLeaveRequest();
-            });
+            };
 
         function updatePermissionModeUI() {
             const requestType = document.getElementById('requestType').value;
@@ -1998,6 +2000,9 @@
         }
 
         async function submitLeaveRequest() {
+            if (isSubmittingLeaveRequest) return;
+            isSubmittingLeaveRequest = true;
+
             const supabase = window.supabaseInstance;
 
             const requestType = document.getElementById('requestType').value;
@@ -2059,46 +2064,56 @@
                 created_at: new Date().toISOString()
             };
 
+            let insertError = null;
             try {
-                const { data, error } = await supabase
+                const { error } = await supabase
                     .from('leave_requests')
                     .insert([requestData]);
+                insertError = error;
+            } catch (err) {
+                insertError = err;
+            }
 
-                if (error) throw error;
+            if (insertError) {
+                console.error('خطأ في إرسال الطلب:', insertError);
+                showCustomError('فشل إرسال الطلب. حاول مرة أخرى.', 'خطأ');
+                isSubmittingLeaveRequest = false;
+                return;
+            }
 
-                // Send email notification for leave request
+            const successMsg = requestType === 'sick'
+                ? `تم إرسال الطلب بنجاح! يرجى رفع الشهادة الطبية خلال ${medicalDeadlineDays} أيام.`
+                : 'تم إرسال الطلب بنجاح! سيتم مراجعته من قبل الإدارة.';
+
+            showCustomSuccess(successMsg, 'نجح الإرسال');
+            document.getElementById('leaveRequestForm').reset();
+            updatePermissionModeUI();
+
+            // الأعمال اللاحقة لا يجب أن تغيّر نتيجة إرسال الطلب
+            try {
                 if (window.sendLeaveRequestNotification) {
                     setTimeout(() => {
-                        sendLeaveRequestNotification(requestData).catch(err => {
+                        Promise.resolve(window.sendLeaveRequestNotification(requestData)).catch(err => {
                             console.warn('⚠️ Could not send email notification:', err);
                         });
                     }, 500);
                 }
 
-                // Send Telegram notification for leave request
                 if (window.sendLeaveRequestTelegram) {
                     setTimeout(() => {
-                        sendLeaveRequestTelegram(requestData).catch(err => {
+                        Promise.resolve(window.sendLeaveRequestTelegram(requestData)).catch(err => {
                             console.warn('⚠️ Could not send Telegram notification:', err);
                         });
                     }, 1000);
                 }
 
-                const successMsg = requestType === 'sick'
-                    ? `تم إرسال الطلب بنجاح! يرجى رفع الشهادة الطبية خلال ${medicalDeadlineDays} أيام.`
-                    : 'تم إرسال الطلب بنجاح! سيتم مراجعته من قبل الإدارة.';
-
-                showCustomSuccess(successMsg, 'نجح الإرسال');
-                document.getElementById('leaveRequestForm').reset();
-                updatePermissionModeUI();
-                
-                // تحميل البيانات بشكل منفصل - عدم رمي الخطأ للمستوى العلوي
                 loadUserData().catch(err => {
                     console.warn('⚠️ تعذر تحديث البيانات المعروضة:', err);
                 });
-            } catch (err) {
-                console.error('خطأ في إرسال الطلب:', err);
-                showCustomError('فشل إرسال الطلب. حاول مرة أخرى.', 'خطأ');
+            } catch (postSuccessErr) {
+                console.warn('⚠️ خطأ بعد نجاح إرسال الطلب:', postSuccessErr);
+            } finally {
+                isSubmittingLeaveRequest = false;
             }
         }
 
