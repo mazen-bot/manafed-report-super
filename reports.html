@@ -59,6 +59,51 @@
                 margin-right: 0 !important;
             }
         }
+
+        th.col-general-notes,
+        td.col-general-notes {
+            min-width: 200px;
+            max-width: 260px;
+            white-space: normal;
+            word-break: break-word;
+            vertical-align: middle;
+        }
+
+        td.col-general-notes span {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-height: 3em;
+            line-height: 1.5em;
+            word-break: break-word;
+            white-space: normal;
+        }
+
+        /* إخفاء العمود بالكامل عند إضافة الكلاس على الجدول */
+        #reportsTable.general-notes-collapsed th.col-general-notes,
+        #reportsTable.general-notes-collapsed td.col-general-notes {
+            display: none;
+        }
+
+        .general-notes-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .general-notes-toggle-btn {
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border-radius: 6px;
+            padding: 2px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
     </style>
     <!-- Custom Alerts System / نظام التنبيهات المخصصة -->
     <script src="custom-alerts.js"></script>
@@ -256,6 +301,9 @@
 
        
 
+        <div style="text-align:right;margin-bottom:6px;">
+            <button type="button" id="toggleGeneralNotesBtn" class="general-notes-toggle-btn" onclick="toggleGeneralNotesColumn()" style="background:#6b2d87;border:none;color:#fff;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;">📋 إخفاء ملاحظات عامة</button>
+        </div>
         <div class="table-container">
             <table id="reportsTable">
                 <thead>
@@ -1121,6 +1169,7 @@
         let currentDisplayData = [];
         let currentPage = 1;
         let rowsPerPage = 7;
+        let isGeneralNotesExpanded = false;
         let tableControlsInitialized = false;
         let activeNotesCell = null;
         let selectedRecordId = null;
@@ -1435,6 +1484,9 @@
 
                     const cell = event.target.closest('.notes-cell');
                     if (cell) openNotesEditor(cell);
+
+                    const gnCell = event.target.closest('.general-notes-cell');
+                    if (gnCell) openNotesEditor(gnCell);
                 });
             }
 
@@ -1848,7 +1900,12 @@
             const newText = notesEditor.value.trim();
             const finalText = newText.length ? newText : '-';
             activeNotesCell.dataset.notes = finalText;
-            activeNotesCell.textContent = finalText;
+            if (activeNotesCell.classList.contains('general-notes-cell')) {
+                const span = activeNotesCell.querySelector('span');
+                if (span) span.textContent = finalText === '-' ? '' : finalText;
+            } else {
+                activeNotesCell.textContent = finalText;
+            }
 
             const recordId = activeNotesCell.dataset.recordId;
             if (recordId) {
@@ -1856,6 +1913,8 @@
                 if (record) {
                     if (activeNotesCell.dataset.notesType === 'financing') {
                         record.financingNotes = finalText;
+                    } else if (activeNotesCell.dataset.notesType === 'generalNotes') {
+                        record.generalNotes = finalText;
                     } else {
                         record.notes = finalText;
                     }
@@ -2518,6 +2577,8 @@
             const tableBody = document.getElementById('tableBody');
             if (!tableBody) return;
 
+            updateGeneralNotesToggleButton();
+
             if (!currentDisplayData || currentDisplayData.length === 0) {
                 tableBody.innerHTML = '<tr class="no-data"><td colspan="18">لا توجد بيانات متاحة</td></tr>';
                 updatePaginationInfo();
@@ -2584,7 +2645,7 @@
                     <td class="col-withdrawal">${parseFloat(record.withdrawal).toFixed(2)}</td>
                                         <td class="col-salary">${parseFloat(record.salaryWithdrawal || 0).toFixed(2)}</td>
                     <td class="col-notes notes-cell">${record.notes || '-'}</td>
-                    <td class="col-general-notes">${record.generalNotes || '-'}</td>
+                    <td class="col-general-notes general-notes-cell">${buildGeneralNotesCell(record.generalNotes)}</td>
                     <td class="col-attachment">${getAttachmentCell(record)}</td>
                     ${actionsCell.replace('<td', '<td class="col-actions"')}
                 `;
@@ -2603,6 +2664,14 @@
                     notesCell.textContent = noteText;
                 }
 
+                const generalNotesCell = row.querySelector('.general-notes-cell');
+                if (generalNotesCell) {
+                    const gnText = getSafeGeneralNotes(record.generalNotes);
+                    generalNotesCell.dataset.notes = gnText;
+                    generalNotesCell.dataset.recordId = record.id;
+                    generalNotesCell.dataset.notesType = 'generalNotes';
+                }
+
                 if (selectedRecordId && String(selectedRecordId) === String(record.id)) {
                     row.classList.add('selected-row');
                 }
@@ -2612,6 +2681,39 @@
 
             updatePaginationInfo();
         }
+
+        function getSafeGeneralNotes(rawValue) {
+            if (rawValue === null || rawValue === undefined) return '-';
+            const text = String(rawValue);
+            return text.length ? text : '-';
+        }
+
+        function buildGeneralNotesCell(notes) {
+            const safeNotes = getSafeGeneralNotes(notes);
+            const escapedNotes = safeNotes
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            return `<span>${escapedNotes}</span>`;
+        }
+
+        function toggleGeneralNotesColumn() {
+            const table = document.getElementById('reportsTable');
+            if (!table) return;
+            const isCollapsed = table.classList.toggle('general-notes-collapsed');
+            const toggleBtn = document.getElementById('toggleGeneralNotesBtn');
+            if (toggleBtn) toggleBtn.textContent = isCollapsed ? 'إظهار العمود' : 'إخفاء العمود';
+        }
+
+        function updateGeneralNotesToggleButton() {
+            const table = document.getElementById('reportsTable');
+            const toggleBtn = document.getElementById('toggleGeneralNotesBtn');
+            if (!toggleBtn || !table) return;
+            toggleBtn.textContent = table.classList.contains('general-notes-collapsed') ? 'إظهار العمود' : 'إخفاء العمود';
+        }
+
+        // تعريض الدالة للنطاق العالمي لأن onclick في HTML لا يصل للنطاق الداخلي
+        window.toggleGeneralNotesColumn = toggleGeneralNotesColumn;
 
         function formatDateTime(timestamp) {
             const date = new Date(timestamp);
