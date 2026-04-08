@@ -833,9 +833,50 @@
                 font-size: 24px;
             }
         }
+
+        /* إشعار نتيجة إرسال التنبيه */
+        #notifToastContainer {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            pointer-events: none;
+            width: 90%;
+            max-width: 480px;
+        }
+
+        .notif-toast {
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.5;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+            pointer-events: auto;
+            animation: toastIn 0.3s ease;
+            width: 100%;
+            text-align: center;
+        }
+
+        .notif-toast.success { background: #d4edda; color: #155724; border: 1.5px solid #c3e6cb; }
+        .notif-toast.warning { background: #fff3cd; color: #856404; border: 1.5px solid #ffc107; }
+        .notif-toast.error   { background: #f8d7da; color: #721c24; border: 1.5px solid #f5c6cb; }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
+    <!-- حاوية إشعارات نتيجة التنبيهات -->
+    <div id="notifToastContainer"></div>
+
     <!-- قسم تسجيل الدخول -->
     <div id="loginSection" class="login-section">
         <div class="login-header">
@@ -1236,50 +1277,15 @@
     </div>
 
     <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- EmailJS - Try local file first, then CDN fallback -->
-    <script src="email.min.js" onerror="loadEmailJSFromCDN()"></script>
+    <!-- EmailJS CDN fallback functions — يجب تعريفها قبل تحميل email.min.js -->
     <script>
-        // If local file loads successfully, try to initialize
-        function checkAndInitEmailJS() {
-            if (typeof emailjs !== 'undefined') {
-                window.emailjsLoaded = true;
-                console.log('✅ EmailJS loaded from local file');
-                if (typeof initializeEmailJS === 'function') {
-                    initializeEmailJS();
-                }
-            }
-        }
-        
-        
-        // Try to initialize after a short delay
-        setTimeout(checkAndInitEmailJS, 100);
-        
         // Fallback CDN loader if local file not found
         function loadEmailJSFromCDN() {
             console.log('📡 Local EmailJS file not found, loading from CDN...');
             
             const script = document.createElement('script');
-            script.src = 'https://unpkg.com/@emailjs/browser@4.3.0/dist/build/email.min.js';
-            script.id = 'emailjs-cdn-primary';
-            script.onload = () => {
-                window.emailjsLoaded = true;
-                console.log('✅ EmailJS loaded from unpkg CDN');
-                if (typeof initializeEmailJS === 'function') {
-                    initializeEmailJS();
-                }
-            };
-            script.onerror = () => {
-                console.warn('⚠️ unpkg CDN failed, trying jsDelivr...');
-                loadFromJsDelivr();
-            };
-            document.head.appendChild(script);
-        }
-        
-        // Secondary CDN fallback
-        function loadFromJsDelivr() {
-            const script = document.createElement('script');
             script.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4.3.0/dist/build/email.min.js';
-            script.id = 'emailjs-cdn-secondary';
+            script.id = 'emailjs-cdn-primary';
             script.onload = () => {
                 window.emailjsLoaded = true;
                 console.log('✅ EmailJS loaded from jsDelivr CDN');
@@ -1288,7 +1294,26 @@
                 }
             };
             script.onerror = () => {
-                console.warn('⚠️ jsDelivr failed, trying cdnjs...');
+                console.warn('⚠️ jsDelivr CDN failed, trying unpkg...');
+                loadFromUnpkg();
+            };
+            document.head.appendChild(script);
+        }
+
+        // Secondary CDN fallback
+        function loadFromUnpkg() {
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/@emailjs/browser@4.3.0/dist/build/email.min.js';
+            script.id = 'emailjs-cdn-secondary';
+            script.onload = () => {
+                window.emailjsLoaded = true;
+                console.log('✅ EmailJS loaded from unpkg CDN');
+                if (typeof initializeEmailJS === 'function') {
+                    initializeEmailJS();
+                }
+            };
+            script.onerror = () => {
+                console.warn('⚠️ unpkg failed, trying cdnjs...');
                 loadFromCdnjs();
             };
             document.head.appendChild(script);
@@ -1308,11 +1333,26 @@
             };
             script.onerror = () => {
                 window.emailjsLoadError = true;
-                console.error('❌ All CDN sources failed. See setup-emailjs-offline.html for local setup');
+                console.error('❌ All CDN sources failed. Email notifications disabled.');
             };
             document.head.appendChild(script);
         }
+
+        // If local file loads successfully, try to initialize
+        function checkAndInitEmailJS() {
+            if (typeof emailjs !== 'undefined') {
+                window.emailjsLoaded = true;
+                console.log('✅ EmailJS loaded from local file');
+                if (typeof initializeEmailJS === 'function') {
+                    initializeEmailJS();
+                }
+            }
+        }
+        // Try to initialize after a short delay (handles local file success case)
+        setTimeout(checkAndInitEmailJS, 100);
     </script>
+    <!-- EmailJS - Try local file first, then CDN fallback -->
+    <script src="email.min.js" onerror="loadEmailJSFromCDN()"></script>
     <script src="custom-alerts.js"></script>
     <script src="override-alerts.js"></script>
     <script src="emailjs-notifications.js"></script>
@@ -1561,6 +1601,19 @@
                 await submitLeaveRequest();
             };
 
+            // إرسال إنذار
+            document.getElementById('warningForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await submitWarning();
+            });
+
+            // تشغيل الاستعلام
+            document.getElementById('reportForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await loadReports();
+            });
+        }
+
         function updatePermissionModeUI() {
             const requestType = document.getElementById('requestType').value;
             const permissionMode = document.getElementById('permissionMode').value;
@@ -1637,19 +1690,6 @@
                 requestHours.value = '';
                 calculateDays();
             }
-        }
-
-            // إرسال إنذار
-            document.getElementById('warningForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                await submitWarning();
-            });
-
-            // تشغيل الاستعلام
-            document.getElementById('reportForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                await loadReports();
-            });
         }
 
         function showMainContent() {
@@ -1786,6 +1826,143 @@
         async function promptAction(message, defaultValue = '') {
             const result = window.prompt(message, defaultValue);
             return result instanceof Promise ? await result : result;
+        }
+
+        function showNotifToast(message, type = 'success', duration = 6000) {
+            const container = document.getElementById('notifToastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `notif-toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.transition = 'opacity 0.4s';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 400);
+            }, duration);
+        }
+
+        async function runTelegramDiagnosis() {
+            const box = document.getElementById('diagnosisResult');
+            box.style.display = 'block';
+            box.innerHTML = '⏳ جاري التشخيص...';
+
+            const lines = [];
+            const ok  = (t) => lines.push(`<span style="color:#155724">✅ ${t}</span>`);
+            const err = (t) => lines.push(`<span style="color:#721c24">❌ ${t}</span>`);
+            const inf = (t) => lines.push(`<span style="color:#004085">ℹ️ ${t}</span>`);
+            const render = () => { box.innerHTML = lines.join('<br>'); };
+
+            // 1. التحقق من تحميل وحدة التلغرام
+            if (typeof window.sendLeaveRequestTelegram !== 'function') {
+                err('وحدة telegram-notifications.js غير محملة. تأكد من وجود الملف وإعادة تحميل الصفحة.');
+                render(); return;
+            }
+            ok('وحدة telegram-notifications.js محملة');
+
+            // 2. التحقق من تسجيل دخول المستخدم
+            if (!currentUser || !currentUser.employee_id) {
+                err('لا يوجد مستخدم مسجّل الدخول.');
+                render(); return;
+            }
+            ok(`المستخدم الحالي: ${currentUser.employee_id} (${currentUser.name})`);
+
+            // 3. جلب بيانات الموظف مباشرة مع إظهار الخطأ الحقيقي
+            const supabase = window.supabaseInstance;
+            if (!supabase) {
+                err('Supabase غير مُهيّأ.');
+                render(); return;
+            }
+
+            inf(`جاري جلب بيانات الموظف (${currentUser.employee_id}) من قاعدة البيانات...`);
+            render();
+
+            const { data: empRow, error: empErr } = await supabase
+                .from('employees')
+                .select('employee_id, name, telegram_chat_id, manager_id')
+                .eq('employee_id', currentUser.employee_id)
+                .single();
+
+            if (empErr) {
+                err(`خطأ Supabase عند جلب الموظف: ${empErr.message || JSON.stringify(empErr)}`);
+                if (empErr.message && empErr.message.includes('telegram_chat_id')) {
+                    err('▶ السبب: عمود telegram_chat_id غير موجود في جدول employees. يجب تشغيل ملف add_telegram_support.sql في Supabase SQL Editor.');
+                }
+                render(); return;
+            }
+
+            if (!empRow) {
+                err(`لم يُعثر على الموظف برقم ${currentUser.employee_id} في قاعدة البيانات.`);
+                render(); return;
+            }
+            ok(`تم جلب بيانات الموظف: ${empRow.name}`);
+            inf(`telegram_chat_id للموظف: ${empRow.telegram_chat_id || '(غير محدد)'}`);
+            inf(`manager_id للموظف: ${empRow.manager_id || '(غير محدد)'}`);
+
+            // 4. التحقق من manager_id
+            if (!empRow.manager_id) {
+                err('الموظف ليس لديه مدير (manager_id فارغ). افتح admin.html وحدد المدير.');
+                render(); return;
+            }
+            ok(`manager_id = ${empRow.manager_id}`);
+
+            // 5. جلب بيانات المدير مع إظهار الخطأ
+            const { data: mgrRow, error: mgrErr } = await supabase
+                .from('employees')
+                .select('employee_id, name, telegram_chat_id')
+                .eq('employee_id', empRow.manager_id)
+                .single();
+
+            if (mgrErr) {
+                err(`خطأ Supabase عند جلب المدير: ${mgrErr.message || JSON.stringify(mgrErr)}`);
+                render(); return;
+            }
+            if (!mgrRow) {
+                err(`لم يُعثر على المدير برقم ${empRow.manager_id} في قاعدة البيانات.`);
+                render(); return;
+            }
+            ok(`تم جلب بيانات المدير: ${mgrRow.name} (${mgrRow.employee_id})`);
+            inf(`telegram_chat_id للمدير: ${mgrRow.telegram_chat_id || '(غير محدد)'}`);
+
+            // 6. التحقق من Chat ID المدير
+            if (!mgrRow.telegram_chat_id) {
+                err(`المدير (${mgrRow.name}) لا يمتلك Telegram Chat ID.`);
+                err('▶ الحل: افتح admin.html → ابحث عن المدير → اضغط زر Chat ID → أدخل الرقم من @userinfobot');
+                render(); return;
+            }
+            ok(`Chat ID للمدير: ${mgrRow.telegram_chat_id}`);
+
+            // 7. اختبار إرسال رسالة فعلية
+            inf('جاري إرسال رسالة اختبار للمدير...');
+            render();
+
+            const testMsg = `🧪 <b>رسالة اختبار تشخيصية</b>\n\nتم الإرسال بنجاح من نظام الموارد البشرية.\n\nالموظف: ${empRow.name}\nالتاريخ: ${new Date().toLocaleString('ar-EG')}`;
+            const apiUrl = `https://api.telegram.org/bot${window.TelegramConfig ? window.TelegramConfig.botToken : 'UNKNOWN'}/sendMessage`;
+
+            try {
+                const resp = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: mgrRow.telegram_chat_id, text: testMsg, parse_mode: 'HTML', disable_web_page_preview: true })
+                });
+                const result = await resp.json();
+                if (result.ok) {
+                    ok('✨ تم إرسال رسالة الاختبار للمدير بنجاح! تحقق من تليجرام المدير.');
+                } else {
+                    err(`فشل الإرسال - Telegram API: ${result.description}`);
+                    if (result.description && result.description.includes('chat not found')) {
+                        err('▶ المدير لم يضغط /start في البوت بعد.');
+                    } else if (result.description && result.description.includes('bot was blocked')) {
+                        err('▶ المدير حجب البوت. يجب إلغاء الحجب وضغط /start.');
+                    } else if (result.description && result.description.includes('Unauthorized')) {
+                        err('▶ Bot Token خاطئ في ملف telegram-notifications.js.');
+                    }
+                }
+            } catch(e) {
+                err('استثناء أثناء الإرسال: ' + e.message);
+            }
+
+            render();
         }
 
         async function loadHrSettings() {
@@ -2089,21 +2266,47 @@
             document.getElementById('leaveRequestForm').reset();
             updatePermissionModeUI();
 
-            // الأعمال اللاحقة لا يجب أن تغيّر نتيجة إرسال الطلب
+            // إرسال الإشعارات وعرض نتيجتها للمستخدم
             try {
                 if (window.sendLeaveRequestNotification) {
-                    setTimeout(() => {
-                        Promise.resolve(window.sendLeaveRequestNotification(requestData)).catch(err => {
-                            console.warn('⚠️ Could not send email notification:', err);
-                        });
+                    setTimeout(async () => {
+                        try {
+                            const emailSent = await window.sendLeaveRequestNotification(requestData);
+                            if (emailSent) {
+                                showNotifToast('📧 تم إرسال إشعار الإيميل للمدير بنجاح', 'success');
+                            } else {
+                                showNotifToast('📧 الإيميل: تحقق من إعداد إيميل المدير في لوحة التحكم', 'warning');
+                            }
+                        } catch (err) {
+                            showNotifToast('📧 فشل إرسال إشعار الإيميل: ' + err.message, 'error');
+                        }
                     }, 500);
                 }
 
                 if (window.sendLeaveRequestTelegram) {
-                    setTimeout(() => {
-                        Promise.resolve(window.sendLeaveRequestTelegram(requestData)).catch(err => {
-                            console.warn('⚠️ Could not send Telegram notification:', err);
-                        });
+                    setTimeout(async () => {
+                        try {
+                            const tgSent = await window.sendLeaveRequestTelegram(requestData);
+                            if (tgSent) {
+                                showNotifToast('📱 تم إرسال إشعار التلغرام للمدير بنجاح', 'success');
+                            } else {
+                                // تشخيص السبب
+                                const chatIds = window.getTelegramChatIds
+                                    ? await window.getTelegramChatIds(requestData.employee_id).catch(() => null)
+                                    : null;
+                                if (!chatIds) {
+                                    showNotifToast('📱 التلغرام: تعذر جلب بيانات الموظف من قاعدة البيانات', 'error');
+                                } else if (!chatIds.managerId) {
+                                    showNotifToast('📱 التلغرام: لم يُحدَّد مدير لهذا الموظف. افتح لوحة التحكم ← إدارة الموظفين وحدد المدير.', 'error');
+                                } else if (!chatIds.managerChatId) {
+                                    showNotifToast('📱 التلغرام: المدير (' + (chatIds.managerName || chatIds.managerId) + ') لا يمتلك Chat ID. افتح لوحة التحكم وأضف Chat ID للمدير.', 'error');
+                                } else {
+                                    showNotifToast('📱 التلغرام: فشل الإرسال - تحقق من صلاحية Bot Token وأن المدير ضغط /start للبوت', 'error');
+                                }
+                            }
+                        } catch (err) {
+                            showNotifToast('📱 فشل إشعار التلغرام: ' + err.message, 'error');
+                        }
                     }, 1000);
                 }
 
@@ -2193,8 +2396,12 @@
                 if (employeeId) requestsQuery = requestsQuery.eq('employee_id', employeeId);
                 if (requestType) requestsQuery = requestsQuery.eq('request_type', requestType);
                 if (requestStatus) requestsQuery = requestsQuery.eq('status', requestStatus);
-                if (fromDate) requestsQuery = requestsQuery.gte('from_date', fromDate);
-                if (toDate) requestsQuery = requestsQuery.lte('to_date', toDate);
+                if (fromDate) requestsQuery = requestsQuery.gte('created_at', new Date(fromDate).toISOString());
+                if (toDate) {
+                    const endOfDay = new Date(toDate);
+                    endOfDay.setHours(23, 59, 59, 999);
+                    requestsQuery = requestsQuery.lte('created_at', endOfDay.toISOString());
+                }
 
                 let warningsQuery = supabase
                     .from('employee_warnings')

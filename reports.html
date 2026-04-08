@@ -107,6 +107,7 @@
     </style>
     <!-- Custom Alerts System / نظام التنبيهات المخصصة -->
     <script src="custom-alerts.js"></script>
+    <script src="telegram-notifications.js"></script>
     <script src="override-alerts.js"></script>
 </head>
 <body>
@@ -529,6 +530,7 @@
                     <button id="btnReconRefresh" onclick="computeReconciliations()" style="padding:8px 14px;background:#4caf50;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">🔄 تحديث البيانات</button>
                     <button id="btnReconAddDelivery" onclick="toggleAddDeliveryForm()" style="padding:8px 14px;background:#1976d2;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">➕ إضافة تسليم</button>
                     <button id="btnReconExport" onclick="exportReconciliationsExcel()" style="padding:8px 14px;background:#f39c12;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">📥 تصدير Excel</button>
+                    <button id="btnSendCashTelegram" onclick="sendDailyCashReportTelegram(this)" style="padding:8px 14px;background:#0088cc;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">📤 إرسال تقرير تيليغرام</button>
                 </div>
 
                 <div id="addDeliveryForm" style="display:none;margin-top:12px;border-top:1px dashed #ddd;padding-top:12px;">
@@ -2050,6 +2052,7 @@
 
             applyDefaultDateRangesToAllFilters();
             await loadData();
+            scheduleDailyCashReport();
             } catch (err) {
                 console.error('[INIT] خطأ في initializeReports:', err);
                 throw err;
@@ -2760,7 +2763,6 @@
         function applyDefaultDateRangesToAllFilters() {
             setDefaultDateRangeForInputs('filterDateFrom', 'filterDateTo');
             setDefaultDateRangeForInputs('deliveriesFilterDateFrom', 'deliveriesFilterDateTo');
-            setDefaultDateRangeForInputs('reconDateFrom', 'reconDateTo');
             setDefaultDateRangeForInputs('expensesFilterDateFrom', 'expensesFilterDateTo');
             setDefaultDateRangeForInputs('withdrawalDetailsFilterDateFrom', 'withdrawalDetailsFilterDateTo');
         }
@@ -7068,6 +7070,112 @@
         window.deleteDelivery = deleteDelivery;
         window.handleDeliveriesPeriodStartDateChange = handleDeliveriesPeriodStartDateChange;
         window.exportCashDeliveriesSummaryExcel = exportCashDeliveriesSummaryExcel;
+
+        // ============= الإشعار اليومي للكاش على تيليجرام =============
+
+        async function sendDailyCashReportTelegram(btn) {
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري الإرسال...'; }
+            console.log('[DAILY CASH] إرسال تقرير الكاش اليومي...');
+            const supabase = window.supabaseInstance;
+            if (!supabase) { console.warn('[DAILY CASH] Supabase غير متاح'); if (btn) { btn.disabled = false; btn.textContent = '📤 إرسال تقرير تيليغرام'; } return; }
+
+            try {
+                // حساب الأرصدة من البيانات الموجودة في الذاكرة
+                const grouped = {};
+
+                (Array.isArray(allData) ? allData : []).forEach(r => {
+                    if (!grouped[r.branch]) grouped[r.branch] = { expected: 0, delivered: 0, incoming: 0, outgoing: 0 };
+                    grouped[r.branch].expected += parseFloat(r.totalCash || 0);
+                });
+
+                (Array.isArray(cashDeliveries) ? cashDeliveries : []).forEach(d => {
+                    if (!grouped[d.branch]) grouped[d.branch] = { expected: 0, delivered: 0, incoming: 0, outgoing: 0 };
+                    grouped[d.branch].delivered += parseFloat(d.amount || d.delivered_amount || 0);
+                });
+
+                getActiveCashTransfers().forEach(t => {
+                    if (!grouped[t.fromBranch]) grouped[t.fromBranch] = { expected: 0, delivered: 0, incoming: 0, outgoing: 0 };
+                    if (!grouped[t.toBranch]) grouped[t.toBranch] = { expected: 0, delivered: 0, incoming: 0, outgoing: 0 };
+                    grouped[t.fromBranch].outgoing += parseFloat(t.amount || 0);
+                    grouped[t.toBranch].incoming += parseFloat(t.amount || 0);
+                });
+
+                const branches = Object.keys(grouped).sort((a, b) => a.localeCompare(b, 'ar'));
+                if (branches.length === 0) { console.log('[DAILY CASH] لا توجد بيانات'); return; }
+
+                let lines = [];
+                let totalRemaining = 0;
+
+                branches.forEach(branch => {
+                    const d = grouped[branch];
+                    const adjusted = d.expected + d.incoming;
+                    const settled = d.delivered + d.outgoing;
+                    const remaining = adjusted - settled;
+                    totalRemaining += remaining;
+                    const emoji = remaining <= 0 ? '✅' : remaining > 5000 ? '🚨' : '⚠️';
+                    const esc = (t) => String(t || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                    lines.push(`${emoji} <b>${esc(branch)}</b>: ${remaining.toFixed(2)} ر.س`);
+                });
+
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+                const message =
+                    `💰 <b>تقرير الكاش اليومي</b>\n` +
+                    `📅 ${dateStr}\n\n` +
+                    lines.join('\n') +
+                    `\n\n<b>━━━━━━━━━━━━━━</b>\n` +
+                    `💼 <b>إجمالي الكاش المتبقي: ${totalRemaining.toFixed(2)} ر.س</b>`;
+
+                // بوت الكاش المخصص (@manafed_cash_bot)
+                const CASH_BOT_TOKEN = '8645694797:AAEKg2BojN2KJo1wAmAJlpNrQ1r-yj4JKgE';
+                const apiUrl = `https://api.telegram.org/bot${CASH_BOT_TOKEN}/sendMessage`;
+
+                // إرسال إلى الشات المخصص للكاش فقط
+                const CASH_CHAT_ID = '8343466035';
+                try {
+                    const res = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ chat_id: CASH_CHAT_ID, text: message, parse_mode: 'HTML' })
+                    });
+                    if (res.ok) {
+                        console.log('[DAILY CASH] ✅ تم إرسال التقرير إلى شات الكاش');
+                        if (btn) { btn.textContent = '✅ تم الإرسال'; btn.style.background = '#4caf50'; setTimeout(() => { btn.disabled = false; btn.textContent = '📤 إرسال تقرير تيليغرام'; btn.style.background = '#0088cc'; }, 3000); }
+                    } else {
+                        const errBody = await res.text();
+                        console.warn('[DAILY CASH] ⚠️ فشل الإرسال:', errBody);
+                        if (btn) { btn.textContent = '❌ فشل الإرسال'; btn.style.background = '#e53935'; setTimeout(() => { btn.disabled = false; btn.textContent = '📤 إرسال تقرير تيليغرام'; btn.style.background = '#0088cc'; }, 3000); }
+                    }
+                } catch (e) {
+                    console.error('[DAILY CASH] ❌ خطأ في الإرسال:', e);
+                    if (btn) { btn.disabled = false; btn.textContent = '📤 إرسال تقرير تيليغرام'; btn.style.background = '#0088cc'; }
+                }
+
+            } catch (err) {
+                console.error('[DAILY CASH] ❌ خطأ:', err);
+                if (btn) { btn.disabled = false; btn.textContent = '📤 إرسال تقرير تيليغرام'; btn.style.background = '#0088cc'; }
+            }
+        }
+
+        function scheduleDailyCashReport() {
+            const now = new Date();
+            const next3am = new Date(now);
+            next3am.setHours(3, 0, 0, 0);
+            if (next3am <= now) next3am.setDate(next3am.getDate() + 1);
+
+            const msUntil = next3am.getTime() - now.getTime();
+            const minsUntil = Math.round(msUntil / 60000);
+            console.log(`[DAILY CASH] التقرير اليومي سيُرسل بعد ${minsUntil} دقيقة (الساعة 3:00 ص)`);
+
+            setTimeout(async () => {
+                await sendDailyCashReportTelegram();
+                scheduleDailyCashReport(); // جدولة اليوم التالي
+            }, msUntil);
+        }
+
+        window.sendDailyCashReportTelegram = sendDailyCashReportTelegram;
+        window.scheduleDailyCashReport = scheduleDailyCashReport;
 
         // إنشاء موديل التسليمات عند التحميل
         createDeliveriesModal();

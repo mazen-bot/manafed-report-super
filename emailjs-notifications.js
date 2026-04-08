@@ -156,7 +156,7 @@ async function sendLeaveRequestNotification(leaveData) {
         // Email parameters - يُرسل للمدير فقط عند رفع الطلب
         const emailParams = {
             employee_name: emails.employeeName,
-            leave_type: leaveData.leave_type || 'إجازة',
+            leave_type: leaveData.leave_type || leaveData.request_type || 'إجازة',
             from_date: leaveData.from_date,
             to_date: leaveData.to_date,
             days_count: leaveData.days_count,
@@ -231,7 +231,7 @@ async function sendLeaveApprovalNotification(leaveData, approvalStatus, approver
         // Email parameters - يُرسل للموظف فقط عند الموافقة/الرفض
         const emailParams = {
             employee_name: emails.employeeName,
-            leave_type: leaveData.leave_type || 'إجازة',
+            leave_type: leaveData.leave_type || leaveData.request_type || 'إجازة',
             from_date: leaveData.from_date,
             to_date: leaveData.to_date,
             approval_status: statusAr,

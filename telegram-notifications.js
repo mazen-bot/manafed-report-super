@@ -14,6 +14,16 @@ const TelegramConfig = {
 // ================================================
 
 /**
+ * تأمين النص من أحرف HTML الخاصة
+ */
+function escapeHtml(text) {
+    return String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+/**
  * إرسال رسالة تليجرام
  * @param {string} chatId - معرف المحادثة
  * @param {string} message - نص الرسالة (يدعم HTML)
@@ -221,12 +231,12 @@ async function sendLeaveRequestTelegram(leaveData) {
         const message = `
 🔔 <b>طلب إجازة جديد</b>
 
-👤 <b>الموظف:</b> ${chatIds.employeeName}
-📋 <b>النوع:</b> ${leaveTypeAr}
-📅 <b>من:</b> ${leaveData.from_date}
-📅 <b>إلى:</b> ${leaveData.to_date}
-🔢 <b>الأيام:</b> ${leaveData.days_count}
-📝 <b>السبب:</b> ${leaveData.reason || 'بدون تفاصيل'}
+👤 <b>الموظف:</b> ${escapeHtml(chatIds.employeeName)}
+📋 <b>النوع:</b> ${escapeHtml(leaveTypeAr)}
+📅 <b>من:</b> ${escapeHtml(leaveData.from_date)}
+📅 <b>إلى:</b> ${escapeHtml(leaveData.to_date)}
+🔢 <b>الأيام:</b> ${escapeHtml(leaveData.days_count)}
+📝 <b>السبب:</b> ${escapeHtml(leaveData.reason || 'بدون تفاصيل')}
 
 ⏰ <b>تاريخ الطلب:</b> ${new Date().toLocaleDateString('ar-EG')}
 
@@ -295,17 +305,17 @@ async function sendLeaveApprovalTelegram(leaveData, approvalStatus, approverNote
         }[leaveData.request_type] || leaveData.request_type || 'إجازة';
 
         const message = `
-${statusEmoji} <b>${statusText} على طلب الإجازة</b>
+${statusEmoji} <b>${escapeHtml(statusText)} على طلب الإجازة</b>
 
-👤 <b>عزيزي:</b> ${chatIds.employeeName}
+👤 <b>عزيزي:</b> ${escapeHtml(chatIds.employeeName)}
 
-📋 <b>النوع:</b> ${leaveTypeAr}
-📅 <b>من:</b> ${leaveData.from_date}
-📅 <b>إلى:</b> ${leaveData.to_date}
+📋 <b>النوع:</b> ${escapeHtml(leaveTypeAr)}
+📅 <b>من:</b> ${escapeHtml(leaveData.from_date)}
+📅 <b>إلى:</b> ${escapeHtml(leaveData.to_date)}
 
-${statusEmoji} <b>الحالة:</b> ${statusText}
+${statusEmoji} <b>الحالة:</b> ${escapeHtml(statusText)}
 
-📝 <b>ملاحظات:</b> ${approverNotes || 'لا توجد ملاحظات'}
+📝 <b>ملاحظات:</b> ${escapeHtml(approverNotes || 'لا توجد ملاحظات')}
 
 ⏰ <b>تاريخ الرد:</b> ${new Date().toLocaleDateString('ar-EG')}
         `.trim();
@@ -348,13 +358,13 @@ async function sendMedicalReminderTelegram(leaveData, daysLeft) {
         const message = `
 ${urgency} <b>تذكير: الشهادة الطبية مطلوبة</b>
 
-👤 <b>عزيزي:</b> ${chatIds.employeeName}
+👤 <b>عزيزي:</b> ${escapeHtml(chatIds.employeeName)}
 
 📋 <b>نوع الإجازة:</b> إجازة مرضية
-📅 <b>من:</b> ${leaveData.from_date}
-📅 <b>إلى:</b> ${leaveData.to_date}
+📅 <b>من:</b> ${escapeHtml(leaveData.from_date)}
+📅 <b>إلى:</b> ${escapeHtml(leaveData.to_date)}
 
-⏰ <b>المدة المتبقية:</b> ${daysLeft} يوم
+⏰ <b>المدة المتبقية:</b> ${escapeHtml(daysLeft)} يوم
 
 📎 يرجى رفع الشهادة الطبية قبل انتهاء المهلة.
 
@@ -399,13 +409,13 @@ async function sendWarningTelegram(employeeId, warningData) {
         }[warningData.warning_level] || '⚠️';
 
         const message = `
-${warningEmoji} <b>إشعار: ${warningData.warning_level}</b>
+${warningEmoji} <b>إشعار: ${escapeHtml(warningData.warning_level)}</b>
 
-👤 <b>عزيزي:</b> ${chatIds.employeeName}
+👤 <b>عزيزي:</b> ${escapeHtml(chatIds.employeeName)}
 
-📋 <b>نوع الإنذار:</b> ${warningData.warning_level}
-📝 <b>السبب:</b> ${warningData.reason}
-👔 <b>صادر من:</b> ${warningData.issued_by_name}
+📋 <b>نوع الإنذار:</b> ${escapeHtml(warningData.warning_level)}
+📝 <b>السبب:</b> ${escapeHtml(warningData.reason)}
+👔 <b>صادر من:</b> ${escapeHtml(warningData.issued_by_name)}
 
 ⏰ <b>التاريخ:</b> ${new Date().toLocaleDateString('ar-EG')}
 
@@ -454,9 +464,9 @@ async function sendWarningAcknowledgementTelegram(employeeId, warningData) {
         const message = `
 ✅ <b>تأكيد استلام إنذار</b>
 
-👤 <b>الموظف:</b> ${chatIds.employeeName}
-📋 <b>نوع الإنذار:</b> ${warningData.warning_level || 'تنبيه'}
-📝 <b>السبب:</b> ${warningData.reason || 'بدون تفاصيل'}
+👤 <b>الموظف:</b> ${escapeHtml(chatIds.employeeName)}
+📋 <b>نوع الإنذار:</b> ${escapeHtml(warningData.warning_level || 'تنبيه')}
+📝 <b>السبب:</b> ${escapeHtml(warningData.reason || 'بدون تفاصيل')}
 
 🕒 <b>تاريخ التأكيد:</b> ${ackDate}
 
@@ -481,6 +491,7 @@ async function sendWarningAcknowledgementTelegram(employeeId, warningData) {
 // ================================================
 
 // جعل الدوال متاحة globally
+window.TelegramConfig = TelegramConfig;
 window.sendTelegramMessage = sendTelegramMessage;
 window.getTelegramChatIds = getTelegramChatIds;
 window.sendLeaveRequestTelegram = sendLeaveRequestTelegram;

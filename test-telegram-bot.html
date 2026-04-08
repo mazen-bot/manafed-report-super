@@ -202,6 +202,46 @@
         .emoji {
             font-size: 1.5em;
         }
+
+        .notif-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .notif-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 14px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s;
+            background: #fff;
+            font-size: 0.92em;
+            font-weight: 600;
+            color: #4a5568;
+            user-select: none;
+        }
+
+        .notif-card:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+            color: #667eea;
+        }
+
+        .notif-card.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(102,126,234,0.35);
+        }
+
+        .notif-card .notif-icon {
+            font-size: 1.8em;
+            display: block;
+            margin-bottom: 6px;
+        }
     </style>
 </head>
 <body>
@@ -246,6 +286,40 @@
         </div>
         
         <div class="form-group">
+            <label>نوع التنبيه:</label>
+            <div class="notif-grid">
+                <div class="notif-card active" onclick="selectNotif(this, 'custom')">
+                    <span class="notif-icon">✏️</span>
+                    رسالة مخصصة
+                </div>
+                <div class="notif-card" onclick="selectNotif(this, 'leave_request')">
+                    <span class="notif-icon">📋</span>
+                    طلب إجازة
+                </div>
+                <div class="notif-card" onclick="selectNotif(this, 'leave_approved')">
+                    <span class="notif-icon">✅</span>
+                    موافقة على إجازة
+                </div>
+                <div class="notif-card" onclick="selectNotif(this, 'leave_rejected')">
+                    <span class="notif-icon">❌</span>
+                    رفض إجازة
+                </div>
+                <div class="notif-card" onclick="selectNotif(this, 'warning')">
+                    <span class="notif-icon">⚠️</span>
+                    إنذار موظف
+                </div>
+                <div class="notif-card" onclick="selectNotif(this, 'warning_ack')">
+                    <span class="notif-icon">🔖</span>
+                    تأكيد استلام إنذار
+                </div>
+                <div class="notif-card" onclick="selectNotif(this, 'medical')">
+                    <span class="notif-icon">🏥</span>
+                    تذكير شهادة طبية
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
             <label for="messageText">نص الرسالة:</label>
             <textarea 
                 id="messageText" 
@@ -274,6 +348,101 @@
     </div>
     
     <script>
+        // قوالب التنبيهات
+        const notifTemplates = {
+            custom: `🔔 <b>رسالة اختبار</b>
+
+مرحباً! هذه رسالة اختبار من نظام إدارة الموارد البشرية.
+
+✅ إذا استلمت هذه الرسالة، يعني البوت شغال بنجاح!
+
+⏰ التاريخ: {{date}}`,
+
+            leave_request: `🔔 <b>طلب إجازة جديد</b>
+
+👤 <b>الموظف:</b> أحمد محمد
+📋 <b>النوع:</b> إجازة عادية
+📅 <b>من:</b> 2026-04-10
+📅 <b>إلى:</b> 2026-04-14
+🔢 <b>الأيام:</b> 5
+📝 <b>السبب:</b> إجازة سنوية
+
+⏰ <b>تاريخ الطلب:</b> {{date}}
+
+⚠️ يرجى مراجعة الطلب من نظام إدارة الموارد البشرية.`,
+
+            leave_approved: `✅ <b>تمت الموافقة على طلب الإجازة</b>
+
+👤 <b>عزيزي:</b> أحمد محمد
+
+📋 <b>النوع:</b> إجازة عادية
+📅 <b>من:</b> 2026-04-10
+📅 <b>إلى:</b> 2026-04-14
+
+✅ <b>الحالة:</b> تمت الموافقة
+
+📝 <b>ملاحظات:</b> تمت الموافقة على طلبك
+
+⏰ <b>تاريخ الرد:</b> {{date}}`,
+
+            leave_rejected: `❌ <b>تم الرفض على طلب الإجازة</b>
+
+👤 <b>عزيزي:</b> أحمد محمد
+
+📋 <b>النوع:</b> إجازة عادية
+📅 <b>من:</b> 2026-04-10
+📅 <b>إلى:</b> 2026-04-14
+
+❌ <b>الحالة:</b> تم الرفض
+
+📝 <b>ملاحظات:</b> الطلب يتعارض مع احتياجات العمل
+
+⏰ <b>تاريخ الرد:</b> {{date}}`,
+
+            warning: `⚠️ <b>إشعار: إنذار أول</b>
+
+👤 <b>عزيزي:</b> أحمد محمد
+
+📋 <b>نوع الإنذار:</b> إنذار أول
+📝 <b>السبب:</b> التأخر المتكرر في الدوام
+👔 <b>صادر من:</b> المدير المباشر
+
+⏰ <b>التاريخ:</b> {{date}}
+
+⚠️ يرجى مراجعة الإنذار والاطلاع عليه من نظام إدارة الموارد البشرية.`,
+
+            warning_ack: `✅ <b>تأكيد استلام إنذار</b>
+
+👤 <b>الموظف:</b> أحمد محمد
+📋 <b>نوع الإنذار:</b> إنذار أول
+📝 <b>السبب:</b> التأخر المتكرر في الدوام
+
+🕒 <b>تاريخ التأكيد:</b> {{date}}
+
+✅ تم تأكيد استلام الإنذار من قبل الموظف.`,
+
+            medical: `🚨 <b>عاجل!</b> <b>تذكير: الشهادة الطبية مطلوبة</b>
+
+👤 <b>عزيزي:</b> أحمد محمد
+
+📋 <b>نوع الإجازة:</b> إجازة مرضية
+📅 <b>من:</b> 2026-04-05
+📅 <b>إلى:</b> 2026-04-07
+
+⏰ <b>المدة المتبقية:</b> 1 يوم
+
+📎 يرجى رفع الشهادة الطبية قبل انتهاء المهلة.
+
+يمكنك رفعها من نظام إدارة الموارد البشرية.`
+        };
+
+        function selectNotif(el, type) {
+            document.querySelectorAll('.notif-card').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            const today = new Date().toLocaleDateString('ar-EG');
+            document.getElementById('messageText').value = notifTemplates[type].replace(/\{\{date\}\}/g, today);
+        }
+
         // تحميل القيم المحفوظة
         window.addEventListener('DOMContentLoaded', () => {
             const savedToken = localStorage.getItem('telegram_bot_token');
