@@ -607,9 +607,10 @@
             if (withdrawal <= 0) return;
 
             try {
+                // جلب سجل الراتب
                 const { data: salaryRecord, error: salaryFetchError } = await supabase
                     .from('monthly_salary_records')
-                    .select('id, net_salary, total_cash_withdrawn, remaining_amount, payment_status')
+                    .select('id, net_salary, payment_status')
                     .eq('employee_id', salarySource.employee_id)
                     .eq('salary_month', salarySource.salary_month)
                     .eq('salary_year', salarySource.salary_year)
@@ -625,10 +626,31 @@
                     return;
                 }
 
+                // احتساب المسحوب الفعلي من جدول salary_cash_withdrawals (المصدر الصحيح)
+                const { data: withdrawals, error: withdrawalsError } = await supabase
+                    .from('salary_cash_withdrawals')
+                    .select('withdrawal_amount')
+                    .eq('employee_id', salarySource.employee_id)
+                    .eq('salary_month', salarySource.salary_month)
+                    .eq('salary_year', salarySource.salary_year);
+
                 const netSalary = parseAmount(salaryRecord.net_salary, 0);
-                const currentWithdrawn = parseAmount(salaryRecord.total_cash_withdrawn, 0);
-                const effectiveWithdrawal = Math.min(withdrawal, Math.max(0, netSalary - currentWithdrawn));
-                const updatedWithdrawn = Math.max(0, Math.min(netSalary, parseFloat((currentWithdrawn + effectiveWithdrawal).toFixed(2))));
+                let realWithdrawn = 0;
+
+                if (!withdrawalsError && withdrawals && withdrawals.length > 0) {
+                    realWithdrawn = withdrawals.reduce((sum, w) => sum + parseAmount(w.withdrawal_amount, 0), 0);
+                } else {
+                    // في حال تعذر الجلب، نضيف قيمة السحب الجديدة فحسب
+                    console.warn('تعذر جلب سجلات السحب التفصيلية، سيتم إضافة قيمة السحب الجديدة فقط');
+                    const { data: oldRec } = await supabase
+                        .from('monthly_salary_records')
+                        .select('total_cash_withdrawn')
+                        .eq('id', salaryRecord.id)
+                        .maybeSingle();
+                    realWithdrawn = parseAmount(oldRec?.total_cash_withdrawn, 0) + withdrawal;
+                }
+
+                const updatedWithdrawn = Math.max(0, Math.min(netSalary, parseFloat(realWithdrawn.toFixed(2))));
                 const updatedRemaining = Math.max(0, parseFloat((netSalary - updatedWithdrawn).toFixed(2)));
                 const updatedStatus = updatedRemaining <= 0 ? 'paid' : 'pending';
 
@@ -652,6 +674,89 @@
         tamaraInput.addEventListener('input', checkFinancingNotes);
         tabbyInput.addEventListener('input', checkFinancingNotes);
 
+        // مزامنة أرصدة الرواتب من السحوبات الفعلية عند تسجيل الدخول
+        // يُصحّح total_cash_withdrawn و remaining_amount في DB إذا كانت خاطئة
+        async function syncEmployeeSalaryBalance(employeeId) {
+            if (!employeeId) return;
+            try {
+                // جلب جميع سجلات رواتب الموظف غير الملغاة
+                const { data: salaryRecords, error: srError } = await supabase
+                    .from('monthly_salary_records')
+                    .select('id, employee_id, salary_month, salary_year, net_salary, total_cash_withdrawn, remaining_amount, payment_status')
+                    .eq('employee_id', employeeId)
+                    .neq('payment_status', 'cancelled');
+
+                if (srError || !salaryRecords || salaryRecords.length === 0) return;
+
+                // جلب جميع السحوبات الفعلية للموظف دفعة واحدة
+                const { data: allWithdrawals, error: wError } = await supabase
+                    .from('salary_cash_withdrawals')
+                    .select('salary_month, salary_year, withdrawal_amount')
+                    .eq('employee_id', employeeId);
+
+                if (wError) return;
+
+                // بناء خريطة السحوبات الفعلية
+                const withdrawalMap = {};
+                (allWithdrawals || []).forEach(w => {
+                    const key = `${w.salary_month}|${w.salary_year}`;
+                    withdrawalMap[key] = (withdrawalMap[key] || 0) + parseAmount(w.withdrawal_amount, 0);
+                });
+
+                // تحديث كل سجل راتب إذا كانت قيمه غير متطابقة مع الواقع
+                for (const rec of salaryRecords) {
+                    const key = `${rec.salary_month}|${rec.salary_year}`;
+                    const realWithdrawn = parseFloat((withdrawalMap[key] || 0).toFixed(2));
+                    const net = parseAmount(rec.net_salary, 0);
+                    const realRemaining = Math.max(0, parseFloat((net - realWithdrawn).toFixed(2)));
+                    const realStatus = realRemaining <= 0 ? 'paid' : 'pending';
+
+                    const storedWithdrawn = parseAmount(rec.total_cash_withdrawn, 0);
+                    const storedRemaining = parseAmount(rec.remaining_amount, net);
+
+                    // تحديث فقط إذا كانت هناك اختلاف
+                    if (Math.abs(storedWithdrawn - realWithdrawn) > 0.005 || Math.abs(storedRemaining - realRemaining) > 0.005) {
+                        await supabase
+                            .from('monthly_salary_records')
+                            .update({
+                                total_cash_withdrawn: realWithdrawn,
+                                remaining_amount: realRemaining,
+                                payment_status: realStatus
+                            })
+                            .eq('id', rec.id);
+                    }
+                }
+            } catch (err) {
+                console.warn('تعذرت مزامنة أرصدة الرواتب:', err);
+            }
+        }
+
+        // حساب المتبقي الحقيقي من جدول السحوبات الفعلية (المصدر الموثوق)
+        async function getRealRemainingFromWithdrawals(record) {
+            const net = parseAmount(record.net_salary, 0);
+            try {
+                const { data: withdrawals, error } = await supabase
+                    .from('salary_cash_withdrawals')
+                    .select('withdrawal_amount')
+                    .eq('employee_id', record.employee_id)
+                    .eq('salary_month', record.salary_month)
+                    .eq('salary_year', record.salary_year);
+
+                if (error || !withdrawals) {
+                    // عند تعذر الجلب نرجع للقيمة المخزنة
+                    const stored = record.remaining_amount !== undefined && record.remaining_amount !== null
+                        ? parseAmount(record.remaining_amount, net)
+                        : net;
+                    return Math.max(0, stored);
+                }
+
+                const totalWithdrawn = withdrawals.reduce((sum, w) => sum + parseAmount(w.withdrawal_amount, 0), 0);
+                return Math.max(0, parseFloat((net - totalWithdrawn).toFixed(2)));
+            } catch {
+                return Math.max(0, parseAmount(record.remaining_amount, net));
+            }
+        }
+
         // تحميل راتب الموظف وإظهار خانة السحب فقط عند وجود متبقي
         async function loadEmployeeMonthlySalary(employeeId, employeeName = '') {
             const normalizedEmployeeId = (employeeId || '').trim();
@@ -666,18 +771,6 @@
             const currentDate = new Date();
             const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
             const currentYear = currentDate.getFullYear();
-
-            const getRemainingAmount = (record) => {
-                const remaining = record.remaining_amount !== undefined && record.remaining_amount !== null
-                    ? parseFloat(record.remaining_amount)
-                    : parseFloat(record.net_salary || 0);
-                return Number.isFinite(remaining) ? remaining : 0;
-            };
-
-            const pickBestRecord = (records) => {
-                if (!records || records.length === 0) return null;
-                return records.find((record) => getRemainingAmount(record) > 0) || records[0];
-            };
 
             try {
                 // 1) البحث عن راتب الشهر الحالي عبر employee_id
@@ -698,10 +791,8 @@
                     return;
                 }
 
-                let selectedSalary = pickBestRecord(currentMonthData);
-
                 // 2) في حال عدم المطابقة بالرقم الوظيفي، نحاول بالاسم
-                if (!selectedSalary && normalizedEmployeeName) {
+                if ((!currentMonthData || currentMonthData.length === 0) && normalizedEmployeeName) {
                     const { data: currentMonthByName, error: currentMonthByNameError } = await supabase
                         .from('monthly_salary_records')
                         .select('*')
@@ -712,10 +803,12 @@
                         .order('updated_at', { ascending: false })
                         .limit(20);
 
-                    if (!currentMonthByNameError) {
-                        selectedSalary = pickBestRecord(currentMonthByName);
+                    if (!currentMonthByNameError && currentMonthByName && currentMonthByName.length > 0) {
+                        currentMonthData = currentMonthByName;
                     }
                 }
+
+                let selectedSalary = (currentMonthData && currentMonthData.length > 0) ? currentMonthData[0] : null;
 
                 // 3) إذا لم يوجد للشهر الحالي، نرجع لآخر سجل راتب متاح
                 if (!selectedSalary) {
@@ -736,7 +829,7 @@
                         return;
                     }
 
-                    selectedSalary = pickBestRecord(latestSalaryData);
+                    selectedSalary = (latestSalaryData && latestSalaryData.length > 0) ? latestSalaryData[0] : null;
                 }
 
                 if (!selectedSalary) {
@@ -746,22 +839,31 @@
                     return;
                 }
 
-                const remaining = getRemainingAmount(selectedSalary);
-                if (remaining <= 0) {
+                // احتساب المتبقي الحقيقي من جدول السحوبات الفعلية
+                const realRemaining = await getRealRemainingFromWithdrawals(selectedSalary);
+
+                if (realRemaining <= 0) {
                     employeeMonthlySalary = null;
                     salaryWithdrawalGroup.style.display = 'none';
                     console.log('ℹ️ لا يوجد مبلغ متبقي للسحب لهذا الموظف');
                     return;
                 }
 
+                // تحديث السجل بالقيم الصحيحة ليستخدمها باقي الكود
+                selectedSalary = {
+                    ...selectedSalary,
+                    remaining_amount: realRemaining,
+                    total_cash_withdrawn: parseFloat((parseAmount(selectedSalary.net_salary, 0) - realRemaining).toFixed(2))
+                };
+
                 employeeMonthlySalary = selectedSalary;
 
                 salaryWithdrawalGroup.style.display = 'block';
                 salaryEmployeeInfo.textContent = `${selectedSalary.employee_name} - ${selectedSalary.salary_month}`;
                 salaryAvailableAmount.style.display = 'block';
-                salaryAvailableValue.textContent = remaining.toLocaleString('ar-SA', { minimumFractionDigits: 2 });
+                salaryAvailableValue.textContent = realRemaining.toLocaleString('ar-SA', { minimumFractionDigits: 2 });
 
-                console.log('✅ تم تحميل راتب الموظف:', selectedSalary);
+                console.log('✅ تم تحميل راتب الموظف، المتبقي الحقيقي:', realRemaining);
             } catch (err) {
                 console.error('خطأ في تحميل راتب الموظف:', err);
                 employeeMonthlySalary = null;
@@ -1098,6 +1200,44 @@
             }
 
             console.log('User confirmed, proceeding to save...');
+
+            // ===== فحص التكرار قبل الحفظ =====
+            try {
+                const { data: existingRecords } = await supabase
+                    .from('sales')
+                    .select('id, total_sales, total_cash, total_card, tamara, tabby, extra_cash, expenses, returns, withdrawal, salary_withdrawal')
+                    .eq('employee_id', employeeId)
+                    .eq('sale_date', saleDate)
+                    .eq('branch', branch);
+
+                if (existingRecords && existingRecords.length > 0) {
+                    const salaryWithdrawalVal = parseFloat(salaryWithdrawalInput?.value) || 0;
+                    const isDuplicate = existingRecords.some(rec =>
+                        parseFloat(rec.total_sales) === totalSales &&
+                        parseFloat(rec.total_cash) === totalCash &&
+                        parseFloat(rec.total_card) === totalCard &&
+                        parseFloat(rec.tamara || 0) === tamara &&
+                        parseFloat(rec.tabby || 0) === tabby &&
+                        parseFloat(rec.extra_cash || 0) === extraCash &&
+                        parseFloat(rec.expenses || 0) === expenses &&
+                        parseFloat(rec.returns || 0) === (parseFloat(document.getElementById('returns').value) || 0) &&
+                        parseFloat(rec.withdrawal || 0) === withdrawal &&
+                        parseFloat(rec.salary_withdrawal || 0) === salaryWithdrawalVal
+                    );
+
+                    if (isDuplicate) {
+                        await showCustomAlert(
+                            `⚠️ يوجد تقرير مطابق تماماً لهذا اليوم (${saleDate}) بنفس الموظف والفرع وجميع المبالغ.\n\nتم إلغاء الحفظ لمنع التكرار.`,
+                            '🚫 تقرير مكرر',
+                            'warning'
+                        );
+                        return;
+                    }
+                }
+            } catch (dupErr) {
+                console.warn('تعذر فحص التكرار، سيتم المتابعة:', dupErr);
+            }
+            // ===================================
             
             // إظهار شاشة الانتظار الآن بعد التأكيد والتحققات
             const loadingOverlay = document.getElementById('loadingOverlay');
@@ -1336,7 +1476,8 @@
                 secureArea.style.display = 'block';
                 loginCard.style.display = 'none';
                 
-                // تحميل راتب الموظف للشهر الحالي
+                // تحميل راتب الموظف للشهر الحالي + مزامنة الأرصدة من السحوبات الفعلية
+                await syncEmployeeSalaryBalance(data.employee_id);
                 await loadEmployeeMonthlySalary(data.employee_id, data.name);
             } catch (err) {
                 console.error(err);

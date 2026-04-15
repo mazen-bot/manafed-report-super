@@ -72,6 +72,7 @@
         td.col-general-notes span {
             display: -webkit-box;
             -webkit-line-clamp: 2;
+            line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -489,6 +490,15 @@
                 <div id="duplicateReportsList" style="font-size: 14px; color: #856404;"></div>
             </div>
 
+            <!-- لوحة إدارة إخفاء/إظهار الفروع -->
+            <div id="hiddenBranchesPanelWrap" style="display:none;margin-bottom:14px;background:#fff3cd;border:2px solid #ffc107;border-radius:10px;padding:14px 16px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                    <strong style="color:#856404;font-size:14px;">👁️ فروع مخفية من الجدول</strong>
+                    <button onclick="restoreAllMissingBranches()" style="background:#ffc107;color:#856404;border:none;padding:5px 14px;border-radius:7px;cursor:pointer;font-weight:700;font-size:13px;">🔄 إظهار الكل</button>
+                </div>
+                <div id="hiddenBranchesTagsList" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+            </div>
+
             <div style="margin-top: 20px; overflow-x: auto;">
                 <table id="missingReportsTable" style="width: 100%; border-collapse: collapse;">
                     <thead>
@@ -498,11 +508,12 @@
                             <th style="padding: 12px; border: 1px solid #e0e0e0; text-align: right;">التواريخ المفقودة</th>
                             <th style="padding: 12px; border: 1px solid #e0e0e0; text-align: right;">آخر تقرير مرسل</th>
                             <th style="padding: 12px; border: 1px solid #e0e0e0; text-align: right;">الحالة</th>
+                            <th style="padding: 12px; border: 1px solid #e0e0e0; text-align: center;">إخفاء</th>
                         </tr>
                     </thead>
                     <tbody id="missingReportsBody">
                         <tr class="no-data">
-                            <td colspan="5" style="text-align: center; padding: 20px;">جاري التحميل...</td>
+                            <td colspan="6" style="text-align: center; padding: 20px;">جاري التحميل...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -875,6 +886,10 @@
                     <div>
                         <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px;">🏦 تابي</label>
                         <input type="number" id="editReportTabby" step="0.01" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;">
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:6px;font-weight:600;color:#ff9800;font-size:13px;">💵 سحب الراتب (تعديله يؤثر على رصيد الراتب الشهري)</label>
+                        <input type="number" id="editReportSalaryWithdrawal" step="0.01" min="0" style="width:100%;padding:10px;border:2px solid #ff9800;border-radius:8px;background:#fff8e1;">
                     </div>
                     <div>
                         <label style="display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px;">الملاحظات</label>
@@ -2155,6 +2170,9 @@
                 
                 // فحص الفروع التي لم ترسل تقارير اليوم
                 checkMissingBranchReports();
+
+                // إرسال تلقائي عند اكتمال جميع الفروع
+                checkAllBranchesCompleteAutoSend();
             } catch (err) {
                 console.error(err);
                 showCustomError('تعذر تحميل البيانات من Supabase. تحقق من الاتصال أو الإعدادات.', 'خطأ في التحميل');
@@ -2162,6 +2180,115 @@
 
             // تحديث بطاقات الإحصائيات
             updateDashboardStats();
+        }
+
+        // ====== إرسال تلقائي عند اكتمال جميع الفروع ======
+        async function checkAllBranchesCompleteAutoSend() {
+            try {
+                // جلب جميع الفروع
+                const { data: employees } = await supabase
+                    .from('employees')
+                    .select('branch_name');
+                if (!employees) return;
+
+                const allBranches = [...new Set(employees.map(e => e.branch_name).filter(b => b))];
+                if (allBranches.length === 0) return;
+
+                const today = new Date().toISOString().split('T')[0];
+
+                // الفروع التي أرسلت تقارير اليوم
+                const branchesWithReports = [...new Set(
+                    allData.filter(r => r.saleDate === today).map(r => r.branch)
+                )];
+
+                // هل جميع الفروع أرسلت؟
+                const allComplete = allBranches.every(b => branchesWithReports.includes(b));
+                if (!allComplete) return;
+
+                // تجنب الإرسال المكرر لنفس اليوم
+                const sentKey = `autoTelegramSent_${today}`;
+                if (localStorage.getItem(sentKey)) return;
+
+                // ضع العلامة أولاً للحماية من التكرار
+                localStorage.setItem(sentKey, '1');
+
+                console.log('[AUTO SEND] ✅ جميع الفروع أرسلت تقاريرها اليوم، جاري الإرسال التلقائي...');
+
+                // أضف ملاحظة للرسالة بأنها تلقائية
+                const originalFn = window.sendDailyCashReportTelegram;
+                await sendDailyCashReportTelegramAuto();
+
+            } catch(e) {
+                console.warn('[AUTO SEND] تعذر فحص اكتمال الفروع:', e);
+            }
+        }
+
+        async function sendDailyCashReportTelegramAuto() {
+            console.log('[AUTO SEND] إرسال التقرير التلقائي...');
+            try {
+                const grouped = {};
+                (Array.isArray(allData) ? allData : []).forEach(r => {
+                    if (!grouped[r.branch]) grouped[r.branch] = { expected: 0, delivered: 0, incoming: 0, outgoing: 0 };
+                    grouped[r.branch].expected += parseFloat(r.totalCash || 0);
+                });
+                (Array.isArray(cashDeliveries) ? cashDeliveries : []).forEach(d => {
+                    if (!grouped[d.branch]) grouped[d.branch] = { expected: 0, delivered: 0, incoming: 0, outgoing: 0 };
+                    grouped[d.branch].delivered += parseFloat(d.amount || d.delivered_amount || 0);
+                });
+                getActiveCashTransfers().forEach(t => {
+                    if (!grouped[t.fromBranch]) grouped[t.fromBranch] = { expected: 0, delivered: 0, incoming: 0, outgoing: 0 };
+                    if (!grouped[t.toBranch]) grouped[t.toBranch] = { expected: 0, delivered: 0, incoming: 0, outgoing: 0 };
+                    grouped[t.fromBranch].outgoing += parseFloat(t.amount || 0);
+                    grouped[t.toBranch].incoming += parseFloat(t.amount || 0);
+                });
+
+                const branches = Object.keys(grouped).sort((a, b) => a.localeCompare(b, 'ar'));
+                if (branches.length === 0) return;
+
+                let lines = [];
+                let totalRemaining = 0;
+                branches.forEach(branch => {
+                    const d = grouped[branch];
+                    const adjusted = d.expected + d.incoming;
+                    const settled = d.delivered + d.outgoing;
+                    const remaining = adjusted - settled;
+                    totalRemaining += remaining;
+                    const emoji = remaining <= 0 ? '✅' : remaining > 5000 ? '🚨' : '⚠️';
+                    const esc = (t) => String(t || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                    lines.push(`${emoji} <b>${esc(branch)}</b>: ${remaining.toFixed(2)} ر.س`);
+                });
+
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                const message =
+                    `🤖 <b>تقرير الكاش التلقائي</b>\n` +
+                    `✅ <i>جميع الفروع أرسلت تقاريرها</i>\n` +
+                    `📅 ${dateStr}\n\n` +
+                    lines.join('\n') +
+                    `\n\n<b>━━━━━━━━━━━━━━</b>\n` +
+                    `💼 <b>إجمالي الكاش المتبقي: ${totalRemaining.toFixed(2)} ر.س</b>`;
+
+                const CASH_BOT_TOKEN = '8645694797:AAEKg2BojN2KJo1wAmAJlpNrQ1r-yj4JKgE';
+                const CASH_CHAT_ID = '8343466035';
+                const res = await fetch(`https://api.telegram.org/bot${CASH_BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: CASH_CHAT_ID, text: message, parse_mode: 'HTML' })
+                });
+                if (res.ok) {
+                    console.log('[AUTO SEND] ✅ تم الإرسال التلقائي');
+                } else {
+                    const err = await res.text();
+                    console.warn('[AUTO SEND] ⚠️ فشل الإرسال:', err);
+                    // أزل العلامة حتى يُعاد المحاولة
+                    const today = new Date().toISOString().split('T')[0];
+                    localStorage.removeItem(`autoTelegramSent_${today}`);
+                }
+            } catch(e) {
+                console.error('[AUTO SEND] ❌ خطأ:', e);
+                const today = new Date().toISOString().split('T')[0];
+                localStorage.removeItem(`autoTelegramSent_${today}`);
+            }
         }
 
         async function checkMissingBranchReports() {
@@ -2350,14 +2477,48 @@
             }
         }
 
+        // جلب الفروع المخفية من localStorage
+        function getHiddenMissingBranches() {
+            try {
+                return new Set(JSON.parse(localStorage.getItem('hiddenMissingBranches') || '[]'));
+            } catch(e) { return new Set(); }
+        }
+
+        function saveHiddenMissingBranches(set) {
+            localStorage.setItem('hiddenMissingBranches', JSON.stringify([...set]));
+        }
+
+        function hideMissingBranch(branch) {
+            const hidden = getHiddenMissingBranches();
+            hidden.add(branch);
+            saveHiddenMissingBranches(hidden);
+            updateMissingReportsView();
+        }
+        window.hideMissingBranch = hideMissingBranch;
+
+        function restoreMissingBranch(branch) {
+            const hidden = getHiddenMissingBranches();
+            hidden.delete(branch);
+            saveHiddenMissingBranches(hidden);
+            updateMissingReportsView();
+        }
+        window.restoreMissingBranch = restoreMissingBranch;
+
+        function restoreAllMissingBranches() {
+            localStorage.removeItem('hiddenMissingBranches');
+            updateMissingReportsView();
+        }
+        window.restoreAllMissingBranches = restoreAllMissingBranches;
+
         async function updateMissingReportsView() {
             const daysSelect = document.getElementById('missingReportsDays');
             const days = daysSelect ? parseInt(daysSelect.value) : 7;
 
             const result = await generateMissingReportsData(days);
             const tbody = document.getElementById('missingReportsBody');
+            const hiddenSet = getHiddenMissingBranches();
 
-            // تحديث الإحصائيات
+            // تحديث الإحصائيات (تعتمد على الكل بما فيها المخفية)
             const totalEl = document.getElementById('missingBranchesTotal');
             const daysEl = document.getElementById('missingDaysTotal');
             const compliantEl = document.getElementById('compliantBranchesTotal');
@@ -2366,15 +2527,43 @@
             if (daysEl) daysEl.textContent = result.totalDays;
             if (compliantEl) compliantEl.textContent = result.compliant;
 
-            // تحديث الجدول
+            // تحديث لوحة الفروع المخفية
+            const panelWrap = document.getElementById('hiddenBranchesPanelWrap');
+            const tagsEl = document.getElementById('hiddenBranchesTagsList');
+            const hiddenInData = result.data.filter(item => hiddenSet.has(item.branch));
+            if (panelWrap && tagsEl) {
+                if (hiddenInData.length > 0) {
+                    panelWrap.style.display = 'block';
+                    tagsEl.innerHTML = hiddenInData.map(item => `
+                        <span style="display:inline-flex;align-items:center;gap:5px;background:#ffeeba;border:1px solid #ffc107;border-radius:20px;padding:4px 10px;font-size:13px;color:#856404;">
+                            ${item.branch}
+                            <button class="btn-restore-branch" data-branch="${item.branch.replace(/"/g, '&quot;')}" title="إظهار" style="background:none;border:none;cursor:pointer;color:#856404;font-size:14px;line-height:1;padding:0;">👁️</button>
+                        </span>
+                    `).join('');
+
+                    tagsEl.querySelectorAll('.btn-restore-branch').forEach(btn => {
+                        btn.addEventListener('click', () => restoreMissingBranch(btn.dataset.branch));
+                    });
+                } else {
+                    panelWrap.style.display = 'none';
+                    tagsEl.innerHTML = '';
+                }
+            }
+
             if (!tbody) return;
 
-            if (result.data.length === 0) {
-                tbody.innerHTML = '<tr class="no-data"><td colspan="5" style="text-align: center; padding: 20px; color: #4caf50; font-weight: 600;">✅ جميع الفروع ملتزمة بإرسال التقارير</td></tr>';
+            // تصفية الفروع المرئية (حذف المخفية)
+            const visibleData = result.data.filter(item => !hiddenSet.has(item.branch));
+
+            if (visibleData.length === 0) {
+                const msg = result.data.length === 0
+                    ? '✅ جميع الفروع ملتزمة بإرسال التقارير'
+                    : `👁️ جميع الفروع مخفية (${hiddenInData.length}) — اضغط "إظهار الكل" لاستعادتها`;
+                tbody.innerHTML = `<tr class="no-data"><td colspan="6" style="text-align: center; padding: 20px; color: #4caf50; font-weight: 600;">${msg}</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = result.data.map(item => `
+            tbody.innerHTML = visibleData.map(item => `
                 <tr style="background: ${item.status === 'خطر' ? '#ffebee' : item.status === 'تحذير' ? '#fff3e0' : 'white'};">
                     <td style="padding: 12px; border: 1px solid #e0e0e0; font-weight: 600;">${item.branch}</td>
                     <td style="padding: 12px; border: 1px solid #e0e0e0; text-align: center;">
@@ -2389,8 +2578,15 @@
                             ${item.status === 'خطر' ? '🔴' : '⚠️'} ${item.status}
                         </span>
                     </td>
+                    <td style="padding: 8px; border: 1px solid #e0e0e0; text-align: center;">
+                        <button class="btn-hide-branch" data-branch="${item.branch.replace(/"/g, '&quot;')}" title="إخفاء الفرع" style="background:#eeeeee;border:1px solid #bdbdbd;border-radius:7px;padding:4px 10px;cursor:pointer;font-size:13px;color:#555;">🚫 إخفاء</button>
+                    </td>
                 </tr>
             `).join('');
+
+            tbody.querySelectorAll('.btn-hide-branch').forEach(btn => {
+                btn.addEventListener('click', () => hideMissingBranch(btn.dataset.branch));
+            });
         }
 
         function exportMissingReportsToExcel() {
@@ -4719,6 +4915,7 @@
             document.getElementById('editReportWithdrawal').value = parseFloat(record.withdrawal || 0).toFixed(2);
             document.getElementById('editReportTamara').value = parseFloat(record.tamara || 0).toFixed(2);
             document.getElementById('editReportTabby').value = parseFloat(record.tabby || 0).toFixed(2);
+            document.getElementById('editReportSalaryWithdrawal').value = parseFloat(record.salaryWithdrawal || 0).toFixed(2);
             document.getElementById('editReportNotes').value = record.notes || '';
             
             // حساب الكاش بناءً على القيم الحالية
@@ -4798,7 +4995,20 @@
                 return;
             }
 
+            // جلب البيانات القديمة من DB قبل التعديل (خاصة salary_withdrawal و salary_employee_id)
+            const { data: oldDbRec } = await supabase
+                .from('sales')
+                .select('salary_withdrawal, salary_employee_id, sale_date')
+                .eq('id', recordId)
+                .maybeSingle();
+
+            const oldSalaryWithdrawal = parseFloat(oldDbRec?.salary_withdrawal || 0);
+            const salaryEmployeeId = oldDbRec?.salary_employee_id || null;
+            const oldSaleDate = oldDbRec?.sale_date || null;
+
             const newDate = document.getElementById('editReportDate').value;
+            const newSalaryWithdrawal = parseFloat(document.getElementById('editReportSalaryWithdrawal').value) || 0;
+
             const updateData = {
                 sale_date: newDate || null,
                 total_sales: parseFloat(document.getElementById('editReportTotalSales').value) || 0,
@@ -4809,7 +5019,8 @@
                 withdrawal: parseFloat(document.getElementById('editReportWithdrawal').value) || 0,
                 tamara: parseFloat(document.getElementById('editReportTamara').value) || 0,
                 tabby: parseFloat(document.getElementById('editReportTabby').value) || 0,
-                notes: document.getElementById('editReportNotes').value
+                notes: document.getElementById('editReportNotes').value,
+                salary_withdrawal: newSalaryWithdrawal
             };
 
             try {
@@ -4819,6 +5030,38 @@
                     .eq('id', recordId);
 
                 if (error) throw error;
+
+                // مزامنة رصيد الراتب إذا تغيّرت قيمة سحب الراتب أو تاريخ التقرير
+                const salaryChanged = Math.abs(newSalaryWithdrawal - oldSalaryWithdrawal) > 0.005;
+                if (salaryChanged && (oldSalaryWithdrawal > 0 || newSalaryWithdrawal > 0)) {
+                    // حذف سجل السحب القديم وإعادة إنشائه بالقيمة الجديدة
+                    if (oldSalaryWithdrawal > 0 && salaryEmployeeId) {
+                        await supabase
+                            .from('salary_cash_withdrawals')
+                            .delete()
+                            .eq('sales_id', recordId);
+                    }
+                    if (newSalaryWithdrawal > 0 && salaryEmployeeId) {
+                        const usedDate = newDate || oldSaleDate || new Date().toISOString().split('T')[0];
+                        const salaryMonth = usedDate.slice(0, 7);
+                        const salaryYear = parseInt(usedDate.slice(0, 4), 10);
+                        await supabase
+                            .from('salary_cash_withdrawals')
+                            .insert([{
+                                employee_id: salaryEmployeeId,
+                                salary_month: salaryMonth,
+                                salary_year: salaryYear,
+                                withdrawal_amount: newSalaryWithdrawal,
+                                withdrawal_date: usedDate,
+                                sales_id: recordId,
+                                notes: `تعديل من التقرير - ${usedDate}`
+                            }]);
+                    }
+                    // إعادة مزامنة رصيد الراتب
+                    const usedEmpId = salaryEmployeeId;
+                    const usedDate2 = newDate || oldSaleDate || new Date().toISOString().split('T')[0];
+                    await syncSalaryAfterSalesChange(null, 0, usedEmpId, usedDate2);
+                }
 
                 // تحديث البيانات المحلية بالأسماء الصحيحة
                 const recordIndex = allData.findIndex(r => String(r.id) === String(recordId));
@@ -4834,7 +5077,8 @@
                         withdrawal: updateData.withdrawal,
                         tamara: updateData.tamara,
                         tabby: updateData.tabby,
-                        notes: updateData.notes
+                        notes: updateData.notes,
+                        salaryWithdrawal: newSalaryWithdrawal
                     };
                 }
 
@@ -4845,7 +5089,7 @@
                 populateBranchFilter();
                 applyFilters();
 
-                showCustomSuccess('تم تحديث بيانات السجل بنجاح', 'تم التعديل');
+                showCustomSuccess('تم تحديث بيانات السجل وتحديث رصيد الراتب بنجاح', 'تم التعديل');
             } catch (err) {
                 console.error(err);
                 showCustomError('تعذر تحديث السجل: ' + (err.message || 'حاول مرة أخرى'), 'خطأ التحديث');
@@ -4926,6 +5170,64 @@
 
         window.updateSaleDate = updateSaleDate;
 
+        // ===== مزامنة رصيد الراتب بعد حذف أو تعديل تقرير =====
+        // salesId: إذا كان null يتخطى حذف salary_cash_withdrawals (تم حذفه مسبقاً)
+        async function syncSalaryAfterSalesChange(salesId, oldSalaryWithdrawal, salaryEmployeeId, saleDate) {
+            if (!salaryEmployeeId) return;
+            try {
+                // حذف سجل السحب المرتبط بهذا التقرير (فقط عند الحذف الكامل)
+                if (salesId && oldSalaryWithdrawal > 0) {
+                    await supabase
+                        .from('salary_cash_withdrawals')
+                        .delete()
+                        .eq('sales_id', salesId);
+                }
+
+                // تحديد الشهر والسنة من تاريخ التقرير
+                const dateStr = saleDate || new Date().toISOString().split('T')[0];
+                const salaryMonth = dateStr.slice(0, 7);
+                const salaryYear = parseInt(dateStr.slice(0, 4), 10);
+
+                // إعادة حساب المسحوب الفعلي من المتبقي في salary_cash_withdrawals
+                const { data: remaining } = await supabase
+                    .from('salary_cash_withdrawals')
+                    .select('withdrawal_amount')
+                    .eq('employee_id', salaryEmployeeId)
+                    .eq('salary_month', salaryMonth)
+                    .eq('salary_year', salaryYear);
+
+                const totalWithdrawn = (remaining || []).reduce(
+                    (sum, w) => sum + (parseFloat(w.withdrawal_amount) || 0), 0
+                );
+
+                // تحديث سجل الراتب الشهري بالقيم الصحيحة
+                const { data: salaryRec } = await supabase
+                    .from('monthly_salary_records')
+                    .select('id, net_salary')
+                    .eq('employee_id', salaryEmployeeId)
+                    .eq('salary_month', salaryMonth)
+                    .eq('salary_year', salaryYear)
+                    .neq('payment_status', 'cancelled')
+                    .maybeSingle();
+
+                if (salaryRec) {
+                    const net = parseFloat(salaryRec.net_salary) || 0;
+                    const realWithdrawn = Math.min(totalWithdrawn, net);
+                    const realRemaining = Math.max(0, net - realWithdrawn);
+                    await supabase
+                        .from('monthly_salary_records')
+                        .update({
+                            total_cash_withdrawn: parseFloat(realWithdrawn.toFixed(2)),
+                            remaining_amount: parseFloat(realRemaining.toFixed(2)),
+                            payment_status: realRemaining <= 0 ? 'paid' : 'pending'
+                        })
+                        .eq('id', salaryRec.id);
+                }
+            } catch (err) {
+                console.warn('تعذرت مزامنة رصيد الراتب:', err);
+            }
+        }
+
         async function deleteRecord(id) {
             // التحقق من الصلاحية: حذف مبيعات
             if (!hasPermission('deleteSales')) {
@@ -4936,13 +5238,35 @@
             const confirmed = await confirm('هل أنت متأكد من حذف هذا السجل؟');
             if (!confirmed) return;
 
+            // استرجاع بيانات سحب الراتب من السجل المحلي قبل الحذف
+            const recordToDelete = allData.find(r => String(r.id) === String(id));
+            const oldSalaryWithdrawal = parseFloat(recordToDelete?.salaryWithdrawal || 0);
+            const salaryEmployeeId = recordToDelete?.salaryEmployeeId || recordToDelete?.employeeId || null;
+            const saleDate = recordToDelete?.saleDate || null;
+
             try {
+                // إذا كان التقرير يحتوي على سحب راتب — نجلب salary_employee_id من DB أولاً
+                let dbSalaryEmployeeId = salaryEmployeeId;
+                if (oldSalaryWithdrawal > 0) {
+                    const { data: dbRec } = await supabase
+                        .from('sales')
+                        .select('salary_employee_id, salary_withdrawal, sale_date')
+                        .eq('id', id)
+                        .maybeSingle();
+                    if (dbRec) {
+                        dbSalaryEmployeeId = dbRec.salary_employee_id || salaryEmployeeId;
+                    }
+                }
+
                 const { error } = await supabase
                     .from('sales')
                     .delete()
                     .eq('id', id);
                 
                 if (error) throw error;
+
+                // مزامنة رصيد الراتب بعد الحذف
+                await syncSalaryAfterSalesChange(id, oldSalaryWithdrawal, dbSalaryEmployeeId, saleDate);
                 
                 // تحديث البيانات المحلية
                 const recordIdStr = String(id);
@@ -4957,7 +5281,7 @@
                 // تأخير صغير للتأكد من التحديث الكامل
                 await new Promise(resolve => setTimeout(resolve, 300));
                 
-                showCustomSuccess('تم حذف السجل بنجاح وتحديث البيانات', 'تم الحذف');
+                showCustomSuccess('تم حذف السجل بنجاح وتحديث بيانات الراتب', 'تم الحذف');
             } catch (err) {
                 console.error(err);
                 showCustomError('تعذر حذف السجل من Supabase. حاول مرة أخرى.', 'خطأ الحذف');

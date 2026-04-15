@@ -935,6 +935,25 @@
                         </div>
                     </div>
                     
+                    <!-- حقل تعديل المسحوب — يظهر فقط عند التعديل -->
+                    <div id="monthlySalaryWithdrawnField" style="display:none;background:#fff8e1;border:2px solid #ff9800;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                            <span style="font-size:18px;">✏️</span>
+                            <strong style="color:#e65100;font-size:15px;">تعديل المبلغ المسحوب</strong>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end;">
+                            <div class="field" style="margin-bottom:0;">
+                                <label for="monthlySalaryWithdrawn" style="color:#e65100;">💸 المبلغ المسحوب الجديد</label>
+                                <input id="monthlySalaryWithdrawn" type="number" step="0.01" min="0" placeholder="0.00" style="border:1.5px solid #ff9800;background:#fffde7;">
+                            </div>
+                            <div class="field" style="margin-bottom:0;">
+                                <label style="color:#757575;">📊 المتبقي (محسوب تلقائياً)</label>
+                                <input id="monthlySalaryRemainingPreview" type="number" step="0.01" readonly style="background:#e3f2fd;border:1.5px solid #90caf9;color:#1565c0;font-weight:700;">
+                            </div>
+                        </div>
+                        <p style="margin-top:8px;font-size:12px;color:#795548;">⚠️ سيتم تحديث رصيد الراتب مباشرة في قاعدة البيانات</p>
+                    </div>
+
                     <div class="field">
                         <label for="monthlySalaryNotes">📝 ملاحظات (اختياري)</label>
                         <textarea id="monthlySalaryNotes" rows="2" placeholder="أي ملاحظات..."></textarea>
@@ -946,7 +965,10 @@
                     </div>
                     
                     <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #f0f0f0;">
-                        <h3 style="margin-bottom: 15px;">📊 الرواتب الشهرية المسجلة</h3>
+                        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:15px;">
+                            <h3 style="margin:0;">📊 الرواتب الشهرية المسجلة</h3>
+                            <button id="exportMonthlySalariesExcel" style="background:#217346;color:#fff;border:none;padding:8px 18px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">📥 تصدير Excel</button>
+                        </div>
                         <input type="text" id="searchMonthlySalaries" class="search-box" placeholder="🔍 ابحث عن موظف أو فرع..." style="width:100%;padding:10px;margin-bottom:15px;border:1px solid #ddd;border-radius:8px;">
                         <div class="field">
                             <label for="filterMonthlySalaryMonth">تصفية حسب الشهر</label>
@@ -974,6 +996,8 @@
         </div>
     </div>
 
+    <!-- SheetJS لتصدير Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- Supabase و JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
@@ -2384,6 +2408,9 @@
             const monthlySalaryNotes = document.getElementById('monthlySalaryNotes');
             const saveMonthlySalary = document.getElementById('saveMonthlySalary');
             const cancelMonthlySalaryEdit = document.getElementById('cancelMonthlySalaryEdit');
+            const monthlySalaryWithdrawn = document.getElementById('monthlySalaryWithdrawn');
+            const monthlySalaryRemainingPreview = document.getElementById('monthlySalaryRemainingPreview');
+            const monthlySalaryWithdrawnField = document.getElementById('monthlySalaryWithdrawnField');
             const monthlySalariesList = document.getElementById('monthlySalariesList');
             const filterMonthlySalaryMonth = document.getElementById('filterMonthlySalaryMonth');
             const searchMonthlySalaries = document.getElementById('searchMonthlySalaries');
@@ -2396,8 +2423,31 @@
                 return Number.isFinite(parsed) ? parsed : fallback;
             }
 
+            // المصدر الموثوق الوحيد: مجموع السحوبات الفعلية من salary_cash_withdrawals
+            async function getRealWithdrawnFromDB(employeeId, salaryMonth, salaryYear) {
+                try {
+                    const { data, error } = await supabase
+                        .from('salary_cash_withdrawals')
+                        .select('withdrawal_amount')
+                        .eq('employee_id', employeeId)
+                        .eq('salary_month', salaryMonth)
+                        .eq('salary_year', salaryYear);
+
+                    if (error || !data) return null;
+                    return parseFloat(data.reduce((sum, w) => sum + getNumericValue(w.withdrawal_amount, 0), 0).toFixed(2));
+                } catch {
+                    return null;
+                }
+            }
+
+            // للعرض في الجدول — يعتمد على القيم المحقونة من loadMonthlySalaries
             function getSalaryWithdrawn(record) {
                 const net = getNumericValue(record?.net_salary, 0);
+                const hasStoredRemaining = record?.remaining_amount !== undefined && record?.remaining_amount !== null;
+                if (hasStoredRemaining) {
+                    const remaining = Math.max(0, Math.min(net, getNumericValue(record.remaining_amount, net)));
+                    return Math.max(0, parseFloat((net - remaining).toFixed(2)));
+                }
                 const withdrawn = getNumericValue(record?.total_cash_withdrawn, 0);
                 return Math.max(0, Math.min(net, parseFloat(withdrawn.toFixed(2))));
             }
@@ -2423,6 +2473,9 @@
                 monthlySalaryDeductions.value = '0';
                 monthlySalaryNet.value = '';
                 monthlySalaryNotes.value = '';
+                if (monthlySalaryWithdrawn) monthlySalaryWithdrawn.value = '';
+                if (monthlySalaryRemainingPreview) monthlySalaryRemainingPreview.value = '';
+                if (monthlySalaryWithdrawnField) monthlySalaryWithdrawnField.style.display = 'none';
             }
 
             function stopMonthlySalaryEditing() {
@@ -2444,6 +2497,14 @@
                 monthlySalaryNet.value = getNumericValue(record.net_salary, 0).toFixed(2);
                 monthlySalaryNotes.value = record.notes || '';
 
+                // تعبئة حقل المسحوب وإظهاره
+                const currentWithdrawn = getSalaryWithdrawn(record);
+                if (monthlySalaryWithdrawn) monthlySalaryWithdrawn.value = currentWithdrawn.toFixed(2);
+                const net = getNumericValue(record.net_salary, 0);
+                const remaining = Math.max(0, parseFloat((net - currentWithdrawn).toFixed(2)));
+                if (monthlySalaryRemainingPreview) monthlySalaryRemainingPreview.value = remaining.toFixed(2);
+                if (monthlySalaryWithdrawnField) monthlySalaryWithdrawnField.style.display = 'block';
+
                 if (saveMonthlySalary) saveMonthlySalary.textContent = '💾 حفظ التعديل';
                 if (cancelMonthlySalaryEdit) cancelMonthlySalaryEdit.style.display = 'inline-block';
 
@@ -2462,6 +2523,15 @@
             if (monthlySalaryBase) monthlySalaryBase.addEventListener('input', calculateNetSalary);
             if (monthlySalaryAllowances) monthlySalaryAllowances.addEventListener('input', calculateNetSalary);
             if (monthlySalaryDeductions) monthlySalaryDeductions.addEventListener('input', calculateNetSalary);
+
+            // تحديث المتبقي التجريبي عند تغيير المسحوب
+            function updateRemainingPreview() {
+                const net = parseFloat(monthlySalaryNet.value) || 0;
+                const withdrawn = parseFloat(monthlySalaryWithdrawn?.value) || 0;
+                const remaining = Math.max(0, parseFloat((net - withdrawn).toFixed(2)));
+                if (monthlySalaryRemainingPreview) monthlySalaryRemainingPreview.value = remaining.toFixed(2);
+            }
+            if (monthlySalaryWithdrawn) monthlySalaryWithdrawn.addEventListener('input', updateRemainingPreview);
 
             // تحميل الموظفين في قائمة الرواتب الشهرية
             async function loadEmployeesForMonthlySalary() {
@@ -2527,9 +2597,69 @@
 
                     try {
                         if (editingMonthlySalaryId) {
-                            const existingRecord = monthlySalariesCache.find(s => String(s.id) === String(editingMonthlySalaryId));
-                            const withdrawn = getSalaryWithdrawn(existingRecord);
-                            const normalizedWithdrawn = Math.max(0, Math.min(netSalary, withdrawn));
+                            // إذا أدخل المشرف قيمة في حقل المسحوب — استخدمها مباشرة
+                            const manualWithdrawnInput = monthlySalaryWithdrawn?.value?.trim();
+                            let realWithdrawn;
+                            const editRecord = monthlySalariesCache.find(s => String(s.id) === String(editingMonthlySalaryId));
+
+                            if (manualWithdrawnInput !== '' && manualWithdrawnInput !== undefined) {
+                                // استخدام القيمة التي أدخلها المشرف يدوياً
+                                realWithdrawn = parseFloat(manualWithdrawnInput) || 0;
+
+                                // تحديث salary_cash_withdrawals ليعكس القيمة الجديدة
+                                // بحيث تظل loadMonthlySalaries متزامنة
+                                if (editRecord) {
+                                    try {
+                                        // حذف كل سجلات السحب القديمة لهذا الموظف/الشهر
+                                        await supabase
+                                            .from('salary_cash_withdrawals')
+                                            .delete()
+                                            .eq('employee_id', editRecord.employee_id)
+                                            .eq('salary_month', editRecord.salary_month)
+                                            .eq('salary_year', editRecord.salary_year);
+
+                                        // إدراج سجل تصحيح بالقيمة الجديدة
+                                        if (realWithdrawn > 0) {
+                                            await supabase
+                                                .from('salary_cash_withdrawals')
+                                                .insert([{
+                                                    employee_id: editRecord.employee_id,
+                                                    employee_name: editRecord.employee_name,
+                                                    branch_name: editRecord.branch_name,
+                                                    withdrawal_amount: parseFloat(realWithdrawn.toFixed(2)),
+                                                    withdrawal_date: new Date().toISOString().slice(0, 10),
+                                                    salary_month: editRecord.salary_month,
+                                                    salary_year: editRecord.salary_year,
+                                                    sales_id: null,
+                                                    withdrawn_by: currentUser.employee_id,
+                                                    withdrawn_by_name: currentUser.name || currentUser.employee_id,
+                                                    notes: `تعديل يدوي من المشرف - ${new Date().toLocaleDateString('ar-SA')}`
+                                                }]);
+                                        }
+                                    } catch (syncErr) {
+                                        console.warn('تعذر تحديث salary_cash_withdrawals:', syncErr);
+                                    }
+                                }
+                            } else {
+                                // جلب المسحوب الفعلي من جدول السحوبات (المصدر الموثوق)
+                                realWithdrawn = editRecord
+                                    ? await getRealWithdrawnFromDB(editRecord.employee_id, editRecord.salary_month, editRecord.salary_year)
+                                    : null;
+
+                                // احتياط: إذا تعذّر الجلب، نعتمد على freshRecord من DB
+                                if (realWithdrawn === null) {
+                                    const { data: freshRecord } = await supabase
+                                        .from('monthly_salary_records')
+                                        .select('id, net_salary, total_cash_withdrawn, remaining_amount')
+                                        .eq('id', editingMonthlySalaryId)
+                                        .maybeSingle();
+                                    realWithdrawn = freshRecord
+                                        ? getSalaryWithdrawn(freshRecord)
+                                        : getSalaryWithdrawn(editRecord);
+                                }
+                            }
+
+                            const normalizedWithdrawn = Math.max(0, Math.min(netSalary, realWithdrawn));
                             const remainingAmount = Math.max(0, parseFloat((netSalary - normalizedWithdrawn).toFixed(2)));
                             const paymentStatus = remainingAmount <= 0 ? 'paid' : 'pending';
 
@@ -2547,21 +2677,48 @@
 
                             if (error) throw error;
                         } else {
-                            const { error } = await supabase
+                            // التحقق من وجود سجل لنفس الموظف والشهر والسنة للحفاظ على بيانات السحب
+                            const { data: existingRec } = await supabase
                                 .from('monthly_salary_records')
-                                .upsert([
-                                    {
+                                .select('id, employee_id, salary_month, salary_year, total_cash_withdrawn, remaining_amount, payment_status')
+                                .eq('employee_id', employeeId)
+                                .eq('salary_month', month)
+                                .eq('salary_year', year)
+                                .maybeSingle();
+
+                            if (existingRec) {
+                                // حساب المسحوب الفعلي من جدول السحوبات
+                                let realWithdrawn = await getRealWithdrawnFromDB(existingRec.employee_id, existingRec.salary_month, existingRec.salary_year);
+                                if (realWithdrawn === null) {
+                                    realWithdrawn = getNumericValue(existingRec.total_cash_withdrawn, 0);
+                                }
+                                const newRemaining = Math.max(0, parseFloat((netSalary - realWithdrawn).toFixed(2)));
+                                const newStatus = newRemaining <= 0 ? 'paid' : 'pending';
+
+                                const { error } = await supabase
+                                    .from('monthly_salary_records')
+                                    .update({
+                                        ...salaryData,
+                                        total_cash_withdrawn: parseFloat(realWithdrawn.toFixed(2)),
+                                        remaining_amount: newRemaining,
+                                        payment_status: newStatus
+                                    })
+                                    .eq('id', existingRec.id);
+
+                                if (error) throw error;
+                            } else {
+                                // إدراج سجل جديد
+                                const { error } = await supabase
+                                    .from('monthly_salary_records')
+                                    .insert([{
                                         ...salaryData,
                                         total_cash_withdrawn: 0,
                                         remaining_amount: parseFloat(netSalary.toFixed(2)),
                                         payment_status: 'pending'
-                                    }
-                                ], {
-                                    onConflict: 'employee_id,salary_month,salary_year'
-                                })
-                                .select();
+                                    }]);
 
-                            if (error) throw error;
+                                if (error) throw error;
+                            }
                         }
 
                         showCustomSuccess(editingMonthlySalaryId
@@ -2603,7 +2760,43 @@
 
                     if (error) throw error;
 
-                    monthlySalariesCache = data || [];
+                    const records = data || [];
+
+                    // جلب مجاميع السحوبات الفعلية من جدول salary_cash_withdrawals
+                    // هذا هو المصدر الصحيح الوحيد الموثوق لمعرفة كم تم سحبه فعلاً
+                    let withdrawalMap = {}; // key: "employee_id|salary_month|salary_year"
+                    try {
+                        const { data: withdrawals } = await supabase
+                            .from('salary_cash_withdrawals')
+                            .select('employee_id, salary_month, salary_year, withdrawal_amount');
+
+                        if (withdrawals && withdrawals.length > 0) {
+                            withdrawals.forEach(w => {
+                                const key = `${w.employee_id}|${w.salary_month}|${w.salary_year}`;
+                                withdrawalMap[key] = (withdrawalMap[key] || 0) + getNumericValue(w.withdrawal_amount, 0);
+                            });
+                        }
+                    } catch (wErr) {
+                        console.warn('تعذر جلب سجلات السحب التفصيلية، سيتم الاعتماد على القيم المخزنة:', wErr);
+                    }
+
+                    // تحديث قيم total_cash_withdrawn و remaining_amount في كل سجل
+                    // بناءً على المجاميع الفعلية من salary_cash_withdrawals
+                    monthlySalariesCache = records.map(rec => {
+                        const key = `${rec.employee_id}|${rec.salary_month}|${rec.salary_year}`;
+                        if (Object.prototype.hasOwnProperty.call(withdrawalMap, key)) {
+                            const realWithdrawn = parseFloat(withdrawalMap[key].toFixed(2));
+                            const net = getNumericValue(rec.net_salary, 0);
+                            const realRemaining = Math.max(0, parseFloat((net - realWithdrawn).toFixed(2)));
+                            return {
+                                ...rec,
+                                total_cash_withdrawn: realWithdrawn,
+                                remaining_amount: realRemaining
+                            };
+                        }
+                        return rec;
+                    });
+
                     displayMonthlySalaries();
                     
                 } catch (err) {
@@ -2745,6 +2938,81 @@
 
             if (searchMonthlySalaries) {
                 searchMonthlySalaries.addEventListener('input', displayMonthlySalaries);
+            }
+
+            // ====== تصدير الرواتب الشهرية إلى Excel ======
+            const exportMonthlySalariesExcel = document.getElementById('exportMonthlySalariesExcel');
+            if (exportMonthlySalariesExcel) {
+                exportMonthlySalariesExcel.addEventListener('click', () => {
+                    if (!window.XLSX) {
+                        showCustomError('❌ مكتبة Excel غير محملة، تحقق من الاتصال بالإنترنت');
+                        return;
+                    }
+
+                    const monthFilter = filterMonthlySalaryMonth?.value || '';
+                    const searchTerm = (searchMonthlySalaries?.value || '').toLowerCase();
+
+                    let filtered = monthlySalariesCache;
+                    if (monthFilter) filtered = filtered.filter(s => s.salary_month === monthFilter);
+                    if (searchTerm) filtered = filtered.filter(s =>
+                        s.employee_name.toLowerCase().includes(searchTerm) ||
+                        s.branch_name.toLowerCase().includes(searchTerm)
+                    );
+
+                    if (filtered.length === 0) {
+                        showCustomError('⚠️ لا توجد بيانات للتصدير');
+                        return;
+                    }
+
+                    const rows = filtered.map(s => {
+                        const withdrawn = getSalaryWithdrawn(s);
+                        const remaining = getSalaryRemaining(s);
+                        const status = getMonthlyPaymentStatus(s) === 'paid' ? 'تم الاستلام' : 'معلق';
+                        return {
+                            'الموظف': s.employee_name,
+                            'الفرع': s.branch_name,
+                            'الشهر': s.salary_month,
+                            'الراتب الأساسي': parseFloat(s.base_salary) || 0,
+                            'البدلات': parseFloat(s.allowances || 0),
+                            'الخصومات': parseFloat(s.deductions || 0),
+                            'صافي الراتب': parseFloat(s.net_salary) || 0,
+                            'المسحوب': withdrawn,
+                            'المتبقي': remaining,
+                            'الحالة': status
+                        };
+                    });
+
+                    // إجماليات
+                    const totalWithdrawn = filtered.reduce((sum, s) => sum + getSalaryWithdrawn(s), 0);
+                    const totalRemaining = filtered.reduce((sum, s) => sum + getSalaryRemaining(s), 0);
+                    rows.push({
+                        'الموظف': 'المجموع الكلي',
+                        'الفرع': '',
+                        'الشهر': '',
+                        'الراتب الأساسي': '',
+                        'البدلات': '',
+                        'الخصومات': '',
+                        'صافي الراتب': '',
+                        'المسحوب': totalWithdrawn,
+                        'المتبقي': totalRemaining,
+                        'الحالة': ''
+                    });
+
+                    const ws = XLSX.utils.json_to_sheet(rows, { skipHeader: false });
+
+                    // ضبط عرض الأعمدة
+                    ws['!cols'] = [
+                        { wch: 20 }, { wch: 18 }, { wch: 12 },
+                        { wch: 14 }, { wch: 12 }, { wch: 12 },
+                        { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }
+                    ];
+
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'الرواتب الشهرية');
+
+                    const fileName = `رواتب_شهرية${monthFilter ? '_' + monthFilter : ''}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+                    XLSX.writeFile(wb, fileName);
+                });
             }
 
             // ====== إدارة Telegram Chat ID ======
