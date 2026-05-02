@@ -5315,6 +5315,7 @@
             if (!confirmed2) return;
 
             try {
+                // حذف بيانات المبيعات
                 const ids = allData.map(r => r.id);
                 await Promise.all(ids.map(id => 
                     supabase
@@ -5322,13 +5323,47 @@
                         .delete()
                         .eq('id', id)
                 ));
-                
-                // تحديث البيانات المحلية والعرض
+
+                // حذف بيانات الاستلامات والتحويلات من Supabase
+                const client = window.supabaseInstance;
+                if (client && typeof client.from === 'function') {
+                    // حذف جميع الاستلامات (cash_deliveries)
+                    const { data: deliveryIds } = await client.from('cash_deliveries').select('id');
+                    if (deliveryIds && deliveryIds.length > 0) {
+                        await Promise.all(deliveryIds.map(row =>
+                            client.from('cash_deliveries').delete().eq('id', row.id)
+                        ));
+                    }
+
+                    // حذف جميع التحويلات (cash_transfers)
+                    const { data: transferIds } = await client.from('cash_transfers').select('id');
+                    if (transferIds && transferIds.length > 0) {
+                        await Promise.all(transferIds.map(row =>
+                            client.from('cash_transfers').delete().eq('id', row.id)
+                        ));
+                    }
+                }
+
+                // مسح بيانات التحويلات من الذاكرة المحلية
+                localStorage.removeItem('cashTransfers');
+                localStorage.removeItem('cashTransferHistory');
+
+                // تحديث المتغيرات المحلية
                 allData = [];
+                cashDeliveries = [];
+                cashTransfers = [];
+                cashTransferHistory = [];
+
+                // تحديث واجهة المبيعات
                 displayData(allData);
                 updateStats(allData);
                 populateBranchFilter();
                 applyFilters();
+
+                // تحديث واجهة الاستلامات والتحويلات
+                renderCashTransferTables();
+                displayCashReconciliation(null);
+                if (typeof loadDeliveriesData === 'function') loadDeliveriesData();
                 
                 showCustomSuccess('تم حذف جميع السجلات بنجاح', 'تم الحذف');
             } catch (err) {
@@ -5535,7 +5570,7 @@
         }
 
         window.showLoadingSpinner = showLoadingSpinner;
-        function downloadBackup() {
+        async function downloadBackup() {
             // التحقق من الصلاحية: نسخ احتياطية
             if (!hasPermission('backup')) {
                 showNoPermissionMessage('إنشاء نسخ احتياطية');
@@ -5543,12 +5578,35 @@
             }
 
             try {
+                showLoadingSpinner(true);
+
+                const client = window.supabaseInstance;
+                let latestDeliveries = [...cashDeliveries];
+                let latestTransfers = [...cashTransfers];
+
+                // جلب أحدث بيانات الاستلامات والتحويلات من Supabase
+                if (client && typeof client.from === 'function') {
+                    const [deliveriesResult, transfersResult] = await Promise.all([
+                        client.from('cash_deliveries').select('*').order('created_at', { ascending: false }),
+                        client.from('cash_transfers').select('*').order('updated_at', { ascending: false })
+                    ]);
+
+                    if (!deliveriesResult.error && Array.isArray(deliveriesResult.data)) {
+                        latestDeliveries = deliveriesResult.data;
+                    }
+                    if (!transfersResult.error && Array.isArray(transfersResult.data)) {
+                        latestTransfers = transfersResult.data;
+                    }
+                }
+
+                showLoadingSpinner(false);
+
                 const backupData = {
                     timestamp: new Date().toISOString(),
                     salesData: allData,
-                    cashDeliveries: cashDeliveries,
+                    cashDeliveries: latestDeliveries,
                     cashEditHistory: cashEditHistory,
-                    cashTransfers: cashTransfers,
+                    cashTransfers: latestTransfers,
                     cashTransferHistory: cashTransferHistory,
                     version: '1.0',
                     backupAuthor: currentUser.name,
@@ -5566,8 +5624,12 @@
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
 
-                showCustomSuccess('تم تحميل النسخة الاحتياطية بنجاح', 'تم الحفظ');
+                showCustomSuccess(
+                    `تم تحميل النسخة الاحتياطية بنجاح\n${allData.length} مبيعات، ${latestDeliveries.length} استلام كاش، ${latestTransfers.length} تحويل`,
+                    'تم الحفظ'
+                );
             } catch (err) {
+                showLoadingSpinner(false);
                 console.error(err);
                 showCustomError('خطأ في تحميل النسخة الاحتياطية: ' + err.message, 'خطأ');
             }
@@ -5904,15 +5966,15 @@
             const includeDetailsByDate = isManager
                 ? (document.getElementById('handoverIncludeDetails')?.checked !== false)
                 : true;
-            const filterDateFrom = document.getElementById('filterDateFrom').value;
-            const filterDateTo = document.getElementById('filterDateTo').value;
+            // تقرير تسليم العهدة يعتمد على الكاش غير المسلم بدون أي تقيد بتاريخ
+            const filterDateFrom = '';
+            const filterDateTo = '';
             
             allData.forEach(record => {
                 let isFiltered = true;
 
                 if (filterBranch && record.branch !== filterBranch) isFiltered = false;
-                if (filterDateFrom && record.saleDate < filterDateFrom) isFiltered = false;
-                if (filterDateTo && record.saleDate > filterDateTo) isFiltered = false;
+                // بدون فلترة تاريخ
 
                 if (!isFiltered) return;
 
@@ -5988,8 +6050,7 @@
                 const deliveryDate = normalizeDateOnly(delivery.deliveredAt || delivery.createdAt);
 
                 if (filterBranch && branch !== filterBranch) return;
-                if (filterDateFrom && deliveryDate < filterDateFrom) return;
-                if (filterDateTo && deliveryDate > filterDateTo) return;
+                // بدون فلترة تاريخ
 
                 deliveryDetails.push({
                     date: deliveryDate || '-',
@@ -6014,8 +6075,7 @@
             // تطبيق تحويلات الكاش على الرصيد المعتمد
             getActiveCashTransfers().forEach(transfer => {
                 const transferDate = normalizeDateOnly(transfer.date || transfer.updatedAt || transfer.createdAt);
-                if (filterDateFrom && transferDate < filterDateFrom) return;
-                if (filterDateTo && transferDate > filterDateTo) return;
+                // بدون فلترة تاريخ
                 if (filterBranch && transfer.fromBranch !== filterBranch && transfer.toBranch !== filterBranch) return;
 
                 // عند اختيار فرع محدد: لا نعرض/نضيف بيانات الفرع المقابل، ونطبق الأثر على الفرع المحدد فقط
@@ -6097,9 +6157,9 @@
             const reportDate = new Date().toLocaleDateString('ar-EG');
             const reportTime = new Date().toLocaleTimeString('ar-EG');
             
-            // تنسيق التواريخ للعرض في التقرير
-            const dateFromFormatted = filterDateFrom ? new Date(filterDateFrom).toLocaleDateString('ar-EG') : 'بداية الفترة';
-            const dateToFormatted = filterDateTo ? new Date(filterDateTo).toLocaleDateString('ar-EG') : 'نهاية الفترة';
+            // التقرير غير مقيد بالتاريخ
+            const dateFromFormatted = 'بدون تقيد بتاريخ';
+            const dateToFormatted = 'جميع السجلات';
             
             let htmlContent = `
 <!DOCTYPE html>

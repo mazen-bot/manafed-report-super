@@ -1559,6 +1559,88 @@
         setFormEnabled(false);
 
         // ===== معالج رفع الصور إلى Supabase Storage =====
+        async function compressImageOnClient(file) {
+            const maxDimension = 1920;
+            const targetMaxBytes = 5 * 1024 * 1024;
+
+            // ملفات GIF غالبا تحتوي إطارا متحركا، لذلك نتركها كما هي لتجنب فقد الحركة
+            if (file.type === 'image/gif') {
+                return {
+                    file,
+                    originalSize: file.size,
+                    compressedSize: file.size,
+                    compressed: false,
+                    reason: 'gif'
+                };
+            }
+
+            const dataUrl = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+
+            const image = await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = dataUrl;
+            });
+
+            let width = image.naturalWidth || image.width;
+            let height = image.naturalHeight || image.height;
+
+            if (width > maxDimension || height > maxDimension) {
+                const ratio = Math.min(maxDimension / width, maxDimension / height);
+                width = Math.max(1, Math.round(width * ratio));
+                height = Math.max(1, Math.round(height * ratio));
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(image, 0, 0, width, height);
+
+            const outputType = 'image/webp';
+            let quality = 0.85;
+
+            let blob = await new Promise((resolve, reject) => {
+                canvas.toBlob((result) => {
+                    if (!result) reject(new Error('تعذر ضغط الصورة'));
+                    else resolve(result);
+                }, outputType, quality);
+            });
+
+            // خفض الجودة تدريجيا لصيغة WebP حتى نقترب من الحجم المطلوب
+            while (blob.size > targetMaxBytes && quality > 0.45) {
+                quality = parseFloat((quality - 0.1).toFixed(2));
+                blob = await new Promise((resolve, reject) => {
+                    canvas.toBlob((result) => {
+                        if (!result) reject(new Error('تعذر ضغط الصورة'));
+                        else resolve(result);
+                    }, outputType, quality);
+                });
+            }
+
+            const extension = 'webp';
+            const safeName = file.name.replace(/\.[^.]+$/, '');
+            const compressedFile = new File([blob], `${safeName}_compressed.${extension}`, {
+                type: outputType,
+                lastModified: Date.now()
+            });
+
+            return {
+                file: compressedFile,
+                originalSize: file.size,
+                compressedSize: compressedFile.size,
+                compressed: compressedFile.size < file.size,
+                convertedToWebP: true,
+                reason: 'ok'
+            };
+        }
+
         // تنبيه عند الضغط على حقل الصورة
         imageUploadInput.addEventListener('click', function() {
             showCustomAlert(
@@ -1569,16 +1651,9 @@
         });
 
         // عند اختيار صورة
-        imageUploadInput.addEventListener('change', function(e) {
+        imageUploadInput.addEventListener('change', async function(e) {
             const file = e.target.files[0];
             if (!file) return;
-
-            // التحقق من حجم الملف (5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                showCustomError('❌ حجم الصورة كبير جداً. الحد الأقصى 5MB', 'حجم كبير');
-                imageUploadInput.value = '';
-                return;
-            }
 
             // التحقق من نوع الملف
             const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
@@ -1588,16 +1663,50 @@
                 return;
             }
 
-            uploadedImageFile = file;
+            let finalFile = file;
+            let originalSize = file.size;
+            let finalSize = file.size;
+            let convertedToWebP = false;
+
+            try {
+                const compressed = await compressImageOnClient(file);
+                finalFile = compressed.file;
+                finalSize = compressed.compressedSize;
+                convertedToWebP = !!compressed.convertedToWebP;
+
+                if (compressed.reason === 'gif' && finalSize > 5 * 1024 * 1024) {
+                    showCustomError('❌ حجم GIF كبير جداً (أكبر من 5MB). يرجى اختيار صورة أصغر أو بصيغة JPG/PNG.', 'حجم كبير');
+                    imageUploadInput.value = '';
+                    return;
+                }
+
+                if (finalSize > 5 * 1024 * 1024) {
+                    showCustomError('❌ حتى بعد الضغط ما زال حجم الصورة أكبر من 5MB. اختر صورة أصغر.', 'حجم كبير');
+                    imageUploadInput.value = '';
+                    return;
+                }
+            } catch (compressionError) {
+                console.warn('تعذر ضغط الصورة، سيتم استخدام النسخة الأصلية:', compressionError);
+                if (file.size > 5 * 1024 * 1024) {
+                    showCustomError('❌ تعذر ضغط الصورة وحجمها أكبر من 5MB', 'حجم كبير');
+                    imageUploadInput.value = '';
+                    return;
+                }
+            }
+
+            uploadedImageFile = finalFile;
 
             // عرض معاينة
             const reader = new FileReader();
             reader.onload = function(e) {
                 previewImg.src = e.target.result;
-                imageName.textContent = `📎 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                const beforeKB = (originalSize / 1024).toFixed(1);
+                const afterKB = (finalSize / 1024).toFixed(1);
+                const formatText = convertedToWebP ? ' | الصيغة بعد الضغط: WebP' : '';
+                imageName.textContent = `📎 ${file.name} | قبل الضغط: ${beforeKB} KB | بعد الضغط: ${afterKB} KB${formatText}`;
                 imagePreviewDiv.style.display = 'block';
             };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(finalFile);
         });
 
         // عند حذف الصورة
