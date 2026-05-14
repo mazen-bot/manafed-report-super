@@ -1046,8 +1046,24 @@
         setFormEnabled(false);
         secureArea.style.display = 'none';
 
+        // متغير لمنع الحفظ المتزامن
+        let isSaving = false;
+        let isShowingConfirmation = false;
+
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
+
+            // منع الحفظ المكرر
+            if (isSaving) {
+                console.log('عملية حفظ جارية بالفعل، تم تجاهل المحاولة الثانية');
+                return;
+            }
+
+            // منع عرض نافذة التأكيد أكثر من مرة
+            if (isShowingConfirmation) {
+                console.log('نافذة التأكيد مفتوحة بالفعل، تم تجاهل المحاولة الثانية');
+                return;
+            }
 
             if (!currentEmployee) {
                 await showCustomAlert('الرجاء تسجيل الدخول قبل الحفظ', '❌ خطأ', 'error');
@@ -1186,12 +1202,14 @@
             }
 
             console.log('Showing confirmation dialog...');
+            isShowingConfirmation = true;
             const userConfirmed = await showSummaryConfirm(
                 '✅ تأكيد حفظ البيانات',
                 summaryItems,
                 'نعم، احفظ البيانات',
                 'إلغاء'
             );
+            isShowingConfirmation = false;
             console.log('User confirmation:', userConfirmed);
             
             if (!userConfirmed) {
@@ -1200,6 +1218,14 @@
             }
 
             console.log('User confirmed, proceeding to save...');
+
+            // تفعيل حماية الحفظ المكرر وتعطيل زر الحفظ
+            isSaving = true;
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = '⏳ جاري الحفظ...';
+            }
 
             // ===== فحص التكرار قبل الحفظ =====
             try {
@@ -1226,6 +1252,13 @@
                     );
 
                     if (isDuplicate) {
+                        // إعادة تمكين الزر قبل الخروج
+                        isSaving = false;
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                            submitButton.textContent = 'حفظ';
+                        }
+                        
                         await showCustomAlert(
                             `⚠️ يوجد تقرير مطابق تماماً لهذا اليوم (${saleDate}) بنفس الموظف والفرع وجميع المبالغ.\n\nتم إلغاء الحفظ لمنع التكرار.`,
                             '🚫 تقرير مكرر',
@@ -1277,6 +1310,12 @@
                     // إخفاء شاشة الانتظار في حالة فشل رفع الصورة
                     if (loadingOverlay) {
                         loadingOverlay.classList.remove('show');
+                    }
+                    // إعادة تمكين زر الحفظ
+                    isSaving = false;
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'حفظ';
                     }
                     alert('❌ فشل رفع الصورة: ' + (error.message || 'خطأ غير معروف'));
                     return;
@@ -1367,6 +1406,13 @@
                     loadingOverlay.classList.remove('show');
                 }
                 
+                // إعادة تمكين زر الحفظ
+                isSaving = false;
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'حفظ';
+                }
+                
                 alert('تم حفظ البيانات في Supabase بنجاح!');
                 result.classList.add('show');
                 form.reset();
@@ -1405,6 +1451,13 @@
                 // إخفاء شاشة الانتظار في حالة الخطأ
                 if (loadingOverlay) {
                     loadingOverlay.classList.remove('show');
+                }
+                
+                // إعادة تمكين زر الحفظ
+                isSaving = false;
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'حفظ';
                 }
                 
                 console.error('Error saving data:', err);
@@ -1561,7 +1614,8 @@
         // ===== معالج رفع الصور إلى Supabase Storage =====
         async function compressImageOnClient(file) {
             const maxDimension = 1920;
-            const targetMaxBytes = 5 * 1024 * 1024;
+            // تقليل الحد الأقصى للحجم إلى 500KB
+            const targetMaxBytes = 500 * 1024;
 
             // ملفات GIF غالبا تحتوي إطارا متحركا، لذلك نتركها كما هي لتجنب فقد الحركة
             if (file.type === 'image/gif') {
@@ -1613,15 +1667,26 @@
                 }, outputType, quality);
             });
 
-            // خفض الجودة تدريجيا لصيغة WebP حتى نقترب من الحجم المطلوب
-            while (blob.size > targetMaxBytes && quality > 0.45) {
-                quality = parseFloat((quality - 0.1).toFixed(2));
+            // خفض الجودة تدريجيا لصيغة WebP حتى نقترب من الحجم المطلوب (500KB)
+            while (blob.size > targetMaxBytes && quality > 0.10) {
+                quality = parseFloat((quality - 0.05).toFixed(2));
                 blob = await new Promise((resolve, reject) => {
                     canvas.toBlob((result) => {
                         if (!result) reject(new Error('تعذر ضغط الصورة'));
                         else resolve(result);
                     }, outputType, quality);
                 });
+            }
+
+            // إذا بقيت الصورة كبيرة جداً، أعدها كما هي مع تحذير
+            if (blob.size > targetMaxBytes) {
+                return {
+                    file,
+                    originalSize: file.size,
+                    compressedSize: file.size,
+                    compressed: false,
+                    reason: 'size-limit'
+                };
             }
 
             const extension = 'webp';

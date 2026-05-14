@@ -829,9 +829,15 @@ function showSummaryConfirm(title, items, confirmText = 'تأكيد', cancelText
         document.body.style.overflow = 'hidden';
     }
 
-    // تحديث نصوص الأزرار
-    if (confirmBtn) confirmBtn.textContent = confirmText;
-    if (cancelBtn) cancelBtn.textContent = cancelText;
+    // تحديث نصوص الأزرار وإعادة تمكينها
+    if (confirmBtn) {
+        confirmBtn.textContent = confirmText;
+        confirmBtn.disabled = false;
+    }
+    if (cancelBtn) {
+        cancelBtn.textContent = cancelText;
+        cancelBtn.disabled = false;
+    }
 
     return new Promise(resolve => {
         // متغيرات لتتبع حالة المعالج
@@ -842,6 +848,11 @@ function showSummaryConfirm(title, items, confirmText = 'تأكيد', cancelText
             isResolved = true;
             e.preventDefault();
             e.stopPropagation();
+            
+            // تعطيل الأزرار فوراً
+            if (confirmBtn) confirmBtn.disabled = true;
+            if (cancelBtn) cancelBtn.disabled = true;
+            
             cleanup();
             resolve(true);
         };
@@ -851,6 +862,11 @@ function showSummaryConfirm(title, items, confirmText = 'تأكيد', cancelText
             isResolved = true;
             e.preventDefault();
             e.stopPropagation();
+            
+            // تعطيل الأزرار فوراً
+            if (confirmBtn) confirmBtn.disabled = true;
+            if (cancelBtn) cancelBtn.disabled = true;
+            
             cleanup();
             resolve(false);
         };
@@ -869,12 +885,22 @@ function showSummaryConfirm(title, items, confirmText = 'تأكيد', cancelText
             document.body.style.overflow = '';
         };
 
-        // إضافة المعالجات
+        // إزالة أي معالجات قديمة أولاً (للأمان)
         if (confirmBtn) {
-            confirmBtn.addEventListener('click', handleConfirm);
+            const oldConfirm = confirmBtn.onclick;
+            if (oldConfirm) confirmBtn.onclick = null;
         }
         if (cancelBtn) {
-            cancelBtn.addEventListener('click', handleCancel);
+            const oldCancel = cancelBtn.onclick;
+            if (oldCancel) cancelBtn.onclick = null;
+        }
+
+        // إضافة المعالجات الجديدة مع خيار once للتنفيذ مرة واحدة فقط
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', handleConfirm, { once: true });
+        }
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', handleCancel, { once: true });
         }
     });
 }
