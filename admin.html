@@ -1320,9 +1320,10 @@
             // ====== تحميل الفروع ======
             async function loadBranches() {
                 try {
-                    const { data, error } = await supabase.from('branches').select('*');
-                    if (error) throw error;
-                    branchesCache = data || [];
+                    branchesCache = await fetchAllSupabaseRows('branches', '*', {
+                        orderBy: 'name',
+                        ascending: true
+                    });
                     
                     empBranch.innerHTML = '<option value="">-- اختر الفرع --</option>';
                     branchesCache.forEach(b => {
@@ -1443,9 +1444,10 @@
             // ====== تحميل الموظفين ======
             async function loadEmployees() {
                 try {
-                    const { data, error } = await supabase.from('employees').select('*');
-                    if (error) throw error;
-                    employeesCache = data || [];
+                    employeesCache = await fetchAllSupabaseRows('employees', '*', {
+                        orderBy: 'name',
+                        ascending: true
+                    });
                     displayEmployees();
                 } catch (err) {
                     console.error('خطأ في تحميل الموظفين:', err);
@@ -1495,14 +1497,10 @@
 
             async function loadEntitlementRules() {
                 try {
-                    const { data, error } = await supabase
-                        .from('leave_entitlement_rules')
-                        .select('*')
-                        .order('employment_type', { ascending: true })
-                        .order('job_grade', { ascending: true });
-
-                    if (error) throw error;
-                    entitlementRulesCache = data || [];
+                    entitlementRulesCache = await fetchAllSupabaseRows('leave_entitlement_rules', '*', {
+                        orderBy: 'employment_type',
+                        ascending: true
+                    });
                     renderEntitlementRules();
                 } catch (err) {
                     console.error('خطأ في تحميل قواعد الاستحقاق:', err);
@@ -1870,9 +1868,10 @@
 
             async function loadPermissionsManagement() {
                 try {
-                    const { data, error } = await supabase.from('employees').select('*');
-                    if (error) throw error;
-                    employeesCache = data || [];
+                    employeesCache = await fetchAllSupabaseRows('employees', '*', {
+                        orderBy: 'name',
+                        ascending: true
+                    });
                     filterAndDisplayPermissions();
                 } catch (err) {
                     console.error('خطأ:', err);
@@ -2761,15 +2760,10 @@
             // تحميل سجلات الرواتب الشهرية
             async function loadMonthlySalaries() {
                 try {
-                    const { data, error } = await supabase
-                        .from('monthly_salary_records')
-                        .select('*')
-                        .order('salary_year', { ascending: false })
-                        .order('salary_month', { ascending: false });
-
-                    if (error) throw error;
-
-                    const records = data || [];
+                    const records = await fetchAllSupabaseRows('monthly_salary_records', '*', {
+                        orderBy: 'updated_at',
+                        ascending: false
+                    });
 
                     // جلب مجاميع السحوبات الفعلية من جدول salary_cash_withdrawals
                     // هذا هو المصدر الصحيح الوحيد الموثوق لمعرفة كم تم سحبه فعلاً
@@ -2812,6 +2806,44 @@
                     console.error('خطأ في تحميل الرواتب الشهرية:', err);
                     monthlySalariesList.innerHTML = '<p style="padding:20px;text-align:center;color:#999;">⚠️ خطأ في تحميل البيانات</p>';
                 }
+            }
+
+            async function fetchAllSupabaseRows(tableName, columns = '*', options = {}) {
+                const pageSize = 1000;
+                const rows = [];
+                let offset = 0;
+                const { orderBy, ascending = false, secondaryOrderBy, secondaryAscending = false, filters = [] } = options;
+
+                while (true) {
+                    let query = supabase.from(tableName).select(columns);
+
+                    filters.forEach(filter => {
+                        if (filter && filter.column !== undefined) {
+                            query = query.eq(filter.column, filter.value);
+                        }
+                    });
+
+                    if (orderBy) {
+                        query = query.order(orderBy, { ascending });
+                    }
+
+                    if (secondaryOrderBy) {
+                        query = query.order(secondaryOrderBy, { ascending: secondaryAscending });
+                    }
+
+                    query = query.range(offset, offset + pageSize - 1);
+
+                    const { data, error } = await query;
+                    if (error) throw error;
+                    if (!Array.isArray(data) || data.length === 0) break;
+
+                    rows.push(...data);
+                    if (data.length < pageSize) break;
+
+                    offset += pageSize;
+                }
+
+                return rows;
             }
 
             // عرض سجلات الرواتب الشهرية

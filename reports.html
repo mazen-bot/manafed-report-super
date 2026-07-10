@@ -2085,12 +2085,10 @@
         async function loadData() {
             try {
                 // جلب بيانات المبيعات
-                const { data: records, error } = await supabase
-                    .from('sales')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-                
-                if (error) throw error;
+                const records = await fetchAllSupabaseRows('sales', '*', {
+                    orderBy: 'created_at',
+                    ascending: false
+                });
 
                 // جلب بيانات الموظفين لتجميع الأسماء
                 const { data: employees, error: empError } = await supabase
@@ -2135,12 +2133,12 @@
 
                 // جلب تسليمات الكاش من Supabase (إن وجد جدول)
                 try {
-                    const { data: deliveries, error: delErr } = await supabase
-                        .from('cash_deliveries')
-                        .select('*')
-                        .order('created_at', { ascending: false });
+                    const deliveries = await fetchAllSupabaseRows('cash_deliveries', '*', {
+                        orderBy: 'created_at',
+                        ascending: false
+                    });
 
-                    if (!delErr && Array.isArray(deliveries)) {
+                    if (Array.isArray(deliveries)) {
                         // اعتماد البيانات من قاعدة البيانات فقط بدون دمج محلي
                         cashDeliveries = deliveries.map(d => ({
                             id: d.id || ('r_' + Date.parse(d.created_at || new Date())),
@@ -3178,12 +3176,10 @@
             }
 
             try {
-                const { data, error } = await client
-                    .from('cash_transfers')
-                    .select('*')
-                    .order('updated_at', { ascending: false });
-
-                if (error) throw error;
+                const data = await fetchAllSupabaseRowsFromClient(client, 'cash_transfers', '*', {
+                    orderBy: 'updated_at',
+                    ascending: false
+                });
 
                 cashTransfers = Array.isArray(data)
                     ? data.map(mapCashTransferFromSupabase)
@@ -3202,6 +3198,40 @@
                 }
                 return { source: 'local', loaded: false, error: err };
             }
+        }
+
+        async function fetchAllSupabaseRowsFromClient(client, tableName, columns = '*', options = {}) {
+            const pageSize = 1000;
+            const rows = [];
+            let offset = 0;
+            const { orderBy, ascending = false, filters = [] } = options;
+
+            while (true) {
+                let query = client.from(tableName).select(columns);
+
+                filters.forEach(filter => {
+                    if (filter && filter.column !== undefined) {
+                        query = query.eq(filter.column, filter.value);
+                    }
+                });
+
+                if (orderBy) {
+                    query = query.order(orderBy, { ascending });
+                }
+
+                query = query.range(offset, offset + pageSize - 1);
+
+                const { data, error } = await query;
+                if (error) throw error;
+                if (!Array.isArray(data) || data.length === 0) break;
+
+                rows.push(...data);
+                if (data.length < pageSize) break;
+
+                offset += pageSize;
+            }
+
+            return rows;
         }
 
         function getActiveCashTransfers(options = {}) {
@@ -3447,6 +3477,40 @@
                     });
                 }
             }
+        }
+
+        async function fetchAllSupabaseRows(tableName, columns = '*', options = {}) {
+            const pageSize = 1000;
+            const rows = [];
+            let offset = 0;
+            const { orderBy, ascending = false, filters = [] } = options;
+
+            while (true) {
+                let query = supabase.from(tableName).select(columns);
+
+                filters.forEach(filter => {
+                    if (filter && filter.column !== undefined) {
+                        query = query.eq(filter.column, filter.value);
+                    }
+                });
+
+                if (orderBy) {
+                    query = query.order(orderBy, { ascending });
+                }
+
+                query = query.range(offset, offset + pageSize - 1);
+
+                const { data, error } = await query;
+                if (error) throw error;
+                if (!Array.isArray(data) || data.length === 0) break;
+
+                rows.push(...data);
+                if (data.length < pageSize) break;
+
+                offset += pageSize;
+            }
+
+            return rows;
         }
 
         function editCashTransfer(transferId) {
@@ -7114,7 +7178,7 @@
         }
 
         // عرض التسوية في الجدول - حساب المتوقع والمسلم والمتبقي
-        function displayCashReconciliation(deliveriesFromSupabase) {
+        async function displayCashReconciliation(deliveriesFromSupabase) {
             const tbody = document.getElementById('reconciliationBody');
             if (!tbody) return;
 
@@ -7143,18 +7207,58 @@
             // حساب المتوقع (من المبيعات) والمسلم (من Supabase)
             const grouped = {};
             
-            // 1. حساب المتوقع من المبيعات
-            if (Array.isArray(allData)) {
-                allData.forEach(r => {
-                    const branch = r.branch;
-                    // تطبيق فلتر الفرع
-                    if (selectedBranch && branch !== selectedBranch) return;
-                    
-                    if (!grouped[branch]) {
-                        grouped[branch] = { expected: 0, delivered: 0, incoming: 0, outgoing: 0, lastUpdate: null, deliveryCount: 0, deliveryDates: [] };
+            // 1. حساب المتوقع من المبيعات - جلب كل السجلات بالتصفح لضمان دقة الحساب
+            try {
+                const supabaseClient = window.supabaseInstance;
+                if (supabaseClient && typeof supabaseClient.from === 'function') {
+                    const allSalesData = [];
+                    const pageSize = 1000;
+                    let offset = 0;
+                    while (true) {
+                        let salesQuery = supabaseClient
+                            .from('sales')
+                            .select('branch, total_cash')
+                            .range(offset, offset + pageSize - 1);
+                        if (selectedBranch) salesQuery = salesQuery.eq('branch', selectedBranch);
+                        const { data: page, error: pageErr } = await salesQuery;
+                        if (pageErr || !page || page.length === 0) break;
+                        allSalesData.push(...page);
+                        if (page.length < pageSize) break;
+                        offset += pageSize;
                     }
-                    grouped[branch].expected += parseFloat(r.totalCash || 0);
-                });
+                    
+                    allSalesData.forEach(r => {
+                        const branch = r.branch;
+                        if (!grouped[branch]) {
+                            grouped[branch] = { expected: 0, delivered: 0, incoming: 0, outgoing: 0, lastUpdate: null, deliveryCount: 0, deliveryDates: [] };
+                        }
+                        grouped[branch].expected += parseFloat(r.total_cash || 0);
+                    });
+                } else {
+                    // fallback إلى allData إذا لم يكن Supabase متاحاً
+                    if (Array.isArray(allData)) {
+                        allData.forEach(r => {
+                            const branch = r.branch;
+                            if (selectedBranch && branch !== selectedBranch) return;
+                            if (!grouped[branch]) {
+                                grouped[branch] = { expected: 0, delivered: 0, incoming: 0, outgoing: 0, lastUpdate: null, deliveryCount: 0, deliveryDates: [] };
+                            }
+                            grouped[branch].expected += parseFloat(r.totalCash || 0);
+                        });
+                    }
+                }
+            } catch (salesErr) {
+                console.warn('[CASH] fallback to allData:', salesErr);
+                if (Array.isArray(allData)) {
+                    allData.forEach(r => {
+                        const branch = r.branch;
+                        if (selectedBranch && branch !== selectedBranch) return;
+                        if (!grouped[branch]) {
+                            grouped[branch] = { expected: 0, delivered: 0, incoming: 0, outgoing: 0, lastUpdate: null, deliveryCount: 0, deliveryDates: [] };
+                        }
+                        grouped[branch].expected += parseFloat(r.totalCash || 0);
+                    });
+                }
             }
 
             // 2. حساب المسلم من التسليمات
@@ -7164,10 +7268,8 @@
                     // تطبيق فلتر الفرع
                     if (selectedBranch && branch !== selectedBranch) return;
                     
-                    // تطبيق فلتر التاريخ
+                    // لا فلتر تاريخ هنا - التسليمات تُحسب كاملة لتطابق المتوقع الكلي
                     const deliveryDate = normalizeDateOnly(d.delivered_at || d.created_at);
-                    if (dateFrom && deliveryDate < dateFrom) return;
-                    if (dateTo && deliveryDate > dateTo) return;
                     
                     if (!grouped[branch]) {
                         grouped[branch] = { expected: 0, delivered: 0, incoming: 0, outgoing: 0, lastUpdate: null, deliveryCount: 0, deliveryDates: [] };
@@ -7185,9 +7287,7 @@
             }
 
             getActiveCashTransfers().forEach(transfer => {
-                const transferDate = normalizeDateOnly(transfer.date || transfer.updatedAt || transfer.createdAt);
-                if (dateFrom && transferDate < dateFrom) return;
-                if (dateTo && transferDate > dateTo) return;
+                // لا فلتر تاريخ على التحويلات - تُحسب كاملة لتطابق المتوقع الكلي
                 if (selectedBranch && transfer.fromBranch !== selectedBranch && transfer.toBranch !== selectedBranch) return;
 
                 if (!grouped[transfer.fromBranch]) {

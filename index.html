@@ -1023,6 +1023,40 @@
             }
         }
 
+        async function fetchAllSupabaseRows(tableName, columns = '*', options = {}) {
+            const pageSize = 1000;
+            const rows = [];
+            let offset = 0;
+            const { orderBy, ascending = false, filters = [] } = options;
+
+            while (true) {
+                let query = supabase.from(tableName).select(columns);
+
+                filters.forEach(filter => {
+                    if (filter && filter.column !== undefined) {
+                        query = query.eq(filter.column, filter.value);
+                    }
+                });
+
+                if (orderBy) {
+                    query = query.order(orderBy, { ascending });
+                }
+
+                query = query.range(offset, offset + pageSize - 1);
+
+                const { data, error } = await query;
+                if (error) throw error;
+                if (!Array.isArray(data) || data.length === 0) break;
+
+                rows.push(...data);
+                if (data.length < pageSize) break;
+
+                offset += pageSize;
+            }
+
+            return rows;
+        }
+
         function setFormEnabled(enabled) {
             const controls = Array.from(form.elements).filter(el => el.id !== 'loginEmployeeId' && el.id !== 'loginPassword' && el.id !== 'btnLogin');
             controls.forEach(el => { el.disabled = !enabled; });

@@ -2035,30 +2035,26 @@
 
             try {
                 // جلب طلبات الموظف
-                const { data: requests, error: reqError } = await supabase
-                    .from('leave_requests')
-                    .select('*')
-                    .eq('employee_id', currentUser.employee_id)
-                    .order('created_at', { ascending: false });
+                const requests = await fetchAllSupabaseRows('leave_requests', '*', {
+                    orderBy: 'created_at',
+                    ascending: false,
+                    filters: [{ column: 'employee_id', value: currentUser.employee_id }]
+                });
 
-                if (!reqError) {
-                    allRequests = requests || [];
-                    displayMyRequests();
-                    updateStats();
-                }
+                allRequests = requests || [];
+                displayMyRequests();
+                updateStats();
 
                 // جلب إنذارات الموظف
-                const { data: warnings, error: warnError } = await supabase
-                    .from('employee_warnings')
-                    .select('*')
-                    .eq('employee_id', currentUser.employee_id)
-                    .order('created_at', { ascending: false });
+                const warnings = await fetchAllSupabaseRows('employee_warnings', '*', {
+                    orderBy: 'created_at',
+                    ascending: false,
+                    filters: [{ column: 'employee_id', value: currentUser.employee_id }]
+                });
 
-                if (!warnError) {
-                    displayMyWarnings(warnings || []);
-                    // تحديث عداد الإنذارات في الإحصائيات
-                    document.getElementById('warningsCount').textContent = (warnings || []).length;
-                }
+                displayMyWarnings(warnings || []);
+                // تحديث عداد الإنذارات في الإحصائيات
+                document.getElementById('warningsCount').textContent = (warnings || []).length;
 
                 // تحميل الإجازات المرضية للملفات الطبية
                 await loadMedicalCertificatesRequests();
@@ -2324,14 +2320,12 @@
             const supabase = window.supabaseInstance;
 
             try {
-                const { data: requests, error } = await supabase
-                    .from('leave_requests')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+                const requests = await fetchAllSupabaseRows('leave_requests', '*', {
+                    orderBy: 'created_at',
+                    ascending: false
+                });
 
-                if (!error) {
-                    displayAllRequests(requests || []);
-                }
+                displayAllRequests(requests || []);
             } catch (err) {
                 console.error('خطأ في تحميل الطلبات:', err);
             }
@@ -2388,56 +2382,54 @@
             const warningStatus = document.getElementById('reportWarningStatus').value;
 
             try {
-                let requestsQuery = supabase
-                    .from('leave_requests')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+                const requests = await fetchAllSupabaseRows('leave_requests', '*', {
+                    orderBy: 'created_at',
+                    ascending: false,
+                    filters: [
+                        ...(employeeId ? [{ column: 'employee_id', value: employeeId }] : []),
+                        ...(requestType ? [{ column: 'request_type', value: requestType }] : []),
+                        ...(requestStatus ? [{ column: 'status', value: requestStatus }] : [])
+                    ]
+                });
 
-                if (employeeId) requestsQuery = requestsQuery.eq('employee_id', employeeId);
-                if (requestType) requestsQuery = requestsQuery.eq('request_type', requestType);
-                if (requestStatus) requestsQuery = requestsQuery.eq('status', requestStatus);
-                if (fromDate) requestsQuery = requestsQuery.gte('created_at', new Date(fromDate).toISOString());
-                if (toDate) {
+                const warnings = await fetchAllSupabaseRows('employee_warnings', '*', {
+                    orderBy: 'created_at',
+                    ascending: false,
+                    filters: [
+                        ...(employeeId ? [{ column: 'employee_id', value: employeeId }] : []),
+                        ...(warningLevel ? [{ column: 'warning_level', value: warningLevel }] : []),
+                        ...(warningStatus === 'acknowledged' ? [{ column: 'acknowledged', value: true }] : []),
+                        ...(warningStatus === 'pending' ? [{ column: 'acknowledged', value: false }] : [])
+                    ]
+                });
+
+                const fromDateIso = fromDate ? new Date(fromDate).toISOString() : null;
+                const toDateIso = toDate ? (() => {
                     const endOfDay = new Date(toDate);
                     endOfDay.setHours(23, 59, 59, 999);
-                    requestsQuery = requestsQuery.lte('created_at', endOfDay.toISOString());
-                }
+                    return endOfDay.toISOString();
+                })() : null;
 
-                let warningsQuery = supabase
-                    .from('employee_warnings')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+                const filteredRequests = requests.filter(item => {
+                    if (fromDateIso && item.created_at < fromDateIso) return false;
+                    if (toDateIso && item.created_at > toDateIso) return false;
+                    return true;
+                });
 
-                if (employeeId) warningsQuery = warningsQuery.eq('employee_id', employeeId);
-                if (warningLevel) warningsQuery = warningsQuery.eq('warning_level', warningLevel);
-                if (warningStatus === 'acknowledged') warningsQuery = warningsQuery.eq('acknowledged', true);
-                if (warningStatus === 'pending') warningsQuery = warningsQuery.eq('acknowledged', false);
-                if (fromDate) warningsQuery = warningsQuery.gte('created_at', new Date(fromDate).toISOString());
-                if (toDate) {
-                    const endOfDay = new Date(toDate);
-                    endOfDay.setHours(23, 59, 59, 999);
-                    warningsQuery = warningsQuery.lte('created_at', endOfDay.toISOString());
-                }
+                const filteredWarnings = warnings.filter(item => {
+                    if (fromDateIso && item.created_at < fromDateIso) return false;
+                    if (toDateIso && item.created_at > toDateIso) return false;
+                    return true;
+                });
 
-                const [requestsResult, warningsResult] = await Promise.all([
-                    requestsQuery,
-                    warningsQuery
-                ]);
+                reportRequestsCache = filteredRequests;
+                reportWarningsCache = filteredWarnings;
 
-                if (requestsResult.error) throw requestsResult.error;
-                if (warningsResult.error) throw warningsResult.error;
+                document.getElementById('reportRequestsCount').textContent = filteredRequests.length;
+                document.getElementById('reportWarningsCount').textContent = filteredWarnings.length;
 
-                const requests = requestsResult.data || [];
-                const warnings = warningsResult.data || [];
-
-                reportRequestsCache = requests;
-                reportWarningsCache = warnings;
-
-                document.getElementById('reportRequestsCount').textContent = requests.length;
-                document.getElementById('reportWarningsCount').textContent = warnings.length;
-
-                displayReportRequests(requests);
-                displayReportWarnings(warnings);
+                displayReportRequests(filteredRequests);
+                displayReportWarnings(filteredWarnings);
             } catch (err) {
                 console.error('خطأ في تحميل التقارير:', err);
                 showCustomError('فشل تحميل التقارير. حاول مرة أخرى.', 'خطأ');
@@ -2876,12 +2868,12 @@
             const supabase = window.supabaseInstance;
 
             try {
-                const { data: employees, error } = await supabase
-                    .from('employees')
-                    .select('employee_id, name, branch_name')
-                    .order('name');
+                const employees = await fetchAllSupabaseRows('employees', 'employee_id, name, branch_name', {
+                    orderBy: 'name',
+                    ascending: true
+                });
 
-                if (!error && employees) {
+                if (employees) {
                     const warningSelect = document.getElementById('warningEmployee');
                     warningSelect.innerHTML = '<option value="">اختر الموظف</option>' + 
                         employees.map(emp => `
@@ -2969,14 +2961,11 @@
             const supabase = window.supabaseInstance;
 
             try {
-                const { data, error } = await supabase
-                    .from('employee_warnings')
-                    .select('id')
-                    .eq('employee_id', currentUser.employee_id);
+                const data = await fetchAllSupabaseRows('employee_warnings', 'id', {
+                    filters: [{ column: 'employee_id', value: currentUser.employee_id }]
+                });
 
-                if (!error) {
-                    document.getElementById('warningsCount').textContent = data.length;
-                }
+                document.getElementById('warningsCount').textContent = data.length;
             } catch (err) {
                 console.error('خطأ في تحميل عدد الإنذارات:', err);
             }
@@ -3046,19 +3035,53 @@
             const supabase = window.supabaseInstance;
 
             try {
-                const { data: sickLeaves, error } = await supabase
-                    .from('leave_requests')
-                    .select('*')
-                    .eq('employee_id', currentUser.employee_id)
-                    .eq('request_type', 'sick')
-                    .order('created_at', { ascending: false });
+                const sickLeaves = await fetchAllSupabaseRows('leave_requests', '*', {
+                    orderBy: 'created_at',
+                    ascending: false,
+                    filters: [
+                        { column: 'employee_id', value: currentUser.employee_id },
+                        { column: 'request_type', value: 'sick' }
+                    ]
+                });
 
-                if (!error) {
-                    displayMedicalCertificatesRequests(sickLeaves || []);
-                }
+                displayMedicalCertificatesRequests(sickLeaves || []);
             } catch (err) {
                 console.error('خطأ في تحميل الإجازات المرضية:', err);
             }
+        }
+
+        async function fetchAllSupabaseRows(tableName, columns = '*', options = {}) {
+            const pageSize = 1000;
+            const rows = [];
+            let offset = 0;
+            const { orderBy, ascending = false, filters = [] } = options;
+
+            while (true) {
+                let query = supabase.from(tableName).select(columns);
+
+                filters.forEach(filter => {
+                    if (filter && filter.column !== undefined) {
+                        query = query.eq(filter.column, filter.value);
+                    }
+                });
+
+                if (orderBy) {
+                    query = query.order(orderBy, { ascending });
+                }
+
+                query = query.range(offset, offset + pageSize - 1);
+
+                const { data, error } = await query;
+                if (error) throw error;
+                if (!Array.isArray(data) || data.length === 0) break;
+
+                rows.push(...data);
+                if (data.length < pageSize) break;
+
+                offset += pageSize;
+            }
+
+            return rows;
         }
 
         function displayMedicalCertificatesRequests(sickLeaves) {
