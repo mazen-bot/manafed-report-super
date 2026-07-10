@@ -888,6 +888,10 @@
                         <input type="number" id="editReportTabby" step="0.01" style="width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:8px;">
                     </div>
                     <div>
+                        <label style="display:block;margin-bottom:6px;font-weight:600;color:#4caf50;font-size:13px;">💰 كاش زائد</label>
+                        <input type="number" id="editReportExtraCash" step="0.01" style="width:100%;padding:10px;border:2px solid #4caf50;border-radius:8px;background:#f1f8f4;">
+                    </div>
+                    <div>
                         <label style="display:block;margin-bottom:6px;font-weight:600;color:#ff9800;font-size:13px;">💵 سحب الراتب (تعديله يؤثر على رصيد الراتب الشهري)</label>
                         <input type="number" id="editReportSalaryWithdrawal" step="0.01" min="0" style="width:100%;padding:10px;border:2px solid #ff9800;border-radius:8px;background:#fff8e1;">
                     </div>
@@ -4915,6 +4919,7 @@
             document.getElementById('editReportWithdrawal').value = parseFloat(record.withdrawal || 0).toFixed(2);
             document.getElementById('editReportTamara').value = parseFloat(record.tamara || 0).toFixed(2);
             document.getElementById('editReportTabby').value = parseFloat(record.tabby || 0).toFixed(2);
+            document.getElementById('editReportExtraCash').value = parseFloat(record.extraCash || 0).toFixed(2);
             document.getElementById('editReportSalaryWithdrawal').value = parseFloat(record.salaryWithdrawal || 0).toFixed(2);
             document.getElementById('editReportNotes').value = record.notes || '';
             
@@ -4954,15 +4959,17 @@
             const withdrawal = parseFloat(document.getElementById('editReportWithdrawal').value) || 0;
             const tamara = parseFloat(document.getElementById('editReportTamara').value) || 0;
             const tabby = parseFloat(document.getElementById('editReportTabby').value) || 0;
+            const extraCash = parseFloat(document.getElementById('editReportExtraCash').value) || 0;
+            const salaryWithdrawal = parseFloat(document.getElementById('editReportSalaryWithdrawal').value) || 0;
             
-            // الصيغة الرياضية: الكاش = المبيعات - مدي - تمارا - تابي - المصروفات - السحب - المردود
-            const cash = totalSales - totalCard - tamara - tabby - expenses - withdrawal - returns;
+            // الصيغة الرياضية: الكاش = المبيعات - مدي - تمارا - تابي - المصروفات - السحب - المردود - سحب الراتب + كاش زائد
+            const cash = totalSales - totalCard - tamara - tabby - expenses - withdrawal - returns - salaryWithdrawal + extraCash;
             document.getElementById('editReportCash').value = Math.max(0, cash).toFixed(2);
         }
 
         // دالة لإضافة event listeners لحقول النموذج
         function setupEditModalListeners() {
-            const fieldsToWatch = ['editReportTotalSales', 'editReportCard', 'editReportExpenses', 'editReportReturns', 'editReportWithdrawal', 'editReportTamara', 'editReportTabby'];
+            const fieldsToWatch = ['editReportTotalSales', 'editReportCard', 'editReportExpenses', 'editReportReturns', 'editReportWithdrawal', 'editReportTamara', 'editReportTabby', 'editReportExtraCash', 'editReportSalaryWithdrawal'];
             fieldsToWatch.forEach(fieldId => {
                 const field = document.getElementById(fieldId);
                 if (field) {
@@ -4973,7 +4980,7 @@
 
         // دالة لإزالة event listeners
         function removeEditModalListeners() {
-            const fieldsToWatch = ['editReportTotalSales', 'editReportCard', 'editReportExpenses', 'editReportReturns', 'editReportWithdrawal', 'editReportTamara', 'editReportTabby'];
+            const fieldsToWatch = ['editReportTotalSales', 'editReportCard', 'editReportExpenses', 'editReportReturns', 'editReportWithdrawal', 'editReportTamara', 'editReportTabby', 'editReportExtraCash', 'editReportSalaryWithdrawal'];
             fieldsToWatch.forEach(fieldId => {
                 const field = document.getElementById(fieldId);
                 if (field) {
@@ -5019,6 +5026,7 @@
                 withdrawal: parseFloat(document.getElementById('editReportWithdrawal').value) || 0,
                 tamara: parseFloat(document.getElementById('editReportTamara').value) || 0,
                 tabby: parseFloat(document.getElementById('editReportTabby').value) || 0,
+                extra_cash: parseFloat(document.getElementById('editReportExtraCash').value) || 0,
                 notes: document.getElementById('editReportNotes').value,
                 salary_withdrawal: newSalaryWithdrawal
             };

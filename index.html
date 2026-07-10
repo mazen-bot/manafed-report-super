@@ -301,9 +301,9 @@
             </div>
            
             <div class="form-group">
-                <label for="imageUpload">📸 رفع صورة</label>
-                <input type="file" id="imageUpload" name="imageUpload" accept="image/jpeg,image/png,image/jpg,image/gif,image/webp" style="width:100%;padding:10px;border:2px dashed #e0e0e0;border-radius:10px;background:#f9f9f9;cursor:pointer;">
-                <small style="color:#666;display:block;margin-top:8px;">الصيغ المدعومة: JPG, PNG, GIF, WEBP (الحد الأقصى: 5MB)</small>
+                <label for="imageUpload">📸 رفع صورة <span style="color:#d32f2f;">*</span></label>
+                <input type="file" id="imageUpload" name="imageUpload" accept="image/jpeg,image/png,image/jpg,image/gif,image/webp" required style="width:100%;padding:10px;border:2px dashed #e0e0e0;border-radius:10px;background:#f9f9f9;cursor:pointer;">
+                <small style="color:#d32f2f;display:block;margin-top:8px;font-weight:600;">⚠️ إجباري - الصيغ المدعومة: JPG, PNG, GIF, WEBP (الحد الأقصى: 5MB)</small>
                 <div id="imagePreview" style="margin-top:15px;display:none;">
                     <img id="previewImg" style="max-width:100%;max-height:300px;border-radius:8px;border:2px solid #4caf50;" alt="معاينة الصورة">
                     <p id="imageName" style="color:#666;margin-top:8px;font-size:12px;"></p>
@@ -1164,6 +1164,14 @@
                 document.getElementById('generalNotes').focus();
                 return;
             }
+            
+            // التحقق من رفع الصورة
+            if (!uploadedImageFile) {
+                await showCustomAlert('يرجى رفع صورة التقرير قبل الحفظ.\n\n💡 رفع الصورة إجباري لتوثيق العملية والتأكد من صحة البيانات.', '⚠️ صورة مطلوبة', 'warning');
+                document.getElementById('imageUpload').focus();
+                return;
+            }
+            
             const attachment = '';
 
             const total = totalCash + totalCard;
