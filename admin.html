@@ -2474,6 +2474,267 @@
                 return getSalaryRemaining(record) <= 0 ? 'paid' : 'pending';
             }
 
+            function escapeHtml(value) {
+                return String(value ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function getMonthDateRange(monthValue) {
+                const safeMonth = typeof monthValue === 'string' && /^\d{4}-\d{2}$/.test(monthValue)
+                    ? monthValue
+                    : new Date().toISOString().slice(0, 7);
+
+                const from = `${safeMonth}-01`;
+                const [year, month] = safeMonth.split('-').map(Number);
+                const endDate = new Date(year, month, 0);
+                const to = `${safeMonth}-${String(endDate.getDate()).padStart(2, '0')}`;
+
+                return { from, to };
+            }
+
+            let salaryWithdrawalDetailsModal = null;
+            let salaryWithdrawalDetailsRecord = null;
+
+            function closeSalaryWithdrawalDetailsModal() {
+                if (!salaryWithdrawalDetailsModal) return;
+                salaryWithdrawalDetailsModal.style.display = 'none';
+            }
+
+            function ensureSalaryWithdrawalDetailsModal() {
+                if (salaryWithdrawalDetailsModal) return salaryWithdrawalDetailsModal;
+
+                salaryWithdrawalDetailsModal = document.createElement('div');
+                salaryWithdrawalDetailsModal.id = 'salaryWithdrawalDetailsModal';
+                salaryWithdrawalDetailsModal.style.cssText = [
+                    'display:none',
+                    'position:fixed',
+                    'inset:0',
+                    'background:rgba(0,0,0,0.55)',
+                    'z-index:9999',
+                    'padding:20px',
+                    'overflow:auto'
+                ].join(';');
+
+                salaryWithdrawalDetailsModal.innerHTML = `
+                    <div style="max-width:1100px;margin:20px auto;background:#fff;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.25);overflow:hidden;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 20px;background:#f8f9fa;border-bottom:1px solid #e9ecef;">
+                            <div>
+                                <h3 id="salaryDetailsTitle" style="margin:0;color:#333;">📄 تفاصيل سحب الراتب</h3>
+                                <p id="salaryDetailsSubtitle" style="margin:6px 0 0;color:#666;font-size:13px;"></p>
+                            </div>
+                            <button id="closeSalaryDetailsModal" type="button" style="background:#6c757d;color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600;">إغلاق</button>
+                        </div>
+
+                        <div style="padding:16px 20px;border-bottom:1px solid #f0f0f0;background:#fcfcfc;">
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;align-items:end;">
+                                <div class="field" style="margin-bottom:0;">
+                                    <label for="salaryDetailsFromDate">من تاريخ</label>
+                                    <input type="date" id="salaryDetailsFromDate">
+                                </div>
+                                <div class="field" style="margin-bottom:0;">
+                                    <label for="salaryDetailsToDate">إلى تاريخ</label>
+                                    <input type="date" id="salaryDetailsToDate">
+                                </div>
+                                <div>
+                                    <button id="loadSalaryDetailsBtn" type="button" style="width:100%;background:#17a2b8;color:#fff;border:none;padding:12px;border-radius:8px;cursor:pointer;font-weight:700;">🔎 عرض التفاصيل</button>
+                                </div>
+                            </div>
+
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:10px;margin-top:14px;">
+                                <div style="background:#fff3cd;border:1px solid #ffe69c;border-radius:8px;padding:10px 12px;">
+                                    <div style="font-size:12px;color:#856404;">المجموع خلال الفترة</div>
+                                    <div id="salaryDetailsTotal" style="margin-top:4px;font-size:18px;font-weight:700;color:#856404;">0.00 ر.س</div>
+                                </div>
+                                <div style="background:#d1ecf1;border:1px solid #bee5eb;border-radius:8px;padding:10px 12px;">
+                                    <div style="font-size:12px;color:#0c5460;">المتبقي حسب الفترة المحددة</div>
+                                    <div id="salaryDetailsRemaining" style="margin-top:4px;font-size:18px;font-weight:700;color:#0c5460;">0.00 ر.س</div>
+                                </div>
+                                <div style="background:#d4edda;border:1px solid #c3e6cb;border-radius:8px;padding:10px 12px;">
+                                    <div style="font-size:12px;color:#155724;">المتبقي الحالي في سجل الراتب</div>
+                                    <div id="salaryDetailsCurrentRemaining" style="margin-top:4px;font-size:18px;font-weight:700;color:#155724;">0.00 ر.س</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="padding:14px 20px 20px;">
+                            <div id="salaryDetailsMessage" style="margin-bottom:10px;color:#666;font-size:13px;"></div>
+                            <div style="max-height:430px;overflow:auto;border:1px solid #eee;border-radius:10px;">
+                                <table style="width:100%;border-collapse:collapse;min-width:780px;">
+                                    <thead style="position:sticky;top:0;background:#f8f9fa;z-index:1;">
+                                        <tr>
+                                            <th style="padding:10px;border-bottom:1px solid #e9ecef;">تاريخ التقرير</th>
+                                            <th style="padding:10px;border-bottom:1px solid #e9ecef;">تاريخ السحب</th>
+                                            <th style="padding:10px;border-bottom:1px solid #e9ecef;">الفرع</th>
+                                            <th style="padding:10px;border-bottom:1px solid #e9ecef;">الموظف</th>
+                                            <th style="padding:10px;border-bottom:1px solid #e9ecef;">المبلغ المسحوب</th>
+                                            <th style="padding:10px;border-bottom:1px solid #e9ecef;">المجموع</th>
+                                            <th style="padding:10px;border-bottom:1px solid #e9ecef;">المتبقي</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="salaryDetailsBody">
+                                        <tr><td colspan="7" style="padding:16px;text-align:center;color:#888;">حدد فترة التاريخ ثم اضغط عرض التفاصيل</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(salaryWithdrawalDetailsModal);
+
+                const closeBtn = document.getElementById('closeSalaryDetailsModal');
+                const loadBtn = document.getElementById('loadSalaryDetailsBtn');
+
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', closeSalaryWithdrawalDetailsModal);
+                }
+
+                if (loadBtn) {
+                    loadBtn.addEventListener('click', () => {
+                        loadSalaryWithdrawalDetailsRows();
+                    });
+                }
+
+                salaryWithdrawalDetailsModal.addEventListener('click', (event) => {
+                    if (event.target === salaryWithdrawalDetailsModal) {
+                        closeSalaryWithdrawalDetailsModal();
+                    }
+                });
+
+                return salaryWithdrawalDetailsModal;
+            }
+
+            async function loadSalaryWithdrawalDetailsRows() {
+                if (!salaryWithdrawalDetailsRecord) return;
+
+                const fromDateEl = document.getElementById('salaryDetailsFromDate');
+                const toDateEl = document.getElementById('salaryDetailsToDate');
+                const bodyEl = document.getElementById('salaryDetailsBody');
+                const messageEl = document.getElementById('salaryDetailsMessage');
+                const totalEl = document.getElementById('salaryDetailsTotal');
+                const remainingEl = document.getElementById('salaryDetailsRemaining');
+                const currentRemainingEl = document.getElementById('salaryDetailsCurrentRemaining');
+
+                if (!fromDateEl || !toDateEl || !bodyEl) return;
+
+                const fromDate = fromDateEl.value;
+                const toDate = toDateEl.value;
+
+                if (!fromDate || !toDate) {
+                    showCustomError('⚠️ يرجى تحديد تاريخ البداية والنهاية');
+                    return;
+                }
+
+                if (fromDate > toDate) {
+                    showCustomError('⚠️ تاريخ البداية يجب أن يكون قبل تاريخ النهاية');
+                    return;
+                }
+
+                bodyEl.innerHTML = '<tr><td colspan="7" style="padding:16px;text-align:center;color:#888;">⏳ جاري تحميل بيانات السحب...</td></tr>';
+                if (messageEl) messageEl.textContent = '';
+
+                try {
+                    const { data, error } = await supabase
+                        .from('sales')
+                        .select('id, sale_date, created_at, branch, salary_withdrawal, salary_employee_id')
+                        .eq('salary_employee_id', salaryWithdrawalDetailsRecord.employee_id)
+                        .gt('salary_withdrawal', 0)
+                        .gte('sale_date', fromDate)
+                        .lte('sale_date', toDate)
+                        .order('sale_date', { ascending: true })
+                        .order('created_at', { ascending: true });
+
+                    if (error) throw error;
+
+                    const rows = Array.isArray(data) ? data : [];
+                    const netSalary = getNumericValue(salaryWithdrawalDetailsRecord.net_salary, 0);
+                    const currentRemaining = getSalaryRemaining(salaryWithdrawalDetailsRecord);
+
+                    if (rows.length === 0) {
+                        bodyEl.innerHTML = '<tr><td colspan="7" style="padding:16px;text-align:center;color:#888;">لا توجد سحوبات ضمن الفترة المحددة</td></tr>';
+                        if (totalEl) totalEl.textContent = '0.00 ر.س';
+                        if (remainingEl) remainingEl.textContent = `${netSalary.toLocaleString('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س`;
+                        if (currentRemainingEl) currentRemainingEl.textContent = `${currentRemaining.toLocaleString('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س`;
+                        if (messageEl) messageEl.textContent = `الفترة: ${fromDate} إلى ${toDate}`;
+                        return;
+                    }
+
+                    let runningTotal = 0;
+                    bodyEl.innerHTML = rows.map(row => {
+                        const amount = getNumericValue(row.salary_withdrawal, 0);
+                        runningTotal += amount;
+                        const remaining = Math.max(0, parseFloat((netSalary - runningTotal).toFixed(2)));
+
+                        const reportDate = row.sale_date
+                            ? new Date(row.sale_date).toLocaleDateString('ar-SA')
+                            : '-';
+                        const withdrawalDate = row.created_at
+                            ? new Date(row.created_at).toLocaleString('ar-SA')
+                            : reportDate;
+                        const branchName = escapeHtml(row.branch || salaryWithdrawalDetailsRecord.branch_name || '-');
+                        const employeeName = escapeHtml(salaryWithdrawalDetailsRecord.employee_name || '-');
+
+                        return `
+                            <tr>
+                                <td style="padding:10px;border-bottom:1px solid #f1f1f1;">${reportDate}</td>
+                                <td style="padding:10px;border-bottom:1px solid #f1f1f1;">${withdrawalDate}</td>
+                                <td style="padding:10px;border-bottom:1px solid #f1f1f1;">${branchName}</td>
+                                <td style="padding:10px;border-bottom:1px solid #f1f1f1;font-weight:600;">${employeeName}</td>
+                                <td style="padding:10px;border-bottom:1px solid #f1f1f1;color:#d35400;font-weight:700;">${amount.toLocaleString('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س</td>
+                                <td style="padding:10px;border-bottom:1px solid #f1f1f1;color:#8e44ad;font-weight:700;">${runningTotal.toLocaleString('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س</td>
+                                <td style="padding:10px;border-bottom:1px solid #f1f1f1;color:#1e88e5;font-weight:700;">${remaining.toLocaleString('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س</td>
+                            </tr>
+                        `;
+                    }).join('');
+
+                    if (totalEl) {
+                        totalEl.textContent = `${runningTotal.toLocaleString('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س`;
+                    }
+
+                    if (remainingEl) {
+                        const filteredRemaining = Math.max(0, parseFloat((netSalary - runningTotal).toFixed(2)));
+                        remainingEl.textContent = `${filteredRemaining.toLocaleString('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س`;
+                    }
+
+                    if (currentRemainingEl) {
+                        currentRemainingEl.textContent = `${currentRemaining.toLocaleString('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س`;
+                    }
+
+                    if (messageEl) {
+                        messageEl.textContent = `عدد العمليات: ${rows.length} | الفترة: ${fromDate} إلى ${toDate}`;
+                    }
+                } catch (err) {
+                    console.error('خطأ في تحميل تفاصيل سحب الراتب:', err);
+                    bodyEl.innerHTML = '<tr><td colspan="7" style="padding:16px;text-align:center;color:#c0392b;">⚠️ تعذر تحميل التفاصيل من جدول التقارير</td></tr>';
+                    if (messageEl) messageEl.textContent = err.message || 'خطأ غير معروف';
+                }
+            }
+
+            function openSalaryWithdrawalDetailsModal(record) {
+                if (!record) return;
+
+                salaryWithdrawalDetailsRecord = record;
+                const modal = ensureSalaryWithdrawalDetailsModal();
+                const titleEl = document.getElementById('salaryDetailsTitle');
+                const subtitleEl = document.getElementById('salaryDetailsSubtitle');
+                const fromDateEl = document.getElementById('salaryDetailsFromDate');
+                const toDateEl = document.getElementById('salaryDetailsToDate');
+
+                if (titleEl) titleEl.textContent = `📄 تفاصيل سحب الراتب - ${record.employee_name || '-'}`;
+                if (subtitleEl) subtitleEl.textContent = `الفرع: ${record.branch_name || '-'} | الشهر: ${record.salary_month || '-'}`;
+
+                const range = getMonthDateRange(record.salary_month);
+                if (fromDateEl) fromDateEl.value = range.from;
+                if (toDateEl) toDateEl.value = range.to;
+
+                modal.style.display = 'block';
+                loadSalaryWithdrawalDetailsRows();
+            }
+
             function resetMonthlySalaryForm() {
                 monthlySalaryEmployee.value = '';
                 monthlySalaryBase.value = '';
@@ -2915,6 +3176,7 @@
                                         <td style="color:#2196f3;font-weight:600;">${remaining.toLocaleString('ar-SA', {minimumFractionDigits: 2})} ر.س</td>
                                         <td><span style="padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600;background:${paymentStatus === 'paid' ? '#d4edda' : '#fff3cd'};color:${paymentStatus === 'paid' ? '#155724' : '#856404'};">${paymentStatus === 'paid' ? 'تم الاستلام' : 'معلق'}</span></td>
                                         <td>
+                                            <button class="btn-view-monthly-salary-details btn-small" data-id="${s.id}" style="background:#17a2b8;color:#fff;">📄 تفاصيل</button>
                                             <button class="btn-edit-monthly-salary btn-small" data-id="${s.id}" style="background:#1976d2;color:#fff;">✏️ تعديل</button>
                                             <button class="btn-delete-monthly-salary btn-small btn-delete" data-id="${s.id}">🗑️ حذف</button>
                                         </td>
@@ -2968,6 +3230,17 @@
                             return;
                         }
                         startMonthlySalaryEditing(record);
+                    });
+                });
+
+                document.querySelectorAll('.btn-view-monthly-salary-details').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const record = monthlySalariesCache.find(s => String(s.id) === String(btn.dataset.id));
+                        if (!record) {
+                            showCustomError('❌ تعذر تحميل بيانات السجل للتفاصيل');
+                            return;
+                        }
+                        openSalaryWithdrawalDetailsModal(record);
                     });
                 });
             }

@@ -2366,42 +2366,116 @@
             `).join('');
         }
 
-        async function loadReports() {
-            const supabase = window.supabaseInstance;
-            const isManager = hasHRPermission();
+        function getSupabaseErrorText(errorLike) {
+            if (!errorLike) return 'خطأ غير معروف';
+            if (typeof errorLike === 'string') return errorLike;
 
-            const employeeId = isManager
-                ? document.getElementById('reportEmployee').value
-                : currentUser.employee_id;
+            const parts = [];
+            if (errorLike.message) parts.push(errorLike.message);
+            if (errorLike.details) parts.push(errorLike.details);
+            if (errorLike.hint) parts.push(errorLike.hint);
+            if (errorLike.code) parts.push(`code=${errorLike.code}`);
 
-            const fromDate = document.getElementById('reportFrom').value;
-            const toDate = document.getElementById('reportTo').value;
-            const requestType = document.getElementById('reportRequestType').value;
-            const requestStatus = document.getElementById('reportRequestStatus').value;
-            const warningLevel = document.getElementById('reportWarningLevel').value;
-            const warningStatus = document.getElementById('reportWarningStatus').value;
+            if (parts.length > 0) return parts.join(' | ');
 
             try {
-                const requests = await fetchAllSupabaseRows('leave_requests', '*', {
-                    orderBy: 'created_at',
-                    ascending: false,
-                    filters: [
-                        ...(employeeId ? [{ column: 'employee_id', value: employeeId }] : []),
-                        ...(requestType ? [{ column: 'request_type', value: requestType }] : []),
-                        ...(requestStatus ? [{ column: 'status', value: requestStatus }] : [])
-                    ]
-                });
+                return JSON.stringify(errorLike);
+            } catch (_) {
+                return String(errorLike);
+            }
+        }
 
-                const warnings = await fetchAllSupabaseRows('employee_warnings', '*', {
-                    orderBy: 'created_at',
-                    ascending: false,
-                    filters: [
-                        ...(employeeId ? [{ column: 'employee_id', value: employeeId }] : []),
-                        ...(warningLevel ? [{ column: 'warning_level', value: warningLevel }] : []),
-                        ...(warningStatus === 'acknowledged' ? [{ column: 'acknowledged', value: true }] : []),
-                        ...(warningStatus === 'pending' ? [{ column: 'acknowledged', value: false }] : [])
-                    ]
-                });
+        function mapReportsFailureMessage(requestErrText, warningErrText) {
+            const combined = `${requestErrText} ${warningErrText}`.toLowerCase();
+
+            if (combined.includes('failed to fetch') || combined.includes('networkerror') || combined.includes('network request failed')) {
+                return 'تعذر الاتصال بقاعدة البيانات. تحقق من الإنترنت أو إعدادات الشبكة/VPN ثم أعد المحاولة.';
+            }
+
+            if (combined.includes('invalid api key') || combined.includes('apikey') || combined.includes('jwt') || combined.includes('unauthorized')) {
+                return 'إعدادات الاتصال بـ Supabase غير صحيحة (المفتاح أو الصلاحيات). تحقق من supabaseUrl و supabaseAnonKey.';
+            }
+
+            if (combined.includes('does not exist') || combined.includes('relation') || combined.includes('42p01')) {
+                return 'جداول الموارد البشرية غير موجودة في Supabase. شغّل ملف create_hr_tables.sql ثم أعد المحاولة.';
+            }
+
+            return 'تعذر تحميل بيانات التقارير من قاعدة البيانات. راجع Console لمعرفة التفاصيل.';
+        }
+
+        async function loadReports() {
+            try {
+                if (!window.supabaseInstance) {
+                    showCustomError('اتصال قاعدة البيانات غير جاهز بعد. أعد تحميل الصفحة ثم حاول مرة أخرى.', 'خطأ');
+                    return;
+                }
+
+                if (!currentUser || !currentUser.employee_id) {
+                    showCustomError('يرجى تسجيل الدخول أولاً ثم إعادة محاولة تحميل التقرير.', 'تنبيه');
+                    return;
+                }
+
+                const isManager = hasHRPermission();
+
+                const employeeId = isManager
+                    ? document.getElementById('reportEmployee').value
+                    : (currentUser?.employee_id || '');
+
+                const fromDate = document.getElementById('reportFrom').value;
+                const toDate = document.getElementById('reportTo').value;
+                const requestType = document.getElementById('reportRequestType').value;
+                const requestStatus = document.getElementById('reportRequestStatus').value;
+                const warningLevel = document.getElementById('reportWarningLevel').value;
+                const warningStatus = document.getElementById('reportWarningStatus').value;
+
+                const [requestsResult, warningsResult] = await Promise.allSettled([
+                    fetchAllSupabaseRows('leave_requests', '*', {
+                        orderBy: 'created_at',
+                        ascending: false,
+                        filters: [
+                            ...(employeeId ? [{ column: 'employee_id', value: employeeId }] : []),
+                            ...(requestType ? [{ column: 'request_type', value: requestType }] : []),
+                            ...(requestStatus ? [{ column: 'status', value: requestStatus }] : [])
+                        ]
+                    }),
+                    fetchAllSupabaseRows('employee_warnings', '*', {
+                        orderBy: 'created_at',
+                        ascending: false,
+                        filters: [
+                            ...(employeeId ? [{ column: 'employee_id', value: employeeId }] : [])
+                        ]
+                    })
+                ]);
+
+                if (requestsResult.status === 'rejected') {
+                    console.error('خطأ في تحميل تقارير الطلبات:', requestsResult.reason);
+                }
+
+                if (warningsResult.status === 'rejected') {
+                    console.error('خطأ في تحميل تقارير الإنذارات:', warningsResult.reason);
+                }
+
+                if (requestsResult.status === 'rejected' && warningsResult.status === 'rejected') {
+                    const requestErrText = getSupabaseErrorText(requestsResult.reason);
+                    const warningErrText = getSupabaseErrorText(warningsResult.reason);
+                    const mappedMessage = mapReportsFailureMessage(requestErrText, warningErrText);
+
+                    console.error('تفاصيل فشل تقارير الطلبات:', requestErrText);
+                    console.error('تفاصيل فشل تقارير الإنذارات:', warningErrText);
+
+                    reportRequestsCache = [];
+                    reportWarningsCache = [];
+                    document.getElementById('reportRequestsCount').textContent = '0';
+                    document.getElementById('reportWarningsCount').textContent = '0';
+                    displayReportRequests([]);
+                    displayReportWarnings([]);
+
+                    showCustomError(mappedMessage, 'خطأ');
+                    return;
+                }
+
+                const requests = requestsResult.status === 'fulfilled' ? (requestsResult.value || []) : [];
+                const warnings = warningsResult.status === 'fulfilled' ? (warningsResult.value || []) : [];
 
                 const fromDateIso = fromDate ? new Date(fromDate).toISOString() : null;
                 const toDateIso = toDate ? (() => {
@@ -2417,6 +2491,9 @@
                 });
 
                 const filteredWarnings = warnings.filter(item => {
+                    if (warningLevel && (item.warning_level || '') !== warningLevel) return false;
+                    if (warningStatus === 'acknowledged' && item.acknowledged !== true) return false;
+                    if (warningStatus === 'pending' && item.acknowledged === true) return false;
                     if (fromDateIso && item.created_at < fromDateIso) return false;
                     if (toDateIso && item.created_at > toDateIso) return false;
                     return true;
@@ -2430,6 +2507,10 @@
 
                 displayReportRequests(filteredRequests);
                 displayReportWarnings(filteredWarnings);
+
+                if (requestsResult.status === 'rejected' || warningsResult.status === 'rejected') {
+                    showCustomError('تم تحميل جزء من التقارير فقط. راجع الكونسول لمعرفة السبب.', 'تنبيه');
+                }
             } catch (err) {
                 console.error('خطأ في تحميل التقارير:', err);
                 showCustomError('فشل تحميل التقارير. حاول مرة أخرى.', 'خطأ');
@@ -3055,9 +3136,14 @@
             const rows = [];
             let offset = 0;
             const { orderBy, ascending = false, filters = [] } = options;
+            const client = window.supabaseInstance;
+
+            if (!client || typeof client.from !== 'function') {
+                throw new Error('Supabase client is not initialized correctly');
+            }
 
             while (true) {
-                let query = supabase.from(tableName).select(columns);
+                let query = client.from(tableName).select(columns);
 
                 filters.forEach(filter => {
                     if (filter && filter.column !== undefined) {
